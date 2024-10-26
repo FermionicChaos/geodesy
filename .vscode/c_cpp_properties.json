@@ -1,0 +1,56 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "C:/Program Files/VulkanSDK/Include",
+                "${workspaceFolder}/inc/",
+                "${workspaceFolder}/prj/_deps/glfw-src/include/",
+                "${workspaceFolder}/prj/_deps/glfw-build/src/",
+                "${workspaceFolder}/prj/_deps/glslang-src/",
+                "${workspaceFolder}/prj/_deps/stb-src/",
+                "${workspaceFolder}/prj/_deps/assimp-src/include/",
+                "${workspaceFolder}/prj/_deps/assimp-build/include/",
+                "${workspaceFolder}/prj/_deps/freetype-src/include/",
+                "${workspaceFolder}/prj/_deps/freetype-build/include/",
+                "${workspaceFolder}/prj/_deps/imgui-src/"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "windowsSdkVersion": "10.0.22000.0",
+            "compilerPath": "cl.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-msvc-x64"
+        },
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/inc/",
+                "${workspaceFolder}/prj/Debug/_deps/glfw-src/include/",
+                "${workspaceFolder}/prj/Debug/_deps/glfw-build/src/",
+                "${workspaceFolder}/prj/Debug/_deps/glslang-src/",
+                "${workspaceFolder}/prj/Debug/_deps/stb-src/",
+                "${workspaceFolder}/prj/Debug/_deps/assimp-src/include/",
+                "${workspaceFolder}/prj/Debug/_deps/assimp-build/include/",
+                "${workspaceFolder}/prj/Debug/_deps/freetype-src/include/",
+                "${workspaceFolder}/prj/Debug/_deps/freetype-build/include/",
+                "${workspaceFolder}/prj/Debug/_deps/imgui-src/"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c17",
+            "cppStandard": "gnu++17",
+            "intelliSenseMode": "linux-gcc-x64",
+            "compilerArgs": [
+                "-std=c++17",
+                "-pthread",
+                "-g"
+            ]
+        }
+    ],
+    "version": 4
+}
