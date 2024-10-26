@@ -82,7 +82,7 @@ FetchContent_MakeAvailable(glfw)
 FetchContent_Declare(
     glslang
     GIT_REPOSITORY      https://github.com/KhronosGroup/glslang.git
-    GIT_TAG             vulkan-sdk-1.3.280.0
+    GIT_TAG             vulkan-sdk-1.3.296.0 # Must match Vulkan SDK version installed
 )
 set(ENABLE_PCH OFF)
 set(GLSLANG_ENABLE_INSTALL OFF)
