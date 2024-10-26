@@ -3,7 +3,7 @@
 
 # Geodesy Engine
 
-![Alt Text](https://github.com/FermionicChaos/geodesy/blob/main/res/github/logo.png)
+![Alt Text](https://github.com/FermionicChaos/geodesy/blob/master/res/github/logo.png)
 
 The geodesy engine is a high performance game/physics engine written in C++. It utilizes the Vulkan Graphics
 & Compute API to interact with GPU hardware. Years ago when I was studying physics and taking a general relativity
