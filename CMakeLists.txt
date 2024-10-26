@@ -151,7 +151,8 @@ endif()
 # Link against Vulkan and OpenMP
 add_library(${GEODESY_LIBRARY} ${INC} ${SRC} ${IMGUI_SOURCES})
 
-set_target_properties(${GEODESY_LIBRARY} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib/${CMAKE_SYSTEM_NAME}/${CMAKE_BUILD_TYPE}/)
+# Removed so it can be linked against other projects.
+# set_target_properties(${GEODESY_LIBRARY} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib/${CMAKE_SYSTEM_NAME}/${CMAKE_BUILD_TYPE}/)
 
 # Include directories
 target_include_directories(${GEODESY_LIBRARY} PRIVATE ${Vulkan_INCLUDE_DIRS}/)
