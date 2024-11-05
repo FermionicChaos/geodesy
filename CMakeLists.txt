@@ -78,17 +78,17 @@ FetchContent_MakeAvailable(glfw)
 # endif()
 # FetchContent_MakeAvailable(portaudio)
 
-# ----- GLSLang ----- #
-FetchContent_Declare(
-    glslang
-    GIT_REPOSITORY      https://github.com/KhronosGroup/glslang.git
-    GIT_TAG             vulkan-sdk-1.3.296.0 # Find a way to the version that matches installed vulkan sdk
-)
-set(ENABLE_PCH OFF)
-set(GLSLANG_ENABLE_INSTALL OFF)
-set(GLSLANG_TESTS OFF)
-set(ENABLE_OPT OFF)
-FetchContent_MakeAvailable(glslang)
+# # ----- GLSLang ----- #
+# FetchContent_Declare(
+#     glslang
+#     GIT_REPOSITORY      https://github.com/KhronosGroup/glslang.git
+#     GIT_TAG             vulkan-sdk-1.3.296.0 # Find a way to the version that matches installed vulkan sdk
+# )
+# set(ENABLE_PCH OFF)
+# set(GLSLANG_ENABLE_INSTALL OFF)
+# set(GLSLANG_TESTS OFF)
+# set(ENABLE_OPT OFF)
+# FetchContent_MakeAvailable(glslang)
 
 # ----- ImGui ----- #
 FetchContent_Declare(
@@ -109,7 +109,6 @@ set(IMGUI_SOURCES
 # ----------------------- Geodesy Library ----------------------- #
 
 set(GEODESY_LIBRARY "geodesy")
-# set(GEODESY_UNIT_TEST "geodesy-unit-test")
 
 file(GLOB_RECURSE INC
     "inc/*.h"
@@ -151,15 +150,12 @@ endif()
 # Link against Vulkan and OpenMP
 add_library(${GEODESY_LIBRARY} ${INC} ${SRC} ${IMGUI_SOURCES})
 
-# Removed so it can be linked against other projects.
-# set_target_properties(${GEODESY_LIBRARY} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib/${CMAKE_SYSTEM_NAME}/${CMAKE_BUILD_TYPE}/)
-
 # Include directories
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${Vulkan_INCLUDE_DIRS}/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inc/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glfw-src/include/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glfw-build/src/)
-target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glslang-src/)
+# target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glslang-src/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/stb-src/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/assimp-src/include/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/freetype-src/include/)
@@ -179,47 +175,7 @@ endif()
 
 # Link Third Party Libraries
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC glfw)
-target_link_libraries(${GEODESY_LIBRARY} PUBLIC glslang)
+# target_link_libraries(${GEODESY_LIBRARY} PUBLIC glslang)
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC SPIRV)
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC assimp)
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC freetype)
-
-# # ----------------------- Geodesy Unit Test ----------------------- #
-# # When creating your own project off of the Geodesy Library, use this
-# # as a template for your own CMakeLists.txt file to know what to link against.
-
-# project(${GEODESY_UNIT_TEST})
-
-# # Find and include OpenMP
-# find_package(OpenMP REQUIRED)
-# if(OpenMP_CXX_FOUND)
-#     message("OpenMP found.")
-# endif()
-
-# # Find and include Vulkan
-# find_package(Vulkan REQUIRED)
-# if(Vulkan_FOUND)
-#     message("Vulkan found.")
-# endif()
-
-# # Link against Vulkan and OpenMP
-# add_executable(${GEODESY_UNIT_TEST} main.cpp res/icon.rc)
-
-# set_target_properties(${GEODESY_UNIT_TEST} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/${CMAKE_SYSTEM_NAME}/${CMAKE_BUILD_TYPE}/)
-
-# # Include directories
-# target_include_directories(${GEODESY_UNIT_TEST} PRIVATE ${Vulkan_INCLUDE_DIRS}/)
-# target_include_directories(${GEODESY_UNIT_TEST} PRIVATE ${CMAKE_SOURCE_DIR}/inc/)
-
-# # Link Against Vulkan
-# if(OpenMP_CXX_FOUND)
-#     target_link_libraries(${GEODESY_UNIT_TEST} PRIVATE OpenMP::OpenMP_CXX)
-# endif()
-
-# # Link Against Vulkan
-# if(Vulkan_FOUND)
-#     target_link_libraries(${GEODESY_UNIT_TEST} PRIVATE ${Vulkan_LIBRARY})
-# endif()
-
-# # Link Against Geodesy Library
-# target_link_libraries(${GEODESY_UNIT_TEST} PRIVATE ${GEODESY_LIBRARY})
