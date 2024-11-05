@@ -109,7 +109,7 @@ set(IMGUI_SOURCES
 # ----------------------- Geodesy Library ----------------------- #
 
 set(GEODESY_LIBRARY "geodesy")
-set(GEODESY_UNIT_TEST "geodesy-unit-test")
+# set(GEODESY_UNIT_TEST "geodesy-unit-test")
 
 file(GLOB_RECURSE INC
     "inc/*.h"
@@ -184,42 +184,42 @@ target_link_libraries(${GEODESY_LIBRARY} PUBLIC SPIRV)
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC assimp)
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC freetype)
 
-# ----------------------- Geodesy Unit Test ----------------------- #
-# When creating your own project off of the Geodesy Library, use this
-# as a template for your own CMakeLists.txt file to know what to link against.
+# # ----------------------- Geodesy Unit Test ----------------------- #
+# # When creating your own project off of the Geodesy Library, use this
+# # as a template for your own CMakeLists.txt file to know what to link against.
 
-project(${GEODESY_UNIT_TEST})
+# project(${GEODESY_UNIT_TEST})
 
-# Find and include OpenMP
-find_package(OpenMP REQUIRED)
-if(OpenMP_CXX_FOUND)
-    message("OpenMP found.")
-endif()
+# # Find and include OpenMP
+# find_package(OpenMP REQUIRED)
+# if(OpenMP_CXX_FOUND)
+#     message("OpenMP found.")
+# endif()
 
-# Find and include Vulkan
-find_package(Vulkan REQUIRED)
-if(Vulkan_FOUND)
-    message("Vulkan found.")
-endif()
+# # Find and include Vulkan
+# find_package(Vulkan REQUIRED)
+# if(Vulkan_FOUND)
+#     message("Vulkan found.")
+# endif()
 
-# Link against Vulkan and OpenMP
-add_executable(${GEODESY_UNIT_TEST} main.cpp res/icon.rc)
+# # Link against Vulkan and OpenMP
+# add_executable(${GEODESY_UNIT_TEST} main.cpp res/icon.rc)
 
-set_target_properties(${GEODESY_UNIT_TEST} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/${CMAKE_SYSTEM_NAME}/${CMAKE_BUILD_TYPE}/)
+# set_target_properties(${GEODESY_UNIT_TEST} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/${CMAKE_SYSTEM_NAME}/${CMAKE_BUILD_TYPE}/)
 
-# Include directories
-target_include_directories(${GEODESY_UNIT_TEST} PRIVATE ${Vulkan_INCLUDE_DIRS}/)
-target_include_directories(${GEODESY_UNIT_TEST} PRIVATE ${CMAKE_SOURCE_DIR}/inc/)
+# # Include directories
+# target_include_directories(${GEODESY_UNIT_TEST} PRIVATE ${Vulkan_INCLUDE_DIRS}/)
+# target_include_directories(${GEODESY_UNIT_TEST} PRIVATE ${CMAKE_SOURCE_DIR}/inc/)
 
-# Link Against Vulkan
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(${GEODESY_UNIT_TEST} PRIVATE OpenMP::OpenMP_CXX)
-endif()
+# # Link Against Vulkan
+# if(OpenMP_CXX_FOUND)
+#     target_link_libraries(${GEODESY_UNIT_TEST} PRIVATE OpenMP::OpenMP_CXX)
+# endif()
 
-# Link Against Vulkan
-if(Vulkan_FOUND)
-    target_link_libraries(${GEODESY_UNIT_TEST} PRIVATE ${Vulkan_LIBRARY})
-endif()
+# # Link Against Vulkan
+# if(Vulkan_FOUND)
+#     target_link_libraries(${GEODESY_UNIT_TEST} PRIVATE ${Vulkan_LIBRARY})
+# endif()
 
-# Link Against Geodesy Library
-target_link_libraries(${GEODESY_UNIT_TEST} PRIVATE ${GEODESY_LIBRARY})
+# # Link Against Geodesy Library
+# target_link_libraries(${GEODESY_UNIT_TEST} PRIVATE ${GEODESY_LIBRARY})
