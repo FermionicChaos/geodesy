@@ -155,7 +155,7 @@ add_library(${GEODESY_LIBRARY} ${INC} ${SRC} ${IMGUI_SOURCES})
 # set_target_properties(${GEODESY_LIBRARY} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/lib/${CMAKE_SYSTEM_NAME}/${CMAKE_BUILD_TYPE}/)
 
 # Include directories
-target_include_directories(${GEODESY_LIBRARY} PRIVATE ${Vulkan_INCLUDE_DIRS}/)
+target_include_directories(${GEODESY_LIBRARY} PUBLIC ${Vulkan_INCLUDE_DIRS}/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${CMAKE_SOURCE_DIR}/inc/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glfw-src/include/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glfw-build/src/)
@@ -169,12 +169,12 @@ target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/as
 
 # Link Against Vulkan
 if(OpenMP_CXX_FOUND)
-    target_link_libraries(${GEODESY_LIBRARY} PRIVATE OpenMP::OpenMP_CXX)
+    target_link_libraries(${GEODESY_LIBRARY} PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
 # Link Against Vulkan
 if(Vulkan_FOUND)
-    target_link_libraries(${GEODESY_LIBRARY} PRIVATE ${Vulkan_LIBRARY})
+    target_link_libraries(${GEODESY_LIBRARY} PUBLIC ${Vulkan_LIBRARY})
 endif()
 
 # Link Third Party Libraries
