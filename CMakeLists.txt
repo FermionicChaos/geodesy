@@ -156,7 +156,7 @@ add_library(${GEODESY_LIBRARY} ${INC} ${SRC} ${IMGUI_SOURCES})
 
 # Include directories
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${Vulkan_INCLUDE_DIRS}/)
-target_include_directories(${GEODESY_LIBRARY} PUBLIC ${CMAKE_SOURCE_DIR}/inc/)
+target_include_directories(${GEODESY_LIBRARY} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inc/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glfw-src/include/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glfw-build/src/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glslang-src/)
