@@ -78,17 +78,17 @@ FetchContent_MakeAvailable(glfw)
 # endif()
 # FetchContent_MakeAvailable(portaudio)
 
-# # ----- GLSLang ----- #
-# FetchContent_Declare(
-#     glslang
-#     GIT_REPOSITORY      https://github.com/KhronosGroup/glslang.git
-#     GIT_TAG             vulkan-sdk-1.3.296.0 # Find a way to the version that matches installed vulkan sdk
-# )
-# set(ENABLE_PCH OFF)
-# set(GLSLANG_ENABLE_INSTALL OFF)
-# set(GLSLANG_TESTS OFF)
-# set(ENABLE_OPT OFF)
-# FetchContent_MakeAvailable(glslang)
+# ----- GLSLang ----- #
+FetchContent_Declare(
+    glslang
+    GIT_REPOSITORY      https://github.com/KhronosGroup/glslang.git
+    GIT_TAG             vulkan-sdk-1.3.296.0
+)
+set(ENABLE_PCH OFF)
+set(GLSLANG_ENABLE_INSTALL OFF)
+set(GLSLANG_TESTS OFF)
+set(ENABLE_OPT OFF)
+FetchContent_MakeAvailable(glslang)
 
 # ----- ImGui ----- #
 FetchContent_Declare(
@@ -153,6 +153,7 @@ add_library(${GEODESY_LIBRARY} ${INC} ${SRC} ${IMGUI_SOURCES})
 # Include directories
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${Vulkan_INCLUDE_DIRS}/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inc/)
+target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glfw-src/include/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glfw-build/src/)
 # target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glslang-src/)
@@ -175,7 +176,7 @@ endif()
 
 # Link Third Party Libraries
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC glfw)
-# target_link_libraries(${GEODESY_LIBRARY} PUBLIC glslang)
+target_link_libraries(${GEODESY_LIBRARY} PUBLIC glslang)
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC SPIRV)
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC assimp)
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC freetype)
