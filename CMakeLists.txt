@@ -156,7 +156,6 @@ target_include_directories(${GEODESY_LIBRARY} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glfw-src/include/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glfw-build/src/)
-# target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glslang-src/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/stb-src/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/assimp-src/include/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/freetype-src/include/)
@@ -180,3 +179,22 @@ target_link_libraries(${GEODESY_LIBRARY} PUBLIC glslang)
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC SPIRV)
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC assimp)
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC freetype)
+
+# ----------------------- Geodesy Unit Test ----------------------- #
+# When creating your own project off of the Geodesy Library, use this
+# as a example/template for your own CMakeLists.txt file to know what to link against.
+
+set(GEODESY_UNIT_TEST "geodesy-unit-test")
+
+project(${GEODESY_UNIT_TEST})
+
+# Link against Vulkan and OpenMP
+add_executable(${GEODESY_UNIT_TEST} main.cpp res/icon.rc)
+
+set_target_properties(${GEODESY_UNIT_TEST} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/${CMAKE_SYSTEM_NAME}/${CMAKE_BUILD_TYPE}/)
+
+# Include directories
+target_include_directories(${GEODESY_UNIT_TEST} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/inc/)
+
+# Link Against Geodesy Library
+target_link_libraries(${GEODESY_UNIT_TEST} PRIVATE ${GEODESY_LIBRARY})
