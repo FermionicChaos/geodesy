@@ -60,19 +60,20 @@ namespace geodesy::core::math {
 				// This is to generate numerical dimensions along each axis, which can be used for numerical functions.
 				// ds is the step which will be used to generate the value at each sample point in the domain.
 				vec<std::size_t, N> Index = this->convert_to_dimensional_index(i);
-				(*this)(Index) = ds[aDomainType - 1] * Index[aDomainType - 1] + LowerBound[aDomainType - 1];
+				size_t GlobalIndex = this->convert_to_global_index(Index);
+				(*this)[GlobalIndex] = ds[aDomainType - 1] * Index[aDomainType - 1] + LowerBound[aDomainType - 1];
 			}
 		}
 
-		Y& operator()(const vec<std::size_t, N>& aI) {
-			std::size_t GlobalIndex = this->convert_to_global_index(aI);
-			return (*this)[GlobalIndex];
-		}
+		// Y& operator()(const vec<std::size_t, N>& aI) {
+		// 	std::size_t GlobalIndex = this->convert_to_global_index(aI);
+		// 	return (*this)[GlobalIndex];
+		// }
 
-		Y operator()(const vec<std::size_t, N>& aI) const {
-			std::size_t GlobalIndex = this->convert_to_global_index(aI);
-			return (*this)[GlobalIndex];
-		}
+		// Y operator()(const vec<std::size_t, N>& aI) const {
+		// 	std::size_t GlobalIndex = this->convert_to_global_index(aI);
+		// 	return (*this)[GlobalIndex];
+		// }
 
 		// Y& operator()(const vec<X, N>& aX) {
 		// 	vec<std::size_t, N> Index;
@@ -129,7 +130,8 @@ namespace geodesy::core::math {
 			for (std::size_t i = 0; i < power_of_two(N); i++) {
 				SamplePositions[i] = convert_index_to_position(NeighbourIndices[i]);
 				if ((NeighbourIndices[i] >= vec<std::size_t, N>()) && (NeighbourIndices[i] < ElementCount)) {
-					SamplePoints[i] = (*this)(NeighbourIndices[i]);
+					size_t GlobalIndex = this->convert_to_global_index(NeighbourIndices[i]);
+					SamplePoints[i] = (*this)[GlobalIndex];
 				} else {
 					SamplePoints[i] = Y();
 				}
@@ -224,7 +226,7 @@ namespace geodesy::core::math {
 		}
 
 		field<X, N, Y> operator*(const field<X, N, Y>& aRhs) const {
-			field<X, N, Y> Out = *this | aRhs;
+			field<X, N, Y> Out = *this & aRhs;
 			#pragma omp parallel for
 			for (std::ptrdiff_t i = 0; i < Out.size(); i++) {
 				vec<std::size_t, N> Index = Out.convert_to_dimensional_index(i);
@@ -235,7 +237,7 @@ namespace geodesy::core::math {
 		}
 
 		field<X, N, Y> operator/(const field<X, N, Y>& aRhs) const {
-			field<X, N, Y> Out = *this | aRhs;
+			field<X, N, Y> Out = *this;
 			#pragma omp parallel for
 			for (std::ptrdiff_t i = 0; i < Out.size(); i++) {
 				vec<std::size_t, N> Index = Out.convert_to_dimensional_index(i);
