@@ -9,8 +9,6 @@
 #include "../io/file.h"
 
 #include "device.h"
-#include "context.h"
-
 #include "buffer.h"
 
 namespace geodesy::core::obj {

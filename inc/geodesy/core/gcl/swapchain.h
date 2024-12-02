@@ -3,7 +3,6 @@
 #define GEODESY_CORE_GCL_SWAPCHAIN_H
 
 #include "config.h"
-#include "context.h"
 #include "image.h"
 #include "pipeline.h"
 

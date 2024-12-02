@@ -1,4 +1,5 @@
 #include <geodesy/core/gcl/command_pool.h>
+#include <geodesy/core/gcl/context.h>
 
 #include <geodesy/core/util/log.h>
 

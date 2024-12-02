@@ -11,6 +11,7 @@
 
 // Used to interact with texture class
 #include <geodesy/core/gcl/image.h>
+#include <geodesy/core/gcl/context.h>
 
 namespace geodesy::core::gcl {
 

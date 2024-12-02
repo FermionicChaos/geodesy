@@ -252,6 +252,13 @@ namespace geodesy::core::gcl {
 		aMemoryHandle = VK_NULL_HANDLE;
 	}
 
+	std::shared_ptr<buffer> context::create_buffer(uint aMemoryType, uint aBufferUsage, size_t aElementCount, size_t aBufferSize, void* aBufferData) {
+		return std::make_shared<buffer>(this->shared_from_this(), aMemoryType, aBufferUsage, aElementCount, aBufferSize, aBufferData);
+	}
+
+	std::shared_ptr<image> context::create_image(image::create_info aCreateInfo, image::format aFormat, uint aX, uint aY, uint aZ, uint aT, void* aTextureData) {
+		return std::make_shared<image>(this->shared_from_this(), aCreateInfo, aFormat, aX, aY, aZ, aT, aTextureData);
+	}
 
 	VkResult context::begin(VkCommandBuffer aCommandBuffer) {
 		VkCommandBufferBeginInfo BeginInfo{};

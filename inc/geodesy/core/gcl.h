@@ -4,7 +4,6 @@
 
 #include "gcl/config.h"
 #include "gcl/device.h"
-#include "gcl/context.h"
 #include "gcl/command_pool.h"
 #include "gcl/buffer.h"
 #include "gcl/image.h"
@@ -12,5 +11,6 @@
 #include "gcl/descriptor.h"
 #include "gcl/pipeline.h"
 #include "gcl/swapchain.h"
+#include "gcl/context.h"
 
 #endif // !GEODESY_CORE_GCL_H

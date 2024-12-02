@@ -10,7 +10,6 @@
 
 #include "config.h"
 #include "device.h"
-#include "context.h"
 #include "descriptor.h"
 #include "buffer.h"
 #include "image.h"

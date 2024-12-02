@@ -1,5 +1,6 @@
 #include <geodesy/core/gcl/descriptor.h>
 #include <geodesy/core/gcl/pipeline.h>
+#include <geodesy/core/gcl/context.h>
 
 namespace geodesy::core::gcl {
 

@@ -5,12 +5,13 @@
 #include "../../config.h"
 #include "../math.h"
 #include "device.h"
+#include "command_pool.h"
+#include "buffer.h"
+#include "image.h"
 
 namespace geodesy::core::gcl {
 
-	class command_pool;
-
-	class context {
+	class context : public std::enable_shared_from_this<context>{
 	public:
 
 		std::mutex									Mutex;
@@ -50,6 +51,9 @@ namespace geodesy::core::gcl {
 
 		VkDeviceMemory allocate_memory(VkMemoryRequirements aMemoryRequirements, uint aMemoryType);
 		void free_memory(VkDeviceMemory& aMemoryHandle);
+
+		std::shared_ptr<buffer> create_buffer(uint aMemoryType, uint aBufferUsage, size_t aElementCount, size_t aBufferSize, void* aBufferData = NULL);
+		std::shared_ptr<image> create_image(image::create_info aCreateInfo, image::format aFormat, uint aX, uint aY = 1, uint aZ = 1, uint aT = 1, void* aTextureData = NULL);
 
 		// ----- Command Buffer Recording ----- //
 

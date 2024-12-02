@@ -19,6 +19,7 @@
 #include <geodesy/core/util/variable.h>
 
 #include <geodesy/core/gcl/pipeline.h>
+#include <geodesy/core/gcl/context.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>

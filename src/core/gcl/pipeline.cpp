@@ -1,4 +1,5 @@
 #include <geodesy/core/gcl/pipeline.h>
+#include <geodesy/core/gcl/context.h>
 
 #include "glslang_util.h"
 

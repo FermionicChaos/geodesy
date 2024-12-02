@@ -5,7 +5,6 @@
 #include "../../config.h"
 #include "config.h"
 
-#include "context.h"
 #include "buffer.h"
 #include "image.h"
 

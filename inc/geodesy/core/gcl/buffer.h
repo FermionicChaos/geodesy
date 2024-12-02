@@ -19,7 +19,6 @@
 #include "../util/variable.h"
 
 #include "device.h"
-#include "context.h"
 #include "command_pool.h"
 
 namespace geodesy::core::gcl {
