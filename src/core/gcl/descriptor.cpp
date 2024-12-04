@@ -4,78 +4,113 @@
 
 namespace geodesy::core::gcl {
 
-	descriptor::pool::pool(std::shared_ptr<context> aContext, std::vector<std::shared_ptr<pipeline>> aPipeline, std::size_t aMultiplier) {
+	const VkSamplerCreateInfo descriptor::DefaultSamplerCreateInfo = {
+		VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+		NULL,
+		0,
+		VK_FILTER_LINEAR,
+		VK_FILTER_LINEAR,
+		VK_SAMPLER_MIPMAP_MODE_LINEAR,
+		VK_SAMPLER_ADDRESS_MODE_REPEAT,
+		VK_SAMPLER_ADDRESS_MODE_REPEAT,
+		VK_SAMPLER_ADDRESS_MODE_REPEAT,
+		0.0f,
+		VK_FALSE,
+		1.0f,
+		VK_FALSE,
+		VK_COMPARE_OP_ALWAYS,
+		0.0f,
+		0.0f,
+		VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+		VK_FALSE
+	};
+
+	// descriptor::pool::pool(std::shared_ptr<context> aContext, std::vector<std::shared_ptr<pipeline>> aPipeline, std::size_t aMultiplier) {
+	// 	VkResult Result = VK_SUCCESS;
+	// 	std::size_t MaxSetCount = 0;
+
+	// 	// Determine the total number of Descriptor Sets from each pipeline.
+	// 	for (std::size_t i = 0; i < aPipeline.size(); i++) {
+	// 		// Determines the set count proportional to the number of descriptor set layouts
+	// 		// in each pipeline.
+	// 		MaxSetCount += aPipeline[i]->DescriptorSetLayout.size();
+	// 	}
+
+	// 	// Aggregate all descriptor types require by pipeline list.
+	// 	std::map<VkDescriptorType, uint32_t> DescriptorTypeCount;
+	// 	for (std::size_t i = 0; i < aPipeline.size(); i++) {
+	// 		std::map<VkDescriptorType, uint32_t> Temp = aPipeline[i]->descriptor_type_count();
+	// 		for (auto& [Type, Count] : Temp) {
+	// 			if (DescriptorTypeCount.count(Type) == 0) {
+	// 				DescriptorTypeCount[Type] = 0;
+	// 			}
+	// 			DescriptorTypeCount[Type] += Count;
+	// 		}
+	// 	}
+
+	// 	// Convert to pool size to vector data structure.
+	// 	std::vector<VkDescriptorPoolSize> DescriptorPoolSize;
+	// 	for (auto& [Type, Count] : DescriptorTypeCount) {
+	// 		VkDescriptorPoolSize DPS{};
+	// 		DPS.type = Type;
+	// 		DPS.descriptorCount = Count;
+	// 		DescriptorPoolSize.push_back(DPS);
+	// 	}
+
+	// 	// Apply Multiplier to Max Set count, and descriptor pool sizes.
+	// 	MaxSetCount *= aMultiplier;
+	// 	for (std::size_t i = 0; i < DescriptorPoolSize.size(); i++) {
+	// 		DescriptorPoolSize[i].descriptorCount *= aMultiplier;
+	// 	}
+
+	// 	VkDescriptorPoolCreateInfo DPCI{};
+	// 	DPCI.sType				= VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	// 	DPCI.pNext				= NULL;
+	// 	DPCI.flags				= 0;
+	// 	DPCI.maxSets			= MaxSetCount;
+	// 	DPCI.poolSizeCount		= DescriptorPoolSize.size();
+	// 	DPCI.pPoolSizes			= DescriptorPoolSize.data();
+	// 	Result = vkCreateDescriptorPool(aContext->Handle, &DPCI, NULL, &this->Handle);
+	// }
+
+	// descriptor::pool::~pool() {}
+	
+	descriptor::array::array(std::shared_ptr<context> aContext, std::shared_ptr<pipeline> aPipeline, VkSamplerCreateInfo aSamplerCreateInfo) {
 		VkResult Result = VK_SUCCESS;
-		std::size_t MaxSetCount = 0;
+		this->DescriptorSetLayoutBinding = aPipeline->descriptor_set_layout_binding();
+		this->Context = aContext;
 
-		// Determine the total number of Descriptor Sets from each pipeline.
-		for (std::size_t i = 0; i < aPipeline.size(); i++) {
-			// Determines the set count proportional to the number of descriptor set layouts
-			// in each pipeline.
-			MaxSetCount += aPipeline[i]->DescriptorSetLayout.size();
-		}
-
-		// Aggregate all descriptor types require by pipeline list.
-		std::map<VkDescriptorType, uint32_t> DescriptorTypeCount;
-		for (std::size_t i = 0; i < aPipeline.size(); i++) {
-			std::map<VkDescriptorType, uint32_t> Temp = aPipeline[i]->descriptor_type_count();
-			for (auto& [Type, Count] : Temp) {
-				if (DescriptorTypeCount.count(Type) == 0) {
-					DescriptorTypeCount[Type] = 0;
-				}
-				DescriptorTypeCount[Type] += Count;
-			}
-		}
-
-		// Convert to pool size to vector data structure.
-		std::vector<VkDescriptorPoolSize> DescriptorPoolSize;
-		for (auto& [Type, Count] : DescriptorTypeCount) {
-			VkDescriptorPoolSize DPS{};
-			DPS.type = Type;
-			DPS.descriptorCount = Count;
-			DescriptorPoolSize.push_back(DPS);
-		}
-
-		// Apply Multiplier to Max Set count, and descriptor pool sizes.
-		MaxSetCount *= aMultiplier;
-		for (std::size_t i = 0; i < DescriptorPoolSize.size(); i++) {
-			DescriptorPoolSize[i].descriptorCount *= aMultiplier;
-		}
+		// Get Descriptor Pool Sizes based on glslang API reflection from shader stages.
+		std::vector<VkDescriptorPoolSize> DescriptorPoolSize = aPipeline->descriptor_pool_sizes();
 
 		VkDescriptorPoolCreateInfo DPCI{};
 		DPCI.sType				= VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		DPCI.pNext				= NULL;
 		DPCI.flags				= 0;
-		DPCI.maxSets			= MaxSetCount;
+		DPCI.maxSets			= aPipeline->DescriptorSetLayout.size();
 		DPCI.poolSizeCount		= DescriptorPoolSize.size();
 		DPCI.pPoolSizes			= DescriptorPoolSize.data();
-		Result = vkCreateDescriptorPool(aContext->Handle, &DPCI, NULL, &this->Handle);
-	}
+		Result = vkCreateDescriptorPool(aContext->Handle, &DPCI, NULL, &this->DescriptorPool);
 
-	descriptor::pool::~pool() {
-		
-	}
-	
-	descriptor::array::array(std::shared_ptr<context> aContext, VkDescriptorPool aDescriptorPool, std::shared_ptr<pipeline> aPipeline, VkSamplerCreateInfo aSamplerCreateInfo) {
-		VkResult Result = VK_SUCCESS;
-		this->DescriptorSetLayoutBinding = aPipeline->descriptor_set_layout_binding();
-		this->Context = aContext;
-		this->DescriptorPool = aDescriptorPool;
+		// Allocate Descriptor Sets
 		VkDescriptorSetAllocateInfo DSAI{};
 		DSAI.sType					= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
 		DSAI.pNext					= NULL;
-		DSAI.descriptorPool			= aDescriptorPool;
+		DSAI.descriptorPool			= this->DescriptorPool;
 		DSAI.descriptorSetCount		= aPipeline->DescriptorSetLayout.size();
 		DSAI.pSetLayouts			= aPipeline->DescriptorSetLayout.data();
 		this->DescriptorSet = std::vector<VkDescriptorSet>(aPipeline->DescriptorSetLayout.size());
 		Result = vkAllocateDescriptorSets(aContext->Handle, &DSAI, this->DescriptorSet.data());
+
+		// Create Sampler Info
 		Result = vkCreateSampler(aContext->Handle, &aSamplerCreateInfo, NULL, &this->SamplingMetadata);
 	}
 
-	descriptor::array::array(std::shared_ptr<context> aContext, std::shared_ptr<descriptor::pool> aDescriptorPool, std::shared_ptr<pipeline> aPipeline, VkSamplerCreateInfo aSamplerCreateInfo) : array(aContext, aDescriptorPool->Handle, aPipeline, aSamplerCreateInfo) {}
+	// descriptor::array::array(std::shared_ptr<context> aContext, std::shared_ptr<descriptor::pool> aDescriptorPool, std::shared_ptr<pipeline> aPipeline, VkSamplerCreateInfo aSamplerCreateInfo) : array(aContext, aDescriptorPool->Handle, aPipeline, aSamplerCreateInfo) {}
 
 	descriptor::array::~array() {
 		vkFreeDescriptorSets(this->Context->Handle, this->DescriptorPool, this->DescriptorSet.size(), this->DescriptorSet.data());
+		vkDestroyDescriptorPool(this->Context->Handle, this->DescriptorPool, NULL);
 		vkDestroySampler(this->Context->Handle, this->SamplingMetadata, NULL);
 	}
 

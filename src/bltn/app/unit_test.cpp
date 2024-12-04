@@ -73,23 +73,11 @@ namespace geodesy::bltn {
 		WindowCreateInfo.Swapchain.ImageUsage = image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_DST | image::usage::TRANSFER_SRC;
 		Window = std::make_shared<system_window>(DeviceContext, Engine->PrimaryDisplay, std::string("Triangle Demo with Texture Data"), WindowCreateInfo, math::vec<int, 2>(0, 0), math::vec<int, 2>(Resolution[0], Resolution[1]));
 
-		std::shared_ptr<stg::canvas> Canvas = std::make_shared<stg::canvas>(DeviceContext, "Window Canvas");
-		std::shared_ptr<stg::scene3d> Scene = std::make_shared<stg::scene3d>(DeviceContext, "Scene 3D");
-
-		Canvas->Window.push_back(Window);
-
-		this->Stage.push_back(Canvas);
-		this->Stage.push_back(Scene);
-
-		///*
 		float Scalar = 1.0f;
-		VkFence Fence = DeviceContext->create_fence();
 
 		image::create_info MaterialTextureInfo;
 		MaterialTextureInfo.Memory = device::memory::DEVICE_LOCAL;
 		MaterialTextureInfo.Usage = image::usage::TRANSFER_DST | image::usage::SAMPLED;
-		MaterialTextureInfo.Sample = image::sample::COUNT_1;
-		MaterialTextureInfo.Tiling = image::tiling::OPTIMAL;
 		MaterialTextureInfo.Layout = image::layout::SHADER_READ_ONLY_OPTIMAL;
 
 		buffer::create_info UniformBufferCI;
@@ -107,15 +95,11 @@ namespace geodesy::bltn {
 		std::vector<std::shared_ptr<core::io::file>> Asset = Engine->FileManager.open(AssetList);
 
 		// Cast loaded files 
-		std::shared_ptr<gfx::model> HostModel = std::dynamic_pointer_cast<gfx::model>(Asset[0]);
-		std::shared_ptr<gcl::image> HostTexture = std::dynamic_pointer_cast<gcl::image>(Asset[1]);
-		std::shared_ptr<gcl::shader> VertexShader = std::dynamic_pointer_cast<gcl::shader>(Asset[2]);
-		std::shared_ptr<gcl::shader> PixelShader = std::dynamic_pointer_cast<gcl::shader>(Asset[3]);
+		std::shared_ptr<gfx::model> HostModel 				= std::dynamic_pointer_cast<gfx::model>(Asset[0]);
+		std::shared_ptr<gcl::image> HostTexture 			= std::dynamic_pointer_cast<gcl::image>(Asset[1]);
+		std::shared_ptr<gcl::shader> VertexShader 			= std::dynamic_pointer_cast<gcl::shader>(Asset[2]);
+		std::shared_ptr<gcl::shader> PixelShader 			= std::dynamic_pointer_cast<gcl::shader>(Asset[3]);
 
-		// Load into gpu memory.
-		std::shared_ptr<gfx::model> Model = std::make_shared<gfx::model>(DeviceContext, MaterialTextureInfo, HostModel);
-		std::shared_ptr<gcl::image> Texture = std::make_shared<gcl::image>(DeviceContext, MaterialTextureInfo, HostTexture);
- 		std::shared_ptr<gcl::buffer> UniformBuffer = std::make_shared<gcl::buffer>(DeviceContext, UniformBufferCI, sizeof(float), &Scalar);
 		std::vector<std::shared_ptr<gcl::shader>> ShaderList = { VertexShader, PixelShader };
 		std::shared_ptr<gcl::pipeline::rasterizer> Rasterizer = std::make_shared<gcl::pipeline::rasterizer>(ShaderList, Window->Framechain->Resolution);
 
@@ -141,9 +125,12 @@ namespace geodesy::bltn {
 		// Copy Paste
 		Rasterizer->Multisample.rasterizationSamples		= VK_SAMPLE_COUNT_1_BIT;
 
-		std::shared_ptr<gcl::pipeline> Pipeline = std::make_shared<gcl::pipeline>(DeviceContext, Rasterizer);
-		//*/
-
+		// Load into gpu memory.
+		VkFence Fence 										= DeviceContext->create_fence();
+		std::shared_ptr<gfx::model> Model 					= DeviceContext->create_model(HostModel, MaterialTextureInfo);
+		std::shared_ptr<gcl::image> Texture 				= DeviceContext->create_image(MaterialTextureInfo, HostTexture);
+ 		std::shared_ptr<gcl::buffer> UniformBuffer 			= DeviceContext->create_buffer(UniformBufferCI, sizeof(float), &Scalar);
+		std::shared_ptr<gcl::pipeline> Pipeline 			= DeviceContext->create_pipeline(Rasterizer);
 
 		// Start main loop.
 		float t = 0.0f;

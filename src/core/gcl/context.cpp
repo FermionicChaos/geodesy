@@ -252,12 +252,56 @@ namespace geodesy::core::gcl {
 		aMemoryHandle = VK_NULL_HANDLE;
 	}
 
+	std::shared_ptr<buffer> context::create_buffer(buffer::create_info aCreateInfo, int aVertexCount, util::variable aVertexLayout, void* aVertexData) {
+		return this->create_buffer(aCreateInfo.Memory, aCreateInfo.Usage, aVertexCount * aVertexLayout.size(), aVertexData);
+	}
+
+	std::shared_ptr<buffer> context::create_buffer(uint aMemoryType, uint aBufferUsage, int aVertexCount, util::variable aVertexLayout, void* aVertexData) {
+		return this->create_buffer(aMemoryType, aBufferUsage, aVertexCount * aVertexLayout.size(), aVertexData);
+	}
+
+	std::shared_ptr<buffer> context::create_buffer(buffer::create_info aCreateInfo, size_t aBufferSize, void* aBufferData) {
+		return this->create_buffer(aCreateInfo.Memory, aCreateInfo.Usage, aCreateInfo.ElementCount, aBufferSize, aBufferData);
+	}
+
+	std::shared_ptr<buffer> context::create_buffer(uint aMemoryType, uint aBufferUsage, size_t aBufferSize, void* aBufferData) {
+		return this->create_buffer(aMemoryType, aBufferUsage, 1, aBufferSize, aBufferData);
+	}
+
 	std::shared_ptr<buffer> context::create_buffer(uint aMemoryType, uint aBufferUsage, size_t aElementCount, size_t aBufferSize, void* aBufferData) {
 		return std::make_shared<buffer>(this->shared_from_this(), aMemoryType, aBufferUsage, aElementCount, aBufferSize, aBufferData);
 	}
 
+	std::shared_ptr<image> context::create_image(image::create_info aCreateInfo, std::string aFilePath) {
+		return std::make_shared<image>(this->shared_from_this(), aCreateInfo, aFilePath);
+	}
+
+	std::shared_ptr<image> context::create_image(image::create_info aCreateInfo, std::shared_ptr<image> aHostImage) {
+		return this->create_image(aCreateInfo, (image::format)aHostImage->CreateInfo.format, aHostImage->CreateInfo.extent.width, aHostImage->CreateInfo.extent.height, aHostImage->CreateInfo.extent.depth, aHostImage->CreateInfo.arrayLayers, aHostImage->HostData);
+	}
+
 	std::shared_ptr<image> context::create_image(image::create_info aCreateInfo, image::format aFormat, uint aX, uint aY, uint aZ, uint aT, void* aTextureData) {
 		return std::make_shared<image>(this->shared_from_this(), aCreateInfo, aFormat, aX, aY, aZ, aT, aTextureData);
+	}
+
+	std::shared_ptr<descriptor::array> context::create_descriptor_array(std::shared_ptr<pipeline> aPipeline, VkSamplerCreateInfo aSamplerCreateInfo) {
+		return std::make_shared<descriptor::array>(this->shared_from_this(), aPipeline, aSamplerCreateInfo);
+	}
+
+	std::shared_ptr<framebuffer> context::create_framebuffer(std::shared_ptr<pipeline> aPipeline, std::vector<std::shared_ptr<image>> aImageAttachements, math::vec<uint, 3> aResolution) {
+		return std::make_shared<framebuffer>(this->shared_from_this(), aPipeline, aImageAttachements, aResolution);
+	}
+
+	std::shared_ptr<framebuffer> context::create_framebuffer(std::shared_ptr<pipeline> aPipeline, std::map<std::string, std::shared_ptr<image>> aImage, std::vector<std::string> aAttachmentSelection, math::vec<uint, 3> aResolution) {
+		return std::make_shared<framebuffer>(this->shared_from_this(), aPipeline, aImage, aAttachmentSelection, aResolution);
+	}
+
+	std::shared_ptr<pipeline> context::create_pipeline(std::shared_ptr<pipeline::rasterizer> aRasterizer, VkRenderPass aRenderPass, uint32_t aSubpassIndex) {\
+		return std::make_shared<pipeline>(this->shared_from_this(), aRasterizer, aRenderPass, aSubpassIndex);
+	}
+
+	std::shared_ptr<gfx::model> context::create_model(std::shared_ptr<gfx::model> aModel, gcl::image::create_info aCreateInfo) {
+		return std::make_shared<gfx::model>(this->shared_from_this(), aModel, aCreateInfo);
 	}
 
 	VkResult context::begin(VkCommandBuffer aCommandBuffer) {

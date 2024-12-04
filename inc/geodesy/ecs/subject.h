@@ -24,11 +24,9 @@ namespace geodesy::ecs {
 		virtual bool is_subject() override;
 
 		bool ready_to_render();
-		// uint32_t descriptor_set_count();
-		// std::vector<VkDescriptorPoolSize> descriptor_pool_sizes();
-		// void begin(VkCommandBuffer aCommandBuffer, uint32_t aFrameIndex, VkSubpassContents aSubpassContents = VK_SUBPASS_CONTENTS_INLINE);
-		// void next(VkCommandBuffer aCommandBuffer, VkSubpassContents aSubpassContents = VK_SUBPASS_CONTENTS_INLINE);
-		// void end(VkCommandBuffer aCommandBuffer);
+		VkResult next_frame_now();
+		std::map<std::string, std::shared_ptr<core::gcl::image>> current_frame();
+		VkResult present_frame_now();
 
 		virtual std::shared_ptr<core::gfx::renderer> make_default_renderer(object* aObject);
 		virtual VkResult next_frame(VkSemaphore aSemaphore = VK_NULL_HANDLE, VkFence aFence = VK_NULL_HANDLE);

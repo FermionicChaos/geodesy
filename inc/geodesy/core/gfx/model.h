@@ -85,8 +85,8 @@ namespace geodesy::core::gfx {
 
 		model();
 		model(std::string aFilePath, file::manager* aFileManager = nullptr);
-		model(std::shared_ptr<gcl::context> aContext, std::string aFilePath);
-		model(std::shared_ptr<gcl::context> aContext, gcl::image::create_info aCreateInfo, std::shared_ptr<model> aModel);
+		model(std::shared_ptr<gcl::context> aContext, std::string aFilePath, gcl::image::create_info aCreateInfo = {});
+		model(std::shared_ptr<gcl::context> aContext, std::shared_ptr<model> aModel, gcl::image::create_info aCreateInfo = {});
 		~model();
 
 		void update(double aDeltaTime);

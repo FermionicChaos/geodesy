@@ -70,7 +70,7 @@ namespace geodesy::bltn::obj {
 		std::shared_ptr<shader> PixelShader = std::dynamic_pointer_cast<shader>(Asset[2]);
 
 		// Convert Host model into device model.
-		this->Model = std::make_shared<model>(aContext, TextureCreateInfo, HostModel);
+		this->Model = std::make_shared<model>(aContext, HostModel, TextureCreateInfo);
 		std::vector<std::shared_ptr<shader>> ShaderList = { VertexShader, PixelShader };
 		this->Rasterizer = std::make_shared<pipeline::rasterizer>(ShaderList, aFrameResolution);
 

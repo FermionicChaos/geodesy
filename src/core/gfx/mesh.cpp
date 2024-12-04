@@ -97,14 +97,17 @@ namespace geodesy::core::gfx {
 			// 	device::memory::HOST_VISIBLE | device::memory::DEVICE_LOCAL,
 			// 	buffer::usage::INDEX | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST
 			// );
-			VertexBuffer = std::make_shared<buffer>(Context, VBCI, Vertex.size() * sizeof(vertex), (void*)Vertex.data());
+			//VertexBuffer = std::make_shared<buffer>(Context, VBCI, Vertex.size() * sizeof(vertex), (void*)Vertex.data());
+			VertexBuffer = Context->create_buffer(VBCI, Vertex.size() * sizeof(vertex), Vertex.data());
 			// wtf this is legal?
 			// IndexBuffer = std::vector<gcl::buffer>(1, buffer(Context, IBCI, aIndexData.size() * sizeof(ushort), (void*)aIndexData.data()));
 			if (this->Vertex.size() <= (1 << 16)) {
-				IndexBuffer = std::make_shared<buffer>(Context, IBCI, Topology.Data16.size() * sizeof(ushort), (void*)Topology.Data16.data());
+				//IndexBuffer = std::make_shared<buffer>(Context, IBCI, Topology.Data16.size() * sizeof(ushort), (void*)Topology.Data16.data());
+				IndexBuffer = Context->create_buffer(IBCI, Topology.Data16.size() * sizeof(ushort), Topology.Data16.data());
 			}
 			else {
-				IndexBuffer = std::make_shared<buffer>(Context, IBCI, Topology.Data32.size() * sizeof(uint), (void*)Topology.Data32.data());
+				// IndexBuffer = std::make_shared<buffer>(Context, IBCI, Topology.Data32.size() * sizeof(uint), (void*)Topology.Data32.data());
+				IndexBuffer = Context->create_buffer(IBCI, Topology.Data32.size() * sizeof(uint), Topology.Data32.data());
 			}
 		}
 	}

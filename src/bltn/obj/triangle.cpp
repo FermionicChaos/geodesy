@@ -18,7 +18,7 @@ namespace geodesy::bltn::obj {
 		std::string ModelPath = "assets/models/triangle.obj";
 		// Open through engine file manager.
 		std::shared_ptr<core::gfx::model> HostModel = std::dynamic_pointer_cast<core::gfx::model>(Engine->FileManager.open(ModelPath));
-		this->Model = std::make_shared<core::gfx::model>(aContext, MaterialTextureInfo, HostModel);
+		this->Model = std::make_shared<core::gfx::model>(aContext, HostModel, MaterialTextureInfo);
 	}
 
 }

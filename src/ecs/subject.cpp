@@ -23,6 +23,31 @@ namespace geodesy::ecs {
 		return this->Framechain->Timer.check();
 	}
 
+	VkResult subject::next_frame_now() {
+		VkResult Result = VK_SUCCESS;
+		
+		VkFence Fence = this->Context->create_fence();
+		// Acquire next image from swapchain.
+		Result = this->next_frame(VK_NULL_HANDLE, Fence);
+
+		Context->wait_and_reset(Fence);
+
+		Context->destroy_fence(Fence);
+
+		return Result;
+	}
+
+	VkResult subject::present_frame_now() {
+		VkResult Result = VK_SUCCESS;
+
+		VkPresentInfoKHR PresentInfo = this->present_frame();
+
+		Result = Context->present({ PresentInfo });
+
+		return Result;
+	}
+
+
 	// uint32_t subject::descriptor_set_count() {
 	// 	uint32_t DescriptorSetCount = 0;
 	// 	for (size_t i = 0; this->Pipeline.size(); i++) {

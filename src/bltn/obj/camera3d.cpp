@@ -112,13 +112,13 @@ namespace geodesy::bltn::obj {
 
 		for (std::size_t i = 0; i < this->Image.size(); i++) {
 			// This is the finalized color output.
-			this->Image[i]["Color"] = std::make_shared<image>(aContext, ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
+			this->Image[i]["Color"] 		= aContext->create_image(ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
 			// Opaque Geometry Buffer, used for Opaque and Transparent mesh instances.
-			this->Image[i]["OGB.Color"] = std::make_shared<image>(aContext, ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Position"] = std::make_shared<image>(aContext, ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Normal"] = std::make_shared<image>(aContext, ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Depth"] = std::make_shared<image>(aContext, DepthCreateInfo, image::D32_SFLOAT, aResolution[0], aResolution[1]);
-			this->Image[i]["FinalColor"] = std::make_shared<image>(aContext, ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Color"] 	= aContext->create_image(ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Position"] 	= aContext->create_image(ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Normal"] 	= aContext->create_image(ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Depth"] 	= aContext->create_image(DepthCreateInfo, image::D32_SFLOAT, aResolution[0], aResolution[1]);
+			this->Image[i]["FinalColor"] 	= aContext->create_image(ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
 		}
 	}
 

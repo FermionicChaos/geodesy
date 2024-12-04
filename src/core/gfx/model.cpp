@@ -629,11 +629,11 @@ namespace geodesy::core::gfx {
 	}
 
 
-	model::model(std::shared_ptr<gcl::context>, std::string aFilePath) : model(aFilePath) {
+	model::model(std::shared_ptr<gcl::context>, std::string aFilePath, gcl::image::create_info aCreateInfo) : model(aFilePath) {
 
 	}
 
-	model::model(std::shared_ptr<gcl::context> aContext, gcl::image::create_info aCreateInfo, std::shared_ptr<model> aModel) : model() {
+	model::model(std::shared_ptr<gcl::context> aContext, std::shared_ptr<model> aModel, gcl::image::create_info aCreateInfo) : model() {
 		this->Name = aModel->Name;
 		this->Hierarchy = aModel->Hierarchy;
 		this->Time = aModel->Time;
