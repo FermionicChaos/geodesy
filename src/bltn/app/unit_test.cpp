@@ -161,12 +161,22 @@ namespace geodesy::bltn {
 
 			// Do computation here.
 			{
-				std::vector<std::shared_ptr<image>> Image = { Window->Framechain->Image[Window->Framechain->DrawIndex]["Color"] };
 				std::vector<std::shared_ptr<buffer>> VertexBuffer = { Model->Mesh[0]->VertexBuffer };
 				std::shared_ptr<buffer> IndexBuffer = Model->Mesh[0]->IndexBuffer;
-				std::map<std::pair<int, int>, std::shared_ptr<buffer>> UniformBufferList = { std::make_pair(std::make_pair(0, 0), UniformBuffer) };
-				std::map<std::pair<int, int>, std::shared_ptr<image>> SamplerList = { std::make_pair(std::make_pair(1, 0), Texture) };
-				Pipeline->draw(Image, VertexBuffer, IndexBuffer, UniformBufferList, SamplerList);
+
+				// Allocated GPU Resources needed to execute.
+				std::shared_ptr<framebuffer> Framebuffer = DeviceContext->create_framebuffer(Pipeline, { Window->current_frame()["Color"] }, Window->Framechain->Resolution);
+				std::shared_ptr<descriptor::array> DescriptorArray = DeviceContext->create_descriptor_array(Pipeline);
+
+				DescriptorArray->bind(0, 0, 0, UniformBuffer);
+				DescriptorArray->bind(1, 0, 0, Texture, image::layout::SHADER_READ_ONLY_OPTIMAL);
+
+				Pipeline->draw(Framebuffer, VertexBuffer, IndexBuffer, DescriptorArray);
+
+				// std::vector<std::shared_ptr<image>> Image = { Window->current_frame()["Color"] };
+				// std::map<std::pair<int, int>, std::shared_ptr<buffer>> UniformBufferList = { std::make_pair(std::make_pair(0, 0), UniformBuffer) };
+				// std::map<std::pair<int, int>, std::shared_ptr<image>> SamplerList = { std::make_pair(std::make_pair(1, 0), Texture) };
+				// Pipeline->draw(Image, VertexBuffer, IndexBuffer, UniformBufferList, SamplerList);
 			}
 
 			VkPresentInfoKHR PresentInfo = Window->present_frame();

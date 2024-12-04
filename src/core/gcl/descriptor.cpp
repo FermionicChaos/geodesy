@@ -120,10 +120,10 @@ namespace geodesy::core::gcl {
 		vkDestroySampler(this->Context->Handle, this->SamplingMetadata, NULL);
 	}
 
-	void descriptor::array::array::bind(uint32_t aSet, uint32_t aBinding, uint32_t aArrayElement, std::shared_ptr<image> aImage, VkImageLayout aImageLayout) {
+	void descriptor::array::array::bind(uint32_t aSet, uint32_t aBinding, uint32_t aArrayElement, std::shared_ptr<image> aImage, image::layout aImageLayout) {
 		VkDescriptorImageInfo DII{};
 		DII.imageView			= aImage->View;
-		DII.imageLayout			= aImageLayout;
+		DII.imageLayout			= (VkImageLayout)aImageLayout;
 		DII.sampler				= this->SamplingMetadata;
 		VkWriteDescriptorSet WDS {};
 		WDS.sType				= VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;

@@ -37,6 +37,10 @@ namespace geodesy::ecs {
 		return Result;
 	}
 
+	std::map<std::string, std::shared_ptr<core::gcl::image>> subject::current_frame() {
+		return this->Framechain->Image[this->Framechain->DrawIndex];
+	}
+
 	VkResult subject::present_frame_now() {
 		VkResult Result = VK_SUCCESS;
 

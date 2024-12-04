@@ -762,6 +762,27 @@ namespace geodesy::core::gcl {
 	}
 
 	VkResult pipeline::draw(
+		std::shared_ptr<framebuffer> 								aFramebuffer,
+		std::vector<std::shared_ptr<buffer>> 						aVertexBuffer,
+		std::shared_ptr<buffer> 									aIndexBuffer,
+		std::shared_ptr<descriptor::array> 							aDescriptorArray
+	) {
+		VkResult Result = VK_SUCCESS;
+
+		device::operation DeviceOperation = device::operation::GRAPHICS_AND_COMPUTE;
+
+		VkCommandBuffer DrawCommand = this->Context->allocate_command_buffer(DeviceOperation);
+
+		Result = this->Context->begin(DrawCommand);
+		this->draw(DrawCommand, aFramebuffer, aVertexBuffer, aIndexBuffer, aDescriptorArray);
+		Result = this->Context->end(DrawCommand);
+
+		Result = this->Context->execute_and_wait(DeviceOperation, DrawCommand);
+
+		return Result;
+	}
+
+	VkResult pipeline::draw(
 		std::vector<std::shared_ptr<image>> 						aImage,
 		std::vector<std::shared_ptr<buffer>> 						aVertexBuffer,
 		std::shared_ptr<buffer> 									aIndexBuffer,
@@ -789,7 +810,7 @@ namespace geodesy::core::gcl {
 
 		// Bind sampler images.
 		for (auto& [SetBinding, Image] : aSamplerImage) {
-			DescriptorArray->bind(SetBinding.first, SetBinding.second, 0, Image, (VkImageLayout)image::layout::SHADER_READ_ONLY_OPTIMAL);
+			DescriptorArray->bind(SetBinding.first, SetBinding.second, 0, Image, image::layout::SHADER_READ_ONLY_OPTIMAL);
 		}
 
 		// Write Command Buffer here.

@@ -42,7 +42,7 @@ namespace geodesy::core::gcl {
 			array(std::shared_ptr<context> aContext, std::shared_ptr<pipeline> aPipeline, VkSamplerCreateInfo aSamplerCreateInfo = DefaultSamplerCreateInfo);
 			~array();
 
-			void bind(uint32_t aSet, uint32_t aBinding, uint32_t aArrayElement, std::shared_ptr<image> aImage, VkImageLayout aImageLayout);
+			void bind(uint32_t aSet, uint32_t aBinding, uint32_t aArrayElement, std::shared_ptr<image> aImage, image::layout aImageLayout);
 			void bind(uint32_t aSet, uint32_t aBinding, uint32_t aArrayElement, std::shared_ptr<buffer> aBuffer, size_t aSize = VK_WHOLE_SIZE, size_t aOffset = 0);
 			void bind(uint32_t aSet, uint32_t aBinding, uint32_t aArrayElement, VkBufferView aBufferView);
 
