@@ -109,8 +109,14 @@ namespace geodesy::core::gcl {
 	// descriptor::array::array(std::shared_ptr<context> aContext, std::shared_ptr<descriptor::pool> aDescriptorPool, std::shared_ptr<pipeline> aPipeline, VkSamplerCreateInfo aSamplerCreateInfo) : array(aContext, aDescriptorPool->Handle, aPipeline, aSamplerCreateInfo) {}
 
 	descriptor::array::~array() {
-		vkFreeDescriptorSets(this->Context->Handle, this->DescriptorPool, this->DescriptorSet.size(), this->DescriptorSet.data());
+		//! Not needed since freeing the pool frees the sets.
+		// Free Descriptor Sets
+		// vkFreeDescriptorSets(this->Context->Handle, this->DescriptorPool, this->DescriptorSet.size(), this->DescriptorSet.data());
+
+		// Destroy Descriptor Pool
 		vkDestroyDescriptorPool(this->Context->Handle, this->DescriptorPool, NULL);
+
+		// Destroy Sampler
 		vkDestroySampler(this->Context->Handle, this->SamplingMetadata, NULL);
 	}
 
