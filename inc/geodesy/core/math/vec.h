@@ -74,7 +74,7 @@ namespace geodesy::core::math {
 
 		bool operator==(const vec<T, N>& aRhs) const {
 			bool Out = true;
-			for (std::size_t i = 0; i < N; i++) {
+			for (std::size_t i = 0; i < this->size(); i++) {
 				Out &= ((*this)[i] == aRhs[i]);
 			}
 			return Out;
@@ -82,7 +82,7 @@ namespace geodesy::core::math {
 
 		bool operator>(const vec<T, N>& aRhs) const {
 			bool Out = true;
-			for (std::size_t i = 0; i < N; i++) {
+			for (std::size_t i = 0; i < this->size(); i++) {
 				Out &= ((*this)[i] > aRhs[i]);
 			}
 			return Out;
@@ -90,7 +90,7 @@ namespace geodesy::core::math {
 
 		bool operator<(const vec<T, N>& aRhs) const {
 			bool Out = true;
-			for (std::size_t i = 0; i < N; i++) {
+			for (std::size_t i = 0; i < this->size(); i++) {
 				Out &= ((*this)[i] < aRhs[i]);
 			}
 			return Out;
@@ -98,7 +98,7 @@ namespace geodesy::core::math {
 
 		bool operator>=(const vec<T, N>& aRhs) const {
 			bool Out = true;
-			for (std::size_t i = 0; i < N; i++) {
+			for (std::size_t i = 0; i < this->size(); i++) {
 				Out &= ((*this)[i] >= aRhs[i]);
 			}
 			return Out;
@@ -106,7 +106,7 @@ namespace geodesy::core::math {
 
 		bool operator<=(const vec<T, N>& aRhs) const {
 			bool Out = true;
-			for (std::size_t i = 0; i < N; i++) {
+			for (std::size_t i = 0; i < this->size(); i++) {
 				Out &= ((*this)[i] <= aRhs[i]);
 			}
 			return Out;
@@ -117,7 +117,7 @@ namespace geodesy::core::math {
 		using std::array<T, N>::array;
 
 		vec() {
-			for (std::size_t i = 0; i < N; i++) {
+			for (std::size_t i = 0; i < this->size(); i++) {
 				(*this)[i] = T();
 			}
 		}
@@ -136,7 +136,7 @@ namespace geodesy::core::math {
 		// Dot product
 		T operator*(const vec& aRhs) const {
 			T Out = T();
-			for (std::size_t i = 0; i < N; i++) {
+			for (std::size_t i = 0; i < this->size(); i++) {
 				Out += (*this)[i] * aRhs[i];
 			}
 			return Out;
@@ -180,11 +180,11 @@ namespace geodesy::core::math {
 	}
 
 	template<typename T, std::size_t N> inline
-	std::ostream& operator<<(std::ostream& aOutStream, const vec<T, N>& aVector) {
+	std::ostream& operator<<(std::ostream& aOutStream, const vec<T, N>& aArg) {
 		aOutStream << "{ ";
-		for (std::size_t i = 0; i < N; i++) {
-			aOutStream << aVector[i];
-			if (i < N - 1) {
+		for (std::size_t i = 0; i < aArg.size(); i++) {
+			aOutStream << aArg[i];
+			if (i < aArg.size() - 1) {
 				aOutStream << ", ";
 			}
 		}

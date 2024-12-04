@@ -16,11 +16,13 @@ namespace geodesy::core::gfx {
 	// A draw call represents a singular draw call for a single mesh instance in
 	// the node hiearchy of the model. Distance from the camera is determined
 	struct draw_call {
-		VkCommandBuffer 				Command;
-		float 							DistanceFromSubject;
-		material::transparency 			TransparencyMode;
+		float 											DistanceFromSubject;
+		material::transparency 							TransparencyMode;
+		std::shared_ptr<gcl::framebuffer> 				Framebuffer;
+		std::shared_ptr<gcl::descriptor::array> 		DescriptorArray;
+		VkCommandBuffer 								DrawCommand;
 		draw_call();
-	};	
+	};
 
 	class renderer {
 	public:

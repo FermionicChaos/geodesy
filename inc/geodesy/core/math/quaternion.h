@@ -121,7 +121,7 @@ namespace geodesy::core::math {
 		using std::array<T, 4>::array;
 
 		quaternion() {
-			for (std::size_t i = 0; i < 4; i++) {
+			for (std::size_t i = 0; i < this->size(); i++) {
 				(*this)[i] = T();
 			}
 		}

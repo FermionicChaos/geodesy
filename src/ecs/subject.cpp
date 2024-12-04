@@ -140,7 +140,7 @@ namespace geodesy::ecs {
 			// Seperate command buffers.
 			std::vector<VkCommandBuffer> ExtractedCommandBuffer(DrawCall.size());
 			for (std::size_t i = 0; i < DrawCall.size(); i++) {
-				ExtractedCommandBuffer[i] = DrawCall[i].Command;
+				ExtractedCommandBuffer[i] = DrawCall[i].DrawCommand;
 			}
 			// Append to list.
 			this->Framechain->DrawCommand[this->Framechain->DrawIndex].insert(this->Framechain->DrawCommand[this->Framechain->DrawIndex].end(), ExtractedCommandBuffer.begin(), ExtractedCommandBuffer.end());

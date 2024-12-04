@@ -9,6 +9,7 @@
 namespace geodesy::bltn {
 
 	using namespace core;
+	using namespace ecs;
 
 	using namespace gcl;
 	using namespace obj;
@@ -72,6 +73,9 @@ namespace geodesy::bltn {
 		WindowCreateInfo.Swapchain.FrameRate = 0.333;
 		WindowCreateInfo.Swapchain.ImageUsage = image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_DST | image::usage::TRANSFER_SRC;
 		Window = std::make_shared<system_window>(DeviceContext, Engine->PrimaryDisplay, std::string("Triangle Demo with Texture Data"), WindowCreateInfo, math::vec<int, 2>(0, 0), math::vec<int, 2>(Resolution[0], Resolution[1]));
+
+		// std::shared_ptr<camera3d> Camera3D = std::make_shared<camera3d>(DeviceContext, nullptr, "Camera3D", Resolution, 0.333, 4);
+		// std::shared_ptr<object> Quad = std::dynamic_pointer_cast<object>(std::make_shared<triangle>(DeviceContext, nullptr, "Quad"));
 
 		float Scalar = 1.0f;
 

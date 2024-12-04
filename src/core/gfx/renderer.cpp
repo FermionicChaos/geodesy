@@ -9,9 +9,9 @@
 namespace geodesy::core::gfx {
 
 	draw_call::draw_call() {
-		Command 				= VK_NULL_HANDLE;
 		DistanceFromSubject 	= 0.0f;
 		TransparencyMode 		= material::transparency::OPAQUE;
+		DrawCommand 				= VK_NULL_HANDLE;
 	}
 
 	renderer::renderer(core::gcl::context* aContext, ecs::subject* aSubject, ecs::object* aObject) {

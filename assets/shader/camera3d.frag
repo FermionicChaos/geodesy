@@ -8,7 +8,7 @@
 layout (location = 0) out vec4 PixelColor;
 layout (location = 1) out vec4 PixelPosition;
 layout (location = 2) out vec4 PixelNormal;
-layout (location = 3) out vec4 PixelSpecular;
+// layout (location = 3) out vec4 PixelSpecular;
 
 // Transformed vertex data, interpolated from the vertex shader.
 layout (location = 0) in vec3 WorldPosition;

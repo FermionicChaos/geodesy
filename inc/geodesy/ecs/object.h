@@ -54,7 +54,7 @@ namespace geodesy::ecs {
 		bool 																		Gravity;			// Determines if the object is affected by gravity.
 		bool 																		Collision;			// Determines if object is affected by collisions.
 
-		std::map<std::string, std::shared_ptr<core::io::file>> 						Asset;
+		std::vector<std::shared_ptr<core::io::file>> 								Asset;
 
 		// ! ----- Device Data ----- ! //
 		// ^ This is the data that exists on the GPU.
