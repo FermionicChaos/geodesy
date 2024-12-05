@@ -31,6 +31,7 @@ namespace geodesy::core::gfx {
 		std::string 											Name;					// Name of the material
 		rendering_system 										RenderingSystem;		// Rendering System of the Material
 		transparency 											Transparency;
+		std::shared_ptr<gcl::buffer> 							UniformBuffer;			// Uniform Buffer for the Material
 		std::map<std::string, std::shared_ptr<gcl::image>> 		Texture;				// Texture Maps of the Material
 
 		material();

@@ -118,8 +118,8 @@ namespace geodesy::ecs {
 	// 	vkCmdEndRenderPass(aCommandBuffer);
 	// }
 
-	std::shared_ptr<gfx::renderer> subject::make_default_renderer(object* aObject) {
-		std::shared_ptr<gfx::renderer> DefaultRenderer;
+	std::vector<std::vector<core::gfx::draw_call>> subject::default_renderer(object* aObject) {
+		std::vector<std::vector<core::gfx::draw_call>> DefaultRenderer;
 		return DefaultRenderer;
 	}
 

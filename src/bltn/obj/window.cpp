@@ -100,8 +100,8 @@ namespace geodesy::bltn::obj {
 
 	}
 
-	std::shared_ptr<core::gfx::renderer> window::make_default_renderer(ecs::object* aObject) {
-		std::shared_ptr<core::gfx::renderer> Renderer = std::make_shared<default_renderer>(this->Context.get(), this, aObject);
+	std::vector<std::vector<core::gfx::draw_call>> window::default_renderer(ecs::object* aObject) {
+		std::vector<std::vector<core::gfx::draw_call>> Renderer;
 		return Renderer;
 	}
 	

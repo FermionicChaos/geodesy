@@ -19,17 +19,17 @@ layout (location = 6) in uvec4  VertexBoneID;
 layout (location = 7) in vec4   VertexBoneWeight;
 
 layout (set = 0, binding = 0) uniform Camera3DUBO {
-    mat4 Projection;
-    mat4 Rotation;
 	vec3 Position;
+    mat4 Orientation;
+    mat4 Projection;
 } Camera3D;
 
 layout (set = 0, binding = 1) uniform ObjectUBO {
-    mat4 Orientation;
     vec3 Position;
+    mat4 Orientation;
 } Object;
 
-layout (set = 1, binding = 0) uniform MeshUBO {
+layout (set = 0, binding = 2) uniform MeshUBO {
     mat4 Transform;
     mat4 BoneTransform[MAX_BONE_COUNT];
     mat4 OffsetTransform[MAX_BONE_COUNT];
@@ -80,5 +80,5 @@ void main() {
 		0.0f, 0.0f, 1.0f, Camera3D.Position.z,
 		0.0f, 0.0f, 0.0f, 1.0f
 	);
-    gl_Position = Camera3D.Projection * Camera3D.Rotation * ct * v;
+    gl_Position = Camera3D.Projection * Camera3D.Orientation * ct * v;
 }

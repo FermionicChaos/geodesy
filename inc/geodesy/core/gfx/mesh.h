@@ -39,11 +39,14 @@ namespace geodesy::core::gfx {
 		std::shared_ptr<gcl::context> 		Context;
 		std::shared_ptr<gcl::buffer> 		VertexBuffer;
 		std::shared_ptr<gcl::buffer>		IndexBuffer;
+		std::shared_ptr<gcl::buffer>		UniformBuffer;
 
 		mesh(std::shared_ptr<gcl::context> aContext, const std::vector<vertex>& aVertexData, const topology& aTopologyData);
 		mesh(std::shared_ptr<gcl::context> aContext, std::shared_ptr<mesh> aMesh);
 
-		void draw(VkCommandBuffer aCommandBuffer, std::shared_ptr<gcl::pipeline> aPipeline, std::shared_ptr<gcl::descriptor::array> aDescriptorArray);
+		void draw(VkCommandBuffer aCommandBuffer, std::shared_ptr<gcl::pipeline> aPipeline, std::shared_ptr<gcl::framebuffer> aFramebuffer, std::shared_ptr<gcl::descriptor::array> aDescriptorArray);
+
+		// void draw(std::vector<std::shared_ptr<gcl::image>> aOutput, std::shared_ptr<gcl::pipeline> aPipeline, std::shared_ptr<material> aMaterial);
 
 	};
 

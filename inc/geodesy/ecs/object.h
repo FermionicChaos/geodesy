@@ -62,8 +62,8 @@ namespace geodesy::ecs {
 		std::shared_ptr<core::gcl::context> 										Context;
 		std::shared_ptr<core::phys::mesh>											CollisionBox;
 		std::shared_ptr<core::gfx::model>											Model;
-		std::map<subject*, std::shared_ptr<core::gfx::renderer>>					Renderer;
 		std::shared_ptr<core::gcl::buffer> 											UniformBuffer;
+		std::map<subject*, std::vector<std::vector<core::gfx::draw_call>>>			Renderer;
 
 		object(std::shared_ptr<core::gcl::context> aContext, stage* aStage, std::string aName);
 		~object();

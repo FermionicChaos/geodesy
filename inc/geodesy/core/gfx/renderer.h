@@ -18,22 +18,19 @@ namespace geodesy::core::gfx {
 	struct draw_call {
 		float 											DistanceFromSubject;
 		material::transparency 							TransparencyMode;
+		std::shared_ptr<gcl::context> 					Context;
 		std::shared_ptr<gcl::framebuffer> 				Framebuffer;
 		std::shared_ptr<gcl::descriptor::array> 		DescriptorArray;
 		VkCommandBuffer 								DrawCommand;
 		draw_call();
 	};
 
-	class renderer {
+	class renderer : public std::vector<std::vector<draw_call>> {
 	public:
 
 		gcl::context*											Context;
 		ecs::object* 											Object;
 		ecs::subject* 											Subject;
-		VkDescriptorPool 										DescriptorPool;
-		std::vector<std::shared_ptr<gcl::framebuffer>> 			Framebuffer;
-		std::vector<std::shared_ptr<gcl::descriptor::array>> 	DescriptorArray;
-		std::vector<std::vector<draw_call>> 					DrawCall;			// [FrameIndex][MeshIndex]
 
 		renderer(core::gcl::context* aContext, ecs::subject* aSubject, ecs::object* aObject);
 		~renderer();

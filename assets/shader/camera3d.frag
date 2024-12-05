@@ -19,26 +19,27 @@ layout (location = 4) in vec3 TextureCoordinate;
 
 // Camera3D information.
 layout (set = 0, binding = 0) uniform Camera3DUBO {
-    mat4 Projection;
-    mat4 Rotation;
 	vec3 Position;
+    mat4 Orientation;
+    mat4 Projection;
 } Camera3D;
 
-// Material texture inputs.
-layout (set = 2, binding = 0) uniform sampler2D SurfaceColor; 		// Color of the Surface
-layout (set = 2, binding = 1) uniform sampler2D SurfaceNormalMap; 	// Normal Map of the Surface.
-layout (set = 2, binding = 2) uniform sampler2D SurfaceHeightMap; 	// Bump Map of the surface.
-layout (set = 2, binding = 4) uniform sampler2D SurfaceEmission; 	// Light Emission of surface.
-layout (set = 2, binding = 5) uniform sampler2D SurfaceOpacity; 	// Opacity of the Surface.
-layout (set = 2, binding = 6) uniform sampler2D SurfaceAOC; 		// Opacity of the Surface.
-
-// PBR Specific
-layout (set = 2, binding = 7) uniform sampler2D SurfaceMetallicRoughness;
-
-layout (set = 2, binding = 8) uniform MaterialUBO {
+layout (set = 0, binding = 3) uniform MaterialUBO {
 	float ParallaxScale;
 	int ParallaxIterations;
 } Material;
+
+// Material texture inputs.
+layout (set = 1, binding = 0) uniform sampler2D SurfaceColor; 		// Color of the Surface
+layout (set = 1, binding = 1) uniform sampler2D SurfaceNormalMap; 	// Normal Map of the Surface.
+layout (set = 1, binding = 2) uniform sampler2D SurfaceHeightMap; 	// Bump Map of the surface.
+layout (set = 1, binding = 3) uniform sampler2D SurfaceEmission; 	// Light Emission of surface.
+layout (set = 1, binding = 4) uniform sampler2D SurfaceOpacity; 	// Opacity of the Surface.
+layout (set = 1, binding = 5) uniform sampler2D SurfaceAOC; 		// Opacity of the Surface.
+
+// PBR Specific
+layout (set = 1, binding = 6) uniform sampler2D SurfaceMetallicRoughness;
+
 
 vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
 

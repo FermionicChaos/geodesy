@@ -28,7 +28,7 @@ namespace geodesy::ecs {
 		std::map<std::string, std::shared_ptr<core::gcl::image>> current_frame();
 		VkResult present_frame_now();
 
-		virtual std::shared_ptr<core::gfx::renderer> make_default_renderer(object* aObject);
+		virtual std::vector<std::vector<core::gfx::draw_call>> default_renderer(object* aObject);
 		virtual VkResult next_frame(VkSemaphore aSemaphore = VK_NULL_HANDLE, VkFence aFence = VK_NULL_HANDLE);
 		virtual std::vector<VkSubmitInfo> render(stage* aStage);
 		virtual VkPresentInfoKHR present_frame(const std::vector<VkSemaphore>& aWaitSemaphore = {});

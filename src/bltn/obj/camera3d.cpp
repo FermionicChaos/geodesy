@@ -6,94 +6,6 @@ namespace geodesy::bltn::obj {
 	using namespace geodesy::core::gfx;
 	using namespace geodesy::core::gcl;
 
-	// Localized to camera3d.cpp
-	namespace {
-
-		// This constitutes the default renderer of the geodesy
-		// engine. Since this is localized to object.cpp, for any
-		// derived class of object, it can override and define its
-		// own renderer.
-		class default_renderer : public core::gfx::renderer {
-		public:
-
-			default_renderer(core::gcl::context* aContext, camera3d* aCamera3D, ecs::object* aObject);
-
-		};
-
-		default_renderer::default_renderer(core::gcl::context* aContext, camera3d* aCamera3D, ecs::object* aObject) : core::gfx::renderer(aContext, aCamera3D, aObject) {
-
-			// DescriptorSet for Object, Camera3D
-			// DescriptorSet for mesh instance
-			// DescriptorSet for material
-
-			// Using the existing GPU resources of both Camera3D & the generic Object,
-			// generate the proper draw calls for the object.
-
-			// Camera3D has a default render pass, framebuffers encapsulating the various image views
-			// for the images used by the render target. Along with a default set of pipelines used
-			// for each subpass of the render pass.
-
-			// Object has a model, which consists of a node hierarchy, rigged mesh instances, and so on.
-			// The meshes them selves, and their node meta data is stored GPU side for each object. 
-
-			// describes how camera will render object.
-			std::shared_ptr<model> Model = aObject->Model;
-			std::vector<std::shared_ptr<mesh>> MeshList = Model->Mesh;
-			std::vector<mesh::instance*> MeshInstanceList = Model->Hierarchy.gather_mesh_instances();
-
-			// Generate Descriptor Sets for each pipeline.
-
-			this->DrawCall = std::vector<std::vector<draw_call>>(aCamera3D->Framechain->Image.size());
-			for (size_t FrameIndex = 0; FrameIndex < aCamera3D->Framechain->Image.size(); FrameIndex++) {
-				// Allocate a draw call per mesh instance.
-				this->DrawCall[FrameIndex] = std::vector<draw_call>(MeshInstanceList.size());
-				for (size_t InstanceIndex = 0; InstanceIndex < MeshInstanceList.size(); InstanceIndex++) {
-					// Extract Mesh from MeshList.
-					mesh::instance* MeshInstance = MeshInstanceList[InstanceIndex];
-					std::shared_ptr<mesh> Mesh = MeshList[MeshInstance->Index];
-					std::shared_ptr<material> Material = Model->Material[MeshInstance->MaterialIndex];
-
-					// Create Command Buffer for draw call.
-					VkCommandBuffer Cmd = aContext->allocate_command_buffer(device::GRAPHICS_AND_COMPUTE);
-					std::shared_ptr<descriptor::array> Uniform;
-
-					// VkRect2D RenderArea = { { 0, 0 }, { aCamera3D->Resolution[0], aCamera3D->Resolution[1] } };
-					aContext->begin(Cmd);
-					// aCamera3D->Pipeline->begin(Cmd, aCamera3D->Frame[FrameIndex].Buffer, RenderArea);
-					//Uniform = aCamera3D->Pipeline[0]->create_uniform_array();
-
-					// Bind Object & Camera3D Uniform Buffers.
-					// Bind Mesh Instance Transform Uniform Buffer.
-					// Bind Material Uniform Buffers & Textures.
-
-
-					/*
-					// Vertex Shader Bindings
-					Uniform.bind(0, 0, Mesh->UniformBuffer);
-					Uniform.bind(0, 1, Object->UniformBuffer);
-					Uniform.bind(0, 2, Camera3D->UniformBuffer);
-
-					// Pixel Shader Bindings
-					Uniform.bind(1, 0, Mesh->Texture[0]);
-					Uniform.bind(1, 1, Mesh->Texture[1]);
-					Uniform.bind(1, 2, Mesh->Texture[2]);
-					Uniform.bind(1, 3, Mesh->Texture[3]);
-					Uniform.bind(1, 4, Mesh->Texture[4]);
-					Uniform.bind(1, 5, Mesh->Texture[5]);
-					*/
-					// Bind Uniform Buffers here.
-					// Mesh->draw(Cmd, aCamera3D->Pipeline, Uniform);
-					aCamera3D->Pipeline->end(Cmd);
-					aContext->end(Cmd);
-
-					//this->DrawCall[FrameIndex][InstanceIndex].Command = Cmd;
-
-				}
-			}
-		}
-
-	}
-
 	camera3d::geometry_buffer::geometry_buffer(std::shared_ptr<core::gcl::context> aContext, core::math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount) : framechain(aContext, aFrameRate, aFrameCount) {
 		// New API design?
 		image::create_info DepthCreateInfo;
@@ -140,6 +52,9 @@ namespace geodesy::bltn::obj {
 		// Loaded host memory assets for this object's possession.
 		this->Asset = Engine->FileManager.open(AssetList);
 
+		// Allocate GPU resources.
+		this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(std::make_shared<geometry_buffer>(aContext, aFrameResolution, aFrameRate, aFrameCount));
+
 		// Grab shaders from asset list, compile, and link.
 		std::shared_ptr<gcl::shader> VertexShader = std::dynamic_pointer_cast<gcl::shader>(Asset[0]);
 		std::shared_ptr<gcl::shader> PixelShader = std::dynamic_pointer_cast<gcl::shader>(Asset[1]);
@@ -183,8 +98,6 @@ namespace geodesy::bltn::obj {
 		Rasterizer->DepthStencil.minDepthBounds				= -1.0f;
 		Rasterizer->DepthStencil.maxDepthBounds				= +1.0f;
 
-		// Allocate GPU resources.
-		this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(std::make_shared<geometry_buffer>(aContext, aFrameResolution, aFrameRate, aFrameCount));
 
 		// Create render pipeline for camera3d.
 		this->Pipeline = Context->create_pipeline(Rasterizer);
@@ -194,8 +107,52 @@ namespace geodesy::bltn::obj {
 
 	}
 
-	std::shared_ptr<core::gfx::renderer> camera3d::make_default_renderer(object* aObject) {
-		return std::make_shared<default_renderer>(this->Context.get(), this, aObject);
+	std::vector<std::vector<core::gfx::draw_call>> camera3d::default_renderer(object* aObject) {
+		std::vector<std::vector<draw_call>> Renderer(this->Framechain->Image.size(), std::vector<draw_call>(aObject->Model->Hierarchy.MeshInstance.size()));
+
+		// Gather list of mesh instances throughout model hierarchy.
+		std::vector<mesh::instance> MeshInstance = aObject->Model->Hierarchy.MeshInstance;
+
+		for (size_t i = 0; i < this->Framechain->Image.size(); i++) {
+			for (size_t j = 0; j < MeshInstance.size(); j++) {
+				// Get references for readability.
+				VkResult Result = VK_SUCCESS;
+				device::operation DeviceOperation = device::operation::GRAPHICS_AND_COMPUTE;
+				std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[MeshInstance[j].Index];
+				std::shared_ptr<material> Material = aObject->Model->Material[MeshInstance[j].MaterialIndex];
+
+				std::vector<std::shared_ptr<image>> ImageOutputList = {
+					this->Framechain->Image[i]["OGB.Color"],
+					this->Framechain->Image[i]["OGB.Position"],
+					this->Framechain->Image[i]["OGB.Normal"],
+					this->Framechain->Image[i]["OGB.Depth"]
+				};
+				Renderer[i][j].Framebuffer = Context->create_framebuffer(this->Pipeline, ImageOutputList, this->Framechain->Resolution);
+				Renderer[i][j].DescriptorArray = Context->create_descriptor_array(this->Pipeline);
+				Renderer[i][j].DrawCommand = Context->allocate_command_buffer(DeviceOperation);			// TODO: Allocate from subject command pool.
+
+				// Bind Object Uniform Buffers
+				Renderer[i][j].DescriptorArray->bind(0, 0, 0, this->UniformBuffer);			// Camera Position, Orientation, Projection
+				Renderer[i][j].DescriptorArray->bind(0, 1, 0, aObject->UniformBuffer);		// Object Position, Orientation, Scale
+				Renderer[i][j].DescriptorArray->bind(0, 2, 0, Mesh->UniformBuffer); 		// Mesh Instance Transform
+				Renderer[i][j].DescriptorArray->bind(0, 3, 0, Material->UniformBuffer); 	// Material Properties
+
+				// Bind Material Textures.
+				Renderer[i][j].DescriptorArray->bind(1, 0, 0, Material->Texture["Color"]);
+				Renderer[i][j].DescriptorArray->bind(1, 1, 0, Material->Texture["Normal"]);
+				Renderer[i][j].DescriptorArray->bind(1, 2, 0, Material->Texture["Height"]);
+				Renderer[i][j].DescriptorArray->bind(1, 3, 0, Material->Texture["Emission"]);
+				Renderer[i][j].DescriptorArray->bind(1, 4, 0, Material->Texture["Opacity"]);
+				Renderer[i][j].DescriptorArray->bind(1, 5, 0, Material->Texture["AmbientOcclusion"]);
+				Renderer[i][j].DescriptorArray->bind(1, 5, 0, Material->Texture["Metallic"]);
+
+				Result = Context->begin(Renderer[i][j].DrawCommand);
+				Mesh->draw(Renderer[i][j].DrawCommand, this->Pipeline, Renderer[i][j].Framebuffer, Renderer[i][j].DescriptorArray);
+				Result = Context->end(Renderer[i][j].DrawCommand);
+			}
+		}
+		
+		return Renderer;
 	}
 
 
