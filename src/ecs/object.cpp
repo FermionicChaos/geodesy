@@ -78,7 +78,7 @@ namespace geodesy::ecs {
 	std::vector<gfx::draw_call> object::draw(subject* aSubject) {
 		// NOTE: A single draw call represents a single mesh instance in the model.
 		if (this->Renderer.count(aSubject) == 0) {
-			// this->Renderer[aSubject] = aSubject->make_default_renderer(this);
+			this->Renderer[aSubject] = aSubject->default_renderer(this);
 		} 
 
 		// Return a vector of the draw calls for the subject, and target draw index.

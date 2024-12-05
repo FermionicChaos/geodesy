@@ -84,6 +84,8 @@ namespace geodesy::bltn {
 
 			system_window::poll_input();
 
+			std::vector<gfx::draw_call> DrawCall = Quad->draw(Camera3D.get());
+
 			///*
 			// Acquire next image from swapchain.
 			Result = Window->next_frame_now();

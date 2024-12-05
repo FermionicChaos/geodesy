@@ -14,6 +14,8 @@ namespace geodesy::bltn::obj {
 			geometry_buffer(std::shared_ptr<core::gcl::context> aContext, core::math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount);
 		};
 
+		core::math::mat<float, 4, 4> Projection;
+
 		camera3d(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, std::string aName, core::math::vec<uint, 3> aFrameResolution, double aFrameRate, uint32_t aFrameCount);
 		~camera3d();
 

@@ -640,6 +640,7 @@ namespace geodesy::core::gfx {
 
 		// TODO: Don't forget to create Hierarchy device representation (Future Effort)
 
+		this->Context = aContext;
 		// Load Meshes into device memory represntation.
 		this->Mesh = std::vector<std::shared_ptr<gfx::mesh>>(aModel->Mesh.size());
 		for (std::size_t i = 0; i < aModel->Mesh.size(); i++) {

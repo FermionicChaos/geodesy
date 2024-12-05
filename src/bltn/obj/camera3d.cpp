@@ -6,6 +6,17 @@ namespace geodesy::bltn::obj {
 	using namespace geodesy::core::gfx;
 	using namespace geodesy::core::gcl;
 
+	namespace { 
+
+		// This is needed to be able to pass the camera3d object to the shader.
+		struct Camera3DUBO {
+			alignas(16) math::vec<float, 3> Position;
+			alignas(16) math::mat<float, 4, 4> Orientation;
+			alignas(16) math::mat<float, 4, 4> Projection;
+		};
+
+	}
+
 	camera3d::geometry_buffer::geometry_buffer(std::shared_ptr<core::gcl::context> aContext, core::math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount) : framechain(aContext, aFrameRate, aFrameCount) {
 		// New API design?
 		image::create_info DepthCreateInfo;
@@ -98,9 +109,20 @@ namespace geodesy::bltn::obj {
 		Rasterizer->DepthStencil.minDepthBounds				= -1.0f;
 		Rasterizer->DepthStencil.maxDepthBounds				= +1.0f;
 
-
 		// Create render pipeline for camera3d.
 		this->Pipeline = Context->create_pipeline(Rasterizer);
+
+		buffer::create_info UBCI;
+		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
+		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
+
+		// TODO: Figure out how to handle this.
+		// Camera3DUBO Camera3DUBOData;
+		// Camera3DUBOData.Position = this->Position;
+		// Camera3DUBOData.Orientation = this->Orientation;
+		// Camera3DUBOData.Projection = this->Projection;
+
+		// this->UniformBuffer = Context->create_buffer(UBCI, sizeof(Camera3DUBO), &Camera3DUBOData);
 	}
 
 	camera3d::~camera3d() {
