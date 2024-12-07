@@ -93,6 +93,9 @@ namespace geodesy::core::gcl {
 		VkResult read(size_t aSourceOffset, void* aDestinationData, size_t aDestinationOffset, size_t aRegionSize);
 		VkResult read(void* aDestinationData, std::vector<VkBufferCopy> aRegionList);
 
+		void *map_memory(size_t aOffset, size_t aSize);
+		void unmap_memory(void **aPtr);
+
 		VkBufferMemoryBarrier memory_barrier(
 			uint aSrcAccess, uint aDstAccess,
 			size_t aOffset = 0, size_t aSize = UINT32_MAX

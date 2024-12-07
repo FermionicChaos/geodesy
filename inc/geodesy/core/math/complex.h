@@ -5,7 +5,6 @@
 #include "config.h"
 #include "type.h"
 #include "constants.h"
-#include "vec.h"
 
 namespace geodesy::core::math {
 

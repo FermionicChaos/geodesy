@@ -219,13 +219,12 @@ namespace geodesy::core::gcl {
 			// Host Visible, can be written to directly.
 			for (size_t i = 0; i < aRegionList.size(); i++) {
 				// Calculate offset addresses
-				void* ptr = NULL;
-				Result = vkMapMemory(this->Context->Handle, this->MemoryHandle, aRegionList[i].dstOffset, aRegionList[i].size, 0, &ptr);
+				void* ptr = this->map_memory(aRegionList[i].dstOffset, aRegionList[i].size);
 				//uintptr_t TargetAddress = (uintptr_t)ptr + aRegionList[i].dstOffset;
 				uintptr_t SourceAddress = (uintptr_t)aSourceData + aRegionList[i].srcOffset;
 				// Copy specified targets.
 				memcpy((void*)ptr, (void*)SourceAddress, aRegionList[i].size);
-				vkUnmapMemory(this->Context->Handle, this->MemoryHandle);
+				this->unmap_memory(&ptr);
 			}
 		} else {
 			// Not Host Visible, use staging buffer. For large uploads, we will try something different.
@@ -283,12 +282,11 @@ namespace geodesy::core::gcl {
 			// Host Visible, can be written to directly.
 			for (size_t i = 0; i < aRegionList.size(); i++) {
 				// Calculate offset addresses
-				void* ptr = NULL;
-				Result = vkMapMemory(this->Context->Handle, this->MemoryHandle, aRegionList[i].srcOffset, aRegionList[i].size, 0, &ptr);
+				void* ptr = this->map_memory(aRegionList[i].srcOffset, aRegionList[i].size);
 				uintptr_t TargetAddress = (uintptr_t)aDestinationData + aRegionList[i].dstOffset;
 				// Copy specified targets.
 				memcpy((void*)TargetAddress, ptr, aRegionList[i].size);
-				vkUnmapMemory(this->Context->Handle, this->MemoryHandle);
+				this->unmap_memory(&ptr);
 			}
 		} else {
 			// Not Host Visible, use staging buffer. For large uploads, we will try something different.
@@ -334,6 +332,18 @@ namespace geodesy::core::gcl {
 		return Result;
 	}
 
+	void *buffer::map_memory(size_t aOffset, size_t aSize) {
+		VkResult Result = VK_SUCCESS;
+		void *ptr = NULL;
+		Result = vkMapMemory(this->Context->Handle, this->MemoryHandle, aOffset, aSize, 0, &ptr);
+		return ptr;
+	}
+
+	void buffer::unmap_memory(void **aPtr) {
+		vkUnmapMemory(this->Context->Handle, this->MemoryHandle);
+		*aPtr = NULL;
+	}
+	
 	VkBufferMemoryBarrier buffer::memory_barrier(
 			uint aSrcAccess, uint aDstAccess,
 			size_t aOffset, size_t aSize

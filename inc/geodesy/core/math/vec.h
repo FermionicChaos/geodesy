@@ -3,6 +3,8 @@
 #define GEODESY_CORE_MATH_VEC_H
 
 #include "config.h"
+#include "complex.h"
+#include "quaternion.h"
 
 namespace geodesy::core::math {
 
@@ -142,17 +144,6 @@ namespace geodesy::core::math {
 			return Out;
 		}
 
-		// // Accessors for readability
-    	// T& x() { return (*this)[0]; }
-    	// T& y() { return (*this)[1]; }
-    	// T& z() { return (*this)[2]; }
-    	// T& w() { return (*this)[3]; }
-
-    	// const T& x() const { return (*this)[0]; }
-    	// const T& y() const { return (*this)[1]; }
-    	// const T& z() const { return (*this)[2]; }
-    	// const T& w() const { return (*this)[3]; }
-
 	};
 
 	template<typename T, std::size_t N> inline
@@ -177,6 +168,15 @@ namespace geodesy::core::math {
 	template<typename T, std::size_t N> inline
 	T length(const vec<T, N>& aVector) {
 		return std::sqrt(aVector * aVector);
+	}
+
+	// Arbitrary rotation of a vector around an axis by an angle.
+	template <typename T> inline
+	vec<T, 3> rotate(vec<T, 3> aInput, T aAngle, vec<T, 3> aAxis) {
+		quaternion<T> r 	= quaternion<T>(0.0, aInput[0], aInput[1], aInput[2]);
+		quaternion<T> q 	= exp((aAngle / 2.0) * quaternion<T>(0.0, aAxis[0], aAxis[1], aAxis[2]));
+		r = q * r * (~q);
+		return vec<T, 3>(r[1], r[2], r[3]);
 	}
 
 	template<typename T, std::size_t N> inline
