@@ -157,6 +157,17 @@ namespace geodesy::core::math {
 		return aRhs * aLhs;
 	}
 
+	template<typename T, std::size_t M, std::size_t N> inline
+	mat<T, M, N> transpose(const mat<T, M, N>& aMatrix) {
+		mat<T, N, M> Result;
+		for (std::size_t i = 0; i < M; i++) {
+			for (std::size_t j = 0; j < N; j++) {
+				Result(j, i) = aMatrix(i, j);
+			}
+		}
+		return Result;
+	}
+
 	template <typename T, std::size_t M, std::size_t N> inline
 	T trace(const mat<T, M, N>& aMatrix) {
 		T Result = T();
@@ -266,7 +277,7 @@ namespace geodesy::core::math {
         return mat<T, 4, 4>(
             (1.0 / tn),     0.0,                    0.0,                                    0.0,
             0.0,            (AspectRatio / tn),     0.0,                                    0.0,
-            0.0,            0.0,                    (-((Far + Near) / (Far - Near))),       ((2.0 * Far * Near) / ((double)Far - (double)Near)),
+            0.0,            0.0,                    ((Far + Near) / (Far - Near)),       ((2.0 * Far * Near) / ((double)Far - (double)Near)),
             0.0,            0.0,                    1.0,                                    0.0
         );
     }

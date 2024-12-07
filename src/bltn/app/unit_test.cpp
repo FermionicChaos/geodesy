@@ -75,9 +75,10 @@ namespace geodesy::bltn {
 		WindowCreateInfo.Swapchain.ImageUsage = image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_DST | image::usage::TRANSFER_SRC;
 		Window = std::make_shared<system_window>(DeviceContext, Engine->PrimaryDisplay, std::string("Triangle Demo with Texture Data"), WindowCreateInfo, math::vec<int, 2>(0, 0), math::vec<int, 2>(Resolution[0], Resolution[1]));
 
-		// std::shared_ptr<camera3d> Camera3D = std::make_shared<camera3d>(DeviceContext, nullptr, "Camera3D", Resolution, 0.333, 4);
-		// std::shared_ptr<object> Quad = std::dynamic_pointer_cast<object>(std::make_shared<triangle>(DeviceContext, nullptr, "Quad"));
+		std::shared_ptr<camera3d> Camera3D = std::make_shared<camera3d>(DeviceContext, nullptr, "Camera3D", Resolution, 0.333, 4);
+		std::shared_ptr<object> Quad = std::dynamic_pointer_cast<object>(std::make_shared<triangle>(DeviceContext, nullptr, "Quad"));
 
+		/*
 		float Scalar = 1.0f;
 
 		image::create_info MaterialTextureInfo;
@@ -136,6 +137,7 @@ namespace geodesy::bltn {
 		std::shared_ptr<gcl::image> Texture 				= DeviceContext->create_image(MaterialTextureInfo, HostTexture);
  		std::shared_ptr<gcl::buffer> UniformBuffer 			= DeviceContext->create_buffer(UniformBufferCI, sizeof(float), &Scalar);
 		std::shared_ptr<gcl::pipeline> Pipeline 			= DeviceContext->create_pipeline(Rasterizer);
+		//*/
 
 		// Start main loop.
 		float t = 0.0f;
@@ -149,8 +151,14 @@ namespace geodesy::bltn {
 
 			// // Execute render operations.
 			// Result = Engine->execute_render_operations(this);
+			
+			Window->next_frame_now();
 
-			///*
+			std::vector<gfx::draw_call> DrawCall = Quad->draw(Camera3D.get());
+
+			Window->present_frame_now();
+
+			/*
 			// Acquire next image from swapchain.
 			Result = Window->next_frame(VK_NULL_HANDLE, Fence);
 

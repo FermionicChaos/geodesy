@@ -116,13 +116,19 @@ namespace geodesy::bltn::obj {
 		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
 		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 
-		// TODO: Figure out how to handle this.
-		// Camera3DUBO Camera3DUBOData;
-		// Camera3DUBOData.Position = this->Position;
-		// Camera3DUBOData.Orientation = this->Orientation;
-		// Camera3DUBOData.Projection = this->Projection;
+		uniform_data UniformData;
+		float AspectRatio = (float)aFrameResolution[0] / (float)aFrameResolution[1];
+		UniformData.Position 		= this->Position;
+		UniformData.Rotation 			= {
+			DirectionRight[0], 		DirectionRight[1], 		DirectionRight[2], 		0.0f,
+			-DirectionUp[0], 		-DirectionUp[1], 		-DirectionUp[2], 		0.0f,
+			DirectionFront[0], 		DirectionFront[1], 		DirectionFront[2], 		0.0f,
+			0.0f, 					0.0f, 					0.0f, 					1.0f
+		};
+		UniformData.Projection 		= math::perspective(math::radians(90.0f), AspectRatio, 0.1f, 100.0f);
 
-		// this->UniformBuffer = Context->create_buffer(UBCI, sizeof(Camera3DUBO), &Camera3DUBOData);
+		this->CameraUniformBuffer = Context->create_buffer(UBCI, sizeof(uniform_data), &UniformData);
+		this->CameraUniformBuffer->map_memory(0, sizeof(uniform_data));
 	}
 
 	camera3d::~camera3d() {

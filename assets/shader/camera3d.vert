@@ -20,7 +20,7 @@ layout (location = 7) in vec4   VertexBoneWeight;
 
 layout (set = 0, binding = 0) uniform Camera3DUBO {
 	vec3 Position;
-    mat4 Orientation;
+    mat4 Rotation;
     mat4 Projection;
 } Camera3D;
 
@@ -80,5 +80,5 @@ void main() {
 		0.0f, 0.0f, 1.0f, Camera3D.Position.z,
 		0.0f, 0.0f, 0.0f, 1.0f
 	);
-    gl_Position = Camera3D.Projection * Camera3D.Orientation * ct * v;
+    gl_Position = Camera3D.Projection * Camera3D.Rotation * ct * v;
 }

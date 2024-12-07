@@ -10,8 +10,7 @@ namespace geodesy::bltn::obj {
 		engine* Engine = aContext->Device->Engine;
 
 		std::vector<std::string> AssetList = {
-			"assets/models/quad.obj",
-			"assets/images/wall.jpg"
+			"../glTF-Sample-Models/2.0/Box/glTF/Box.gltf",
 		};
 
 		this->Asset = Engine->FileManager.open(AssetList);
@@ -29,6 +28,7 @@ namespace geodesy::bltn::obj {
 
 		//this->Model = Context->create_model();
 		this->Model = std::make_shared<core::gfx::model>(aContext, HostModel, MaterialTextureInfo);
+		// std::shared_ptr<core::io::file> OpenedFile = this->Engine->FileManager.open("../glTF-Sample-Models/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf");
 	}
 
 }

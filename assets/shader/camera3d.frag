@@ -20,7 +20,7 @@ layout (location = 4) in vec3 TextureCoordinate;
 // Camera3D information.
 layout (set = 0, binding = 0) uniform Camera3DUBO {
 	vec3 Position;
-    mat4 Orientation;
+    mat4 Rotation;
     mat4 Projection;
 } Camera3D;
 

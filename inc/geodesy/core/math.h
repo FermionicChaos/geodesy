@@ -3,6 +3,7 @@
 #define GEODESY_CORE_MATH_H
 
 #include "math/config.h"
+#include "math/constants.h"
 #include "math/complex.h"
 #include "math/quaternion.h"
 #include "math/vec.h"

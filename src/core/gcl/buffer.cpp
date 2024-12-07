@@ -227,7 +227,7 @@ namespace geodesy::core::gcl {
 				uintptr_t SourceAddress = (uintptr_t)aSourceData + aRegionList[i].srcOffset;
 				// Copy specified targets.
 				memcpy((void*)ptr, (void*)SourceAddress, aRegionList[i].size);
-				this->unmap_memory(&ptr);
+				this->unmap_memory();
 			}
 		} else {
 			// Not Host Visible, use staging buffer. For large uploads, we will try something different.
@@ -289,7 +289,7 @@ namespace geodesy::core::gcl {
 				uintptr_t TargetAddress = (uintptr_t)aDestinationData + aRegionList[i].dstOffset;
 				// Copy specified targets.
 				memcpy((void*)TargetAddress, ptr, aRegionList[i].size);
-				this->unmap_memory(&ptr);
+				this->unmap_memory();
 			}
 		} else {
 			// Not Host Visible, use staging buffer. For large uploads, we will try something different.
@@ -337,14 +337,13 @@ namespace geodesy::core::gcl {
 
 	void *buffer::map_memory(size_t aOffset, size_t aSize) {
 		VkResult Result = VK_SUCCESS;
-		void *ptr = NULL;
-		Result = vkMapMemory(this->Context->Handle, this->MemoryHandle, aOffset, aSize, 0, &ptr);
-		return ptr;
+		Result = vkMapMemory(this->Context->Handle, this->MemoryHandle, aOffset, aSize, 0, &this->Ptr);
+		return this->Ptr;
 	}
 
-	void buffer::unmap_memory(void **aPtr) {
+	void buffer::unmap_memory() {
 		vkUnmapMemory(this->Context->Handle, this->MemoryHandle);
-		*aPtr = NULL;
+		this->Ptr = NULL;
 	}
 
 	VkBufferMemoryBarrier buffer::memory_barrier(
@@ -385,6 +384,7 @@ namespace geodesy::core::gcl {
 		this->ElementCount 	= 0;
 		this->MemoryType 	= 0;
 		this->MemoryHandle 	= VK_NULL_HANDLE;
+		this->Ptr 			= NULL;
 	}
 
 }

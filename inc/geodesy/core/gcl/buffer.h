@@ -60,6 +60,8 @@ namespace geodesy::core::gcl {
 		uint 						MemoryType;
 		VkDeviceMemory				MemoryHandle;
 
+		void* 						Ptr;
+
 		buffer();
 		buffer(std::shared_ptr<context> aContext, create_info aCreateInfo, int aVertexCount, util::variable aVertexLayout, void* aVertexData = NULL);
 		buffer(std::shared_ptr<context> aContext, uint aMemoryType, uint aBufferUsage, int aVertexCount, util::variable aVertexLayout, void* aVertexData = NULL);
@@ -94,7 +96,7 @@ namespace geodesy::core::gcl {
 		VkResult read(void* aDestinationData, std::vector<VkBufferCopy> aRegionList);
 
 		void *map_memory(size_t aOffset, size_t aSize);
-		void unmap_memory(void **aPtr);
+		void unmap_memory();
 
 		VkBufferMemoryBarrier memory_barrier(
 			uint aSrcAccess, uint aDstAccess,
