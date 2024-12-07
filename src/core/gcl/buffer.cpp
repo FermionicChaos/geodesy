@@ -13,6 +13,9 @@
 #include <geodesy/core/gcl/image.h>
 #include <geodesy/core/gcl/context.h>
 
+// It approximately 16 MB
+#define GCL_TRANSFER_GRANULARITY_SIZE (1 << 24)
+
 namespace geodesy::core::gcl {
 
 	buffer::create_info::create_info() {
@@ -343,7 +346,7 @@ namespace geodesy::core::gcl {
 		vkUnmapMemory(this->Context->Handle, this->MemoryHandle);
 		*aPtr = NULL;
 	}
-	
+
 	VkBufferMemoryBarrier buffer::memory_barrier(
 			uint aSrcAccess, uint aDstAccess,
 			size_t aOffset, size_t aSize
