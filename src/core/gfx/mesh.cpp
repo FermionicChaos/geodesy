@@ -3,9 +3,45 @@
 #include <vector>
 #include <algorithm>
 
+#define MAX_BONE_COUNT 256
+
 namespace geodesy::core::gfx {
 
 	using namespace gcl;
+
+	namespace {
+
+		struct mesh_instance_ubo_data {
+			alignas(16) math::mat<float, 4, 4> Transform;
+			alignas(16) math::mat<float, 4, 4> BoneTransform[MAX_BONE_COUNT];
+			alignas(16) math::mat<float, 4, 4> BoneOffset[MAX_BONE_COUNT];
+			mesh_instance_ubo_data();
+		};
+
+		mesh_instance_ubo_data::mesh_instance_ubo_data() {
+			Transform = {
+				1.0f, 0.0f, 0.0f, 0.0f,
+				0.0f, 1.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, 1.0f, 0.0f,
+				0.0f, 0.0f, 0.0f, 1.0f
+			};
+			for (size_t i = 0; i < MAX_BONE_COUNT; i++) {
+				BoneTransform[i] = {
+					1.0f, 0.0f, 0.0f, 0.0f,
+					0.0f, 1.0f, 0.0f, 0.0f,
+					0.0f, 0.0f, 1.0f, 0.0f,
+					0.0f, 0.0f, 0.0f, 1.0f
+				};
+				BoneOffset[i] = {
+					1.0f, 0.0f, 0.0f, 0.0f,
+					0.0f, 1.0f, 0.0f, 0.0f,
+					0.0f, 0.0f, 1.0f, 0.0f,
+					0.0f, 0.0f, 0.0f, 1.0f
+				};
+			}
+		}
+
+	}
 
 	mesh::instance::instance() {
 		this->Index 	= -1;
@@ -50,6 +86,33 @@ namespace geodesy::core::gfx {
 				Vertex[i].BoneWeight[j] 	= VertexBoneWeight[j].Weight;
 			}
 		}
+	}
+
+	mesh::instance::instance(std::shared_ptr<gcl::context> aContext, const instance& aInstance) {
+		this->Index 		= aInstance.Index;
+		this->Vertex 		= aInstance.Vertex;
+		this->Bone 			= aInstance.Bone;
+		this->MaterialIndex = aInstance.MaterialIndex;
+		this->Context 		= aContext;
+
+		// Create Vertex Weight Buffer
+        buffer::create_info VBCI;
+        VBCI.Memory = device::memory::DEVICE_LOCAL;
+        VBCI.Usage = buffer::usage::VERTEX | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
+        this->VertexWeightBuffer = Context->create_buffer(VBCI, Vertex.size() * sizeof(vertex::weight), Vertex.data());
+
+        // Create Mesh Instance Uniform Buffer
+        buffer::create_info UBCI;
+        UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
+        UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
+		mesh_instance_ubo_data MeshInstanceUBOData;
+		MeshInstanceUBOData.Transform = aInstance.Transform;
+		for (size_t i = 0; i < aInstance.Bone.size(); i++) {
+			MeshInstanceUBOData.BoneTransform[i] 	= aInstance.Bone[i].Transform;
+			MeshInstanceUBOData.BoneOffset[i] 		= aInstance.Bone[i].Offset;
+		}
+        this->UniformBuffer = Context->create_buffer(UBCI, sizeof(mesh_instance_ubo_data), &MeshInstanceUBOData);
+		this->UniformBuffer->map_memory(0, sizeof(mesh_instance_ubo_data));
 	}
 
 	void mesh::instance::update(double DeltaTime) {

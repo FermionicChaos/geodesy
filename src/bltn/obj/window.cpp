@@ -47,6 +47,7 @@ namespace geodesy::bltn::obj {
 	ecs::subject(aContext, aStage, aName, aFrameResolution, aFrameRate, aFrameCount, aAttachmentCount) {
 		// The default renderer of window is that it takes an image and samples it.
 		// Uses only a quad for basic shaping features, and window parameters.
+		/*
 		engine* Engine = aContext->Device->Engine;
 		std::vector<std::string> AssetPath = {
 			"assets/models/quad.obj",
@@ -96,6 +97,7 @@ namespace geodesy::bltn::obj {
 
 		// Copy Paste
 		Rasterizer->Multisample.rasterizationSamples		= VK_SAMPLE_COUNT_1_BIT;
+		*/
 
 
 	}

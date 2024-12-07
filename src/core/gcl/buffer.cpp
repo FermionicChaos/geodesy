@@ -342,8 +342,10 @@ namespace geodesy::core::gcl {
 	}
 
 	void buffer::unmap_memory() {
-		vkUnmapMemory(this->Context->Handle, this->MemoryHandle);
-		this->Ptr = NULL;
+		if (this->Ptr != NULL) {
+			vkUnmapMemory(this->Context->Handle, this->MemoryHandle);
+			this->Ptr = NULL;
+		}
 	}
 
 	VkBufferMemoryBarrier buffer::memory_barrier(
@@ -368,6 +370,7 @@ namespace geodesy::core::gcl {
 	}
 
 	void buffer::clear() {
+		this->unmap_memory();
 		if (Context != nullptr) {
 			if (Handle != VK_NULL_HANDLE) {
 				vkDestroyBuffer(Context->Handle, Handle, NULL);

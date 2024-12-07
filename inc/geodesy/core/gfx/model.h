@@ -32,6 +32,7 @@ namespace geodesy::core::gfx {
 			std::vector<mesh::instance> 		MeshInstance; 		//
 
 			node();
+			node(std::shared_ptr<gcl::context> aContext, const node& aNode);
 			node(const node& aInput);
 			node(node&& aInput) noexcept;
 			~node();

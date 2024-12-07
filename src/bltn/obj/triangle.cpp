@@ -18,9 +18,6 @@ namespace geodesy::bltn::obj {
 		// Get Host model copy.
 		std::shared_ptr<core::gfx::model> HostModel = std::dynamic_pointer_cast<core::gfx::model>(Asset[0]);
 
-		// TODO: Change Hostmodel's Texture to wall.jpg
-		HostModel->Material[0]->Texture["Color"] = std::dynamic_pointer_cast<core::gcl::image>(Asset[1]);
-
 		gcl::image::create_info MaterialTextureInfo;
 		MaterialTextureInfo.Layout 		= image::layout::SHADER_READ_ONLY_OPTIMAL;
 		MaterialTextureInfo.Memory 		= device::memory::DEVICE_LOCAL;

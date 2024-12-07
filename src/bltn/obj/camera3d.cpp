@@ -136,18 +136,17 @@ namespace geodesy::bltn::obj {
 	}
 
 	std::vector<std::vector<core::gfx::draw_call>> camera3d::default_renderer(object* aObject) {
-		std::vector<std::vector<draw_call>> Renderer(this->Framechain->Image.size(), std::vector<draw_call>(aObject->Model->Hierarchy.MeshInstance.size()));
-
 		// Gather list of mesh instances throughout model hierarchy.
-		std::vector<mesh::instance> MeshInstance = aObject->Model->Hierarchy.MeshInstance;
+		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy.gather_mesh_instances();
+
+		std::vector<std::vector<draw_call>> Renderer(this->Framechain->Image.size(), std::vector<draw_call>(MeshInstance.size()));
 
 		for (size_t i = 0; i < this->Framechain->Image.size(); i++) {
 			for (size_t j = 0; j < MeshInstance.size(); j++) {
 				// Get references for readability.
 				VkResult Result = VK_SUCCESS;
-				device::operation DeviceOperation = device::operation::GRAPHICS_AND_COMPUTE;
-				std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[MeshInstance[j].Index];
-				std::shared_ptr<material> Material = aObject->Model->Material[MeshInstance[j].MaterialIndex];
+				std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[MeshInstance[j]->Index];
+				std::shared_ptr<material> Material = aObject->Model->Material[MeshInstance[j]->MaterialIndex];
 
 				std::vector<std::shared_ptr<image>> ImageOutputList = {
 					this->Framechain->Image[i]["OGB.Color"],
@@ -157,13 +156,13 @@ namespace geodesy::bltn::obj {
 				};
 				Renderer[i][j].Framebuffer = Context->create_framebuffer(this->Pipeline, ImageOutputList, this->Framechain->Resolution);
 				Renderer[i][j].DescriptorArray = Context->create_descriptor_array(this->Pipeline);
-				Renderer[i][j].DrawCommand = Context->allocate_command_buffer(DeviceOperation);			// TODO: Allocate from subject command pool.
+				Renderer[i][j].DrawCommand = this->CommandPool->allocate();
 
 				// Bind Object Uniform Buffers
-				Renderer[i][j].DescriptorArray->bind(0, 0, 0, this->UniformBuffer);			// Camera Position, Orientation, Projection
-				Renderer[i][j].DescriptorArray->bind(0, 1, 0, aObject->UniformBuffer);		// Object Position, Orientation, Scale
-				Renderer[i][j].DescriptorArray->bind(0, 2, 0, Mesh->UniformBuffer); 		// Mesh Instance Transform
-				Renderer[i][j].DescriptorArray->bind(0, 3, 0, Material->UniformBuffer); 	// Material Properties
+				Renderer[i][j].DescriptorArray->bind(0, 0, 0, this->UniformBuffer);					// Camera Position, Orientation, Projection
+				Renderer[i][j].DescriptorArray->bind(0, 1, 0, aObject->UniformBuffer);				// Object Position, Orientation, Scale
+				Renderer[i][j].DescriptorArray->bind(0, 2, 0, MeshInstance[j]->UniformBuffer); 		// Mesh Instance Transform
+				Renderer[i][j].DescriptorArray->bind(0, 3, 0, Material->UniformBuffer); 			// Material Properties
 
 				// Bind Material Textures.
 				Renderer[i][j].DescriptorArray->bind(1, 0, 0, Material->Texture["Color"]);

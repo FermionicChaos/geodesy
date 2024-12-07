@@ -26,10 +26,12 @@ namespace geodesy::core::gfx {
 
 			// Device Memory Objects
 			std::shared_ptr<gcl::context> 	Context;
+			std::shared_ptr<gcl::buffer> 	VertexWeightBuffer;
 			std::shared_ptr<gcl::buffer> 	UniformBuffer;
 
 			instance();
 			instance(int aMeshIndex, uint aVertexCount, const std::vector<bone>& aBoneData, uint aMaterialIndex);
+			instance(std::shared_ptr<gcl::context> aContext, const instance& aInstance);
 
 			void update(double DeltaTime);
 			

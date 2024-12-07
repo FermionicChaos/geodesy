@@ -103,6 +103,7 @@ namespace geodesy::core::gcl {
 		this->Tiling = image::tiling::OPTIMAL;
 		this->Memory = 0;
 		this->Usage = image::usage::TRANSFER_DST | image::usage::TRANSFER_SRC;
+		this->MipLevels = false;
 	}
 
 	image::create_info::create_info(int aSample, int aTiling, int aMemory, int aUsage) : create_info() {
@@ -642,7 +643,12 @@ namespace geodesy::core::gcl {
 		}
 		this->CreateInfo.format						= (VkFormat)aFormat;
 		this->CreateInfo.extent						= { aX, aY, aZ };
-		this->CreateInfo.mipLevels					= std::floor(std::log2(std::max(std::max(aX, aY), aZ))) + 1;
+		if (aCreateInfo.MipLevels) {
+			this->CreateInfo.mipLevels					= std::floor(std::log2(std::max(std::max(aX, aY), aZ))) + 1;
+		}
+		else {
+			this->CreateInfo.mipLevels					= 1;
+		}
 		this->CreateInfo.arrayLayers				= aT;
 		this->CreateInfo.samples					= (VkSampleCountFlagBits)aCreateInfo.Sample;
 		this->CreateInfo.tiling						= (VkImageTiling)aCreateInfo.Tiling;

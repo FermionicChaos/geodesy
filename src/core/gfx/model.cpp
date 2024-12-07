@@ -27,7 +27,7 @@ static Assimp::Importer* ModelImporter = nullptr;
 // denote them as $ \vec{v} $ so they are not confused with bone space vertices
 // $ \vec{v}^{bs} $. This is to eliminate ambiguity in mathematical symbols which
 // many don't care for when describing something. The being said, in the node hierarchy
-// it is neccessary to map mesh space vertices $ \vec{v} \rightarrow \vec{v}^{bs} $
+// it is necessary to map mesh space vertices $ \vec{v} \rightarrow \vec{v}^{bs} $
 // so that the node hierarchy and its associated animations can then be applied to 
 // the mesh. 
 
@@ -185,6 +185,25 @@ namespace geodesy::core::gfx {
 
 	model::node::node() {
 		this->zero_out();
+	}
+
+	model::node::node(std::shared_ptr<gcl::context> aContext, const node& aNode) {
+		this->Root 		= this;
+		this->Parent 	= nullptr;
+		this->Child 	= std::vector<node>(aNode.Child.size());
+		for (size_t i = 0; i < aNode.Child.size(); i++) {
+			this->Child[i] 			= node(aContext, aNode.Child[i]);
+			this->Child[i].Root 	= this->Root;
+			this->Child[i].Parent 	= this;
+		}
+		this->Name 				= aNode.Name;
+		this->Weight 			= aNode.Weight;
+		this->Transformation 	= aNode.Transformation;
+		this->Animation 		= aNode.Animation;
+		this->MeshInstance 		= std::vector<mesh::instance>(aNode.MeshInstance.size());
+		for (size_t i = 0; i < aNode.MeshInstance.size(); i++) {
+			this->MeshInstance[i] = mesh::instance(aContext, aNode.MeshInstance[i]);
+		}
 	}
 
 	model::node::node(const node& aInput) : node() {
@@ -635,10 +654,8 @@ namespace geodesy::core::gfx {
 
 	model::model(std::shared_ptr<gcl::context> aContext, std::shared_ptr<model> aModel, gcl::image::create_info aCreateInfo) : model() {
 		this->Name = aModel->Name;
-		this->Hierarchy = aModel->Hierarchy;
+		this->Hierarchy = node(aContext, aModel->Hierarchy);
 		this->Time = aModel->Time;
-
-		// TODO: Don't forget to create Hierarchy device representation (Future Effort)
 
 		this->Context = aContext;
 		// Load Meshes into device memory represntation.
