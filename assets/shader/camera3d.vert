@@ -51,36 +51,27 @@ void main() {
         mt = Mesh.Transform;
     }
 
+    // Convert to model space
     v = mt * v;
     n = mt * n;
 	t = mt * t;
 	b = mt * b;
 
-    mat4 ot = mat4(
-        1.0f, 0.0f, 0.0f, Object.Position.x,
-        0.0f, 1.0f, 0.0f, Object.Position.y,
-        0.0f, 0.0f, 1.0f, Object.Position.z,
-        0.0f, 0.0f, 0.0f, 1.0f
-    );
-    v = ot * Object.Orientation * v;
-    n = ot * Object.Orientation * n;
-	t = ot * Object.Orientation * t;
-	b = ot * Object.Orientation * b;
+    // Orient object in model space.
+    v = Object.Orientation * v;
+    n = Object.Orientation * n;
+	t = Object.Orientation * t;
+	b = Object.Orientation * b;
 
-    WorldPosition   = v.xyz;
-    WorldNormal     = n.xyz;
-	WorldTangent	= t.xyz;
-	WorldBitangent	= b.xyz;
+    // Convert to world space.
+    WorldPosition   = v.xyz + Object.Position;
+    WorldNormal     = n.xyz + Object.Position;
+	WorldTangent	= t.xyz + Object.Position;
+	WorldBitangent	= b.xyz + Object.Position;
 
+    // Pass over texture coordinates & vertex color for interpolation.
     TextureCoordinate = VertexTextureCoordinate;
-
     InterpolatedVertexColor = VertexColor;
 
-	mat4 ct = mat4(
-		1.0f, 0.0f, 0.0f, Camera3D.Position.x,
-		0.0f, 1.0f, 0.0f, Camera3D.Position.y,
-		0.0f, 0.0f, 1.0f, Camera3D.Position.z,
-		0.0f, 0.0f, 0.0f, 1.0f
-	);
-    gl_Position = Camera3D.Projection * Camera3D.Rotation * ct * v;
+    gl_Position = Camera3D.Projection * Camera3D.Rotation * vec4(v.xyz - Camera3D.Position, 1.0);
 }

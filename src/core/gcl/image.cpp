@@ -583,6 +583,7 @@ namespace geodesy::core::gcl {
 		if (!stbi_is_hdr(aFilePath.c_str())) {
 			this->HostData = (void*)stbi_load(aFilePath.c_str(), &lWidth, &lHeight, &lChannels, STBI_rgb_alpha);
 			lChannels += 1;
+			lChannels = std::min(lChannels, 4);
 			// Determine VkFormat based on the number of channels.
 			switch (lChannels) {
 			case 1: this->CreateInfo.format = VK_FORMAT_R8_SRGB; break;

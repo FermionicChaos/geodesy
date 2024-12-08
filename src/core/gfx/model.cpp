@@ -420,10 +420,11 @@ namespace geodesy::core::gfx {
 	}
 
 	model::model() {
-
+		this->Time = 0.0;
 	}
 
 	model::model(std::string aFilePath, file::manager* aFileManager) : file(aFilePath) {
+		this->Time = 0.0;
 		if (aFilePath.length() == 0) return;
 		const aiScene *Scene = ModelImporter->ReadFile(aFilePath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
 
@@ -445,6 +446,7 @@ namespace geodesy::core::gfx {
 
 		// Extract Scene Hiearchy
 		fill_and_traverse(Scene, this->Hierarchy, Scene->mRootNode);
+		this->Hierarchy.Model = this;
 
 		// Previously incorrect. Animations will be tied to model and not node hierarchy.
 		// Each animation contains a map of node animations which are tied to the node hierarchy.

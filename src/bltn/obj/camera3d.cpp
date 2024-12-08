@@ -1,5 +1,7 @@
 #include <geodesy/bltn/obj/camera3d.h>
 
+#include <iostream>
+
 namespace geodesy::bltn::obj {
 
 	using namespace geodesy::core;
@@ -98,8 +100,8 @@ namespace geodesy::bltn::obj {
 		Rasterizer->DepthStencil.depthTestEnable			= VK_TRUE;
 		Rasterizer->DepthStencil.depthWriteEnable			= VK_TRUE;
 		Rasterizer->DepthStencil.depthCompareOp				= VK_COMPARE_OP_GREATER; // Camera, +z is closer.
-		Rasterizer->DepthStencil.minDepthBounds				= -1.0f;
-		Rasterizer->DepthStencil.maxDepthBounds				= +1.0f;
+		// Rasterizer->DepthStencil.minDepthBounds				= -1.0f;
+		// Rasterizer->DepthStencil.maxDepthBounds				= +1.0f;
 
 		// Create render pipeline for camera3d.
 		this->Pipeline = Context->create_pipeline(Rasterizer);
@@ -109,15 +111,16 @@ namespace geodesy::bltn::obj {
 		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 
 		camera_uniform_data UniformData;
-		float AspectRatio = (float)aFrameResolution[0] / (float)aFrameResolution[1];
+		float AspectRatio = (float)aFrameResolution[1] / (float)aFrameResolution[0];
 		UniformData.Position 		= this->Position;
-		UniformData.Rotation 			= {
+		UniformData.Rotation 		= {
 			DirectionRight[0], 		DirectionRight[1], 		DirectionRight[2], 		0.0f,
 			-DirectionUp[0], 		-DirectionUp[1], 		-DirectionUp[2], 		0.0f,
 			DirectionFront[0], 		DirectionFront[1], 		DirectionFront[2], 		0.0f,
 			0.0f, 					0.0f, 					0.0f, 					1.0f
 		};
 		UniformData.Projection 		= math::perspective(math::radians(90.0f), AspectRatio, 0.1f, 100.0f);
+		std::cout << UniformData.Projection << std::endl;
 
 		this->CameraUniformBuffer = Context->create_buffer(UBCI, sizeof(UniformData), &UniformData);
 		this->CameraUniformBuffer->map_memory(0, sizeof(UniformData));
