@@ -5,7 +5,18 @@ namespace geodesy::ecs {
 
 	using namespace core;
 
-	subject::subject(std::shared_ptr<gcl::context> aContext, stage* aStage, std::string aName, math::vec<uint, 3> aFrameResolution, double aFrameRate, uint32_t aFrameCount, uint32_t aAttachmentCount) : object(aContext, aStage, aName) {
+	subject::subject(
+		std::shared_ptr<core::gcl::context> aContext, 
+		stage* aStage, 
+		std::string aName, 
+		core::math::vec<uint, 3> 
+		aFrameResolution, 
+		double aFrameRate, 
+		uint32_t aFrameCount, 
+		uint32_t aAttachmentCount, 
+		core::math::vec<float, 3> aPosition, 
+		core::math::vec<float, 2> aDirection
+	) : object(aContext, aStage, aName, aPosition, aDirection) {
 
 		this->CommandPool = std::make_shared<gcl::command_pool>(aContext, gcl::device::operation::GRAPHICS_AND_COMPUTE);
 		// this->Timer;

@@ -15,7 +15,7 @@
 
 namespace geodesy::core::gcl {
 
-	class context : public std::enable_shared_from_this<context>{
+	class context : public std::enable_shared_from_this<context> {
 	public:
 
 		std::mutex									Mutex;

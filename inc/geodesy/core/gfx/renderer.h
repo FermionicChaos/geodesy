@@ -37,6 +37,8 @@ namespace geodesy::core::gfx {
 
 	};
 
+	std::vector<VkCommandBuffer> convert(std::vector<draw_call> aDrawCallList);
+
 }
 
 #endif // !GEODESY_CORE_GFX_RENDERER_H

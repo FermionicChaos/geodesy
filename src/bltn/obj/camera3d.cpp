@@ -49,7 +49,7 @@ namespace geodesy::bltn::obj {
 		core::math::vec<uint, 3> 				aFrameResolution, 
 		double 									aFrameRate, 
 		uint32_t 								aFrameCount
-	) : ecs::subject(aContext, aStage, aName, aFrameResolution, aFrameRate, aFrameCount, 4) 
+	) : ecs::subject(aContext, aStage, aName, aFrameResolution, aFrameRate, aFrameCount, 4, { 0.0f, -10.0f, 0.0f }, { 90.0f, 90.0f }) 
 	{
 		VkResult Result = VK_SUCCESS;
 		engine* Engine = aContext->Device->Engine;

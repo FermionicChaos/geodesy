@@ -25,4 +25,12 @@ namespace geodesy::core::gfx {
 
 	}
 
+	std::vector<VkCommandBuffer> convert(std::vector<draw_call> aDrawCallList) {
+		std::vector<VkCommandBuffer> CommandBufferList(aDrawCallList.size());
+		for (size_t i = 0; i < aDrawCallList.size(); i++) {
+			CommandBufferList[i] = aDrawCallList[i].DrawCommand;
+		}
+		return CommandBufferList;
+	}
+
 }
