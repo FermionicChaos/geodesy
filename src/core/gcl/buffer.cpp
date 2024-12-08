@@ -81,52 +81,11 @@ namespace geodesy::core::gcl {
 		}
 	}
 
-	buffer::buffer(const buffer& aInput) : buffer(aInput.Context, aInput.MemoryType, aInput.CreateInfo.usage, aInput.ElementCount, aInput.CreateInfo.size, NULL) {
-		this->copy(0, aInput, 0, aInput.CreateInfo.size);
-	}
-
-	buffer::buffer(buffer&& aInput) noexcept {
-		this->Context			= aInput.Context;
-		this->CreateInfo 		= aInput.CreateInfo;
-		this->Handle			= aInput.Handle;
-		this->MemoryType 		= aInput.MemoryType;
-		this->MemoryHandle		= aInput.MemoryHandle;
-		aInput.zero_out();
-	}
-
 	buffer::~buffer() {
 		this->clear();
 	}
 
-	// TODO: Optimize for memory recycling.
-	buffer& buffer::operator=(const buffer& aRhs) {
-		if (this == &aRhs) return *this;
-
-		VkResult Result = VK_SUCCESS;
-
-		this->clear();
-
-		if (aRhs.Context != nullptr) {
-			*this = buffer(aRhs.Context, aRhs.MemoryType, aRhs.CreateInfo.usage, aRhs.ElementCount, aRhs.CreateInfo.size, NULL);
-
-			Result = this->copy(0, aRhs, 0, aRhs.CreateInfo.size);
-		}
-
-		return *this;
-	}
-
-	buffer& buffer::operator=(buffer&& aRhs) noexcept {
-		this->clear();
-		this->Context			= aRhs.Context;
-		this->CreateInfo 		= aRhs.CreateInfo;
-		this->Handle			= aRhs.Handle;
-		this->MemoryType 		= aRhs.MemoryType;
-		this->MemoryHandle		= aRhs.MemoryHandle;
-		aRhs.zero_out();
-		return *this;
-	}
-
-	void buffer::copy(VkCommandBuffer aCommandBuffer, size_t aDestinationOffset, const buffer& aSourceData, size_t aSourceOffset, size_t aRegionSize) {
+	void buffer::copy(VkCommandBuffer aCommandBuffer, size_t aDestinationOffset, std::shared_ptr<buffer> aSourceData, size_t aSourceOffset, size_t aRegionSize) {
 		VkBufferCopy Region{};
 		Region.srcOffset		= aSourceOffset;
 		Region.dstOffset		= aDestinationOffset;
@@ -136,33 +95,33 @@ namespace geodesy::core::gcl {
 		this->copy(aCommandBuffer, aSourceData, RegionList);
 	}
 
-	void buffer::copy(VkCommandBuffer aCommandBuffer, const buffer& aSourceData, std::vector<VkBufferCopy> aRegionList) {
-		vkCmdCopyBuffer(aCommandBuffer, aSourceData.Handle, this->Handle, aRegionList.size(), aRegionList.data());
+	void buffer::copy(VkCommandBuffer aCommandBuffer, std::shared_ptr<buffer> aSourceData, std::vector<VkBufferCopy> aRegionList) {
+		vkCmdCopyBuffer(aCommandBuffer, aSourceData->Handle, this->Handle, aRegionList.size(), aRegionList.data());
 	}
 
-	void buffer::copy(VkCommandBuffer aCommandBuffer, size_t aDestinationOffset, const image& aSourceData, VkOffset3D aSourceOffset, uint32_t aSourceArrayLayer, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount) {
+	void buffer::copy(VkCommandBuffer aCommandBuffer, size_t aDestinationOffset, std::shared_ptr<image> aSourceData, VkOffset3D aSourceOffset, uint32_t aSourceArrayLayer, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount) {
 		VkBufferImageCopy Region {};
 		Region.bufferOffset						= aDestinationOffset;
 		Region.bufferRowLength					= 0;
 		Region.bufferImageHeight				= 0;
-		Region.imageSubresource.aspectMask		= image::aspect_flag(aSourceData.CreateInfo.format);
+		Region.imageSubresource.aspectMask		= image::aspect_flag(aSourceData->CreateInfo.format);
 		Region.imageSubresource.mipLevel		= 0;
 		Region.imageSubresource.baseArrayLayer	= aSourceArrayLayer;
-		Region.imageSubresource.layerCount		= std::min(aArrayLayerCount, aSourceData.CreateInfo.arrayLayers - aSourceArrayLayer);
+		Region.imageSubresource.layerCount		= std::min(aArrayLayerCount, aSourceData->CreateInfo.arrayLayers - aSourceArrayLayer);
 		std::vector<VkBufferImageCopy> RegionList = { Region };
 		this->copy(aCommandBuffer, aSourceData, RegionList);
 	}
 
-	void buffer::copy(VkCommandBuffer aCommandBuffer, const image& aSourceData, std::vector<VkBufferImageCopy> aRegionList) {
+	void buffer::copy(VkCommandBuffer aCommandBuffer, std::shared_ptr<image> aSourceData, std::vector<VkBufferImageCopy> aRegionList) {
 		vkCmdCopyImageToBuffer(
 			aCommandBuffer, 
-			aSourceData.Handle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 
+			aSourceData->Handle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 
 			this->Handle, 
 			aRegionList.size(), aRegionList.data()
 		);
 	}
 	
-	VkResult buffer::copy(size_t aDestinationOffset, const buffer& aSourceData, size_t aSourceOffset, size_t aRegionSize) {
+	VkResult buffer::copy(size_t aDestinationOffset, std::shared_ptr<buffer> aSourceData, size_t aSourceOffset, size_t aRegionSize) {
 		VkBufferCopy Region{};
 		Region.srcOffset		= aSourceOffset;
 		Region.dstOffset		= aDestinationOffset;
@@ -172,7 +131,7 @@ namespace geodesy::core::gcl {
 		return this->copy(aSourceData, RegionList);
 	}
 
-	VkResult buffer::copy(const buffer& aSourceData, std::vector<VkBufferCopy> aRegionList) {
+	VkResult buffer::copy(std::shared_ptr<buffer> aSourceData, std::vector<VkBufferCopy> aRegionList) {
 		VkResult Result = VK_SUCCESS;
 		VkCommandBuffer CommandBuffer = Context->allocate_command_buffer(device::operation::TRANSFER);
 		Result = Context->begin(CommandBuffer);
@@ -183,22 +142,22 @@ namespace geodesy::core::gcl {
 		return Result;
 	}
 
-	VkResult buffer::copy(size_t aDestinationOffset, const image& aSourceData, VkOffset3D aSourceOffset, uint32_t aSourceArrayLayer, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount) {
+	VkResult buffer::copy(size_t aDestinationOffset, std::shared_ptr<image> aSourceData, VkOffset3D aSourceOffset, uint32_t aSourceArrayLayer, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount) {
 		VkBufferImageCopy Region{};
 		Region.bufferOffset						= aDestinationOffset;
 		Region.bufferRowLength					= 0;
 		Region.bufferImageHeight				= 0;
-		Region.imageSubresource.aspectMask		= image::aspect_flag(aSourceData.CreateInfo.format);
+		Region.imageSubresource.aspectMask		= image::aspect_flag(aSourceData->CreateInfo.format);
 		Region.imageSubresource.mipLevel		= 0;
 		Region.imageSubresource.baseArrayLayer	= aSourceArrayLayer;
-		Region.imageSubresource.layerCount		= std::min(aArrayLayerCount, aSourceData.CreateInfo.arrayLayers - aSourceArrayLayer);
+		Region.imageSubresource.layerCount		= std::min(aArrayLayerCount, aSourceData->CreateInfo.arrayLayers - aSourceArrayLayer);
 		Region.imageOffset 						= aSourceOffset;
 		Region.imageExtent 						= aRegionExtent;
 		std::vector<VkBufferImageCopy> RegionList = { Region };
 		return this->copy(aSourceData, RegionList);
 	}
 
-	VkResult buffer::copy(const image& aSourceData, std::vector<VkBufferImageCopy> aRegionList) {
+	VkResult buffer::copy(std::shared_ptr<image> aSourceData, std::vector<VkBufferImageCopy> aRegionList) {
 		VkResult Result = VK_SUCCESS;
 		VkCommandBuffer CommandBuffer = Context->allocate_command_buffer(device::operation::TRANSFER);
 		Result = Context->begin(CommandBuffer);
@@ -236,7 +195,7 @@ namespace geodesy::core::gcl {
 			size_t StagingBufferSize = GCL_TRANSFER_GRANULARITY_SIZE;
 
 			// Not Host Visible, use staging buffer.
-			buffer StagingBuffer(
+			std::shared_ptr<buffer> StagingBuffer = std::make_shared<buffer>(
 				Context,
 				device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT,
 				buffer::TRANSFER_SRC,
@@ -256,7 +215,7 @@ namespace geodesy::core::gcl {
 					size_t ChunkSize = std::clamp(Remainder, (size_t)0, StagingBufferSize);
 
 					// Write data to staging buffer, if less than ChunkSize, then we are done.
-					Result = StagingBuffer.write(0, aSourceData, aRegionList[i].srcOffset + ChunkOffset, ChunkSize);
+					Result = StagingBuffer->write(0, aSourceData, aRegionList[i].srcOffset + ChunkOffset, ChunkSize);
 
 					// Execute transfer operation.
 					Result = this->copy(aRegionList[i].dstOffset + ChunkOffset, StagingBuffer, 0, ChunkSize);
@@ -298,7 +257,7 @@ namespace geodesy::core::gcl {
 			size_t StagingBufferSize = GCL_TRANSFER_GRANULARITY_SIZE;
 
 			// Not Host Visible, use staging buffer.
-			buffer StagingBuffer(
+			std::shared_ptr<buffer> StagingBuffer = std::make_shared<buffer>(
 				Context,
 				device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT,
 				buffer::TRANSFER_DST,
@@ -318,10 +277,10 @@ namespace geodesy::core::gcl {
 					size_t ChunkSize = std::clamp(Remainder, (size_t)0, StagingBufferSize);
 
 					// Copy *this into staging buffer.
-					StagingBuffer.copy(0, *this, aRegionList[i].srcOffset + ChunkOffset, ChunkSize);
+					StagingBuffer->copy(0, this->shared_from_this(), aRegionList[i].srcOffset + ChunkOffset, ChunkSize);
 
 					// Read staging buffer and copy into host memory aDestination Data.
-					StagingBuffer.read(0, aDestinationData, aRegionList[i].dstOffset + ChunkOffset, ChunkSize);
+					StagingBuffer->read(0, aDestinationData, aRegionList[i].dstOffset + ChunkOffset, ChunkSize);
 
 					// Recalculate remaining data to send.
 					Remainder -= ChunkSize;

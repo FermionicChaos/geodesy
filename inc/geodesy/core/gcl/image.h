@@ -17,7 +17,7 @@ namespace geodesy::core::obj {
 
 namespace geodesy::core::gcl {
 
-	class image : public io::file {
+	class image : public std::enable_shared_from_this<image>, public io::file {
 	public:
 
 		enum sample {
@@ -388,23 +388,14 @@ namespace geodesy::core::gcl {
 		image(std::shared_ptr<context> aContext, create_info aCreateInfo, std::shared_ptr<image> aHostImage);
 		// All created images will be in SHADER_READ_ONLY state.
 		image(std::shared_ptr<context> aContext, create_info aCreateInfo, format aFormat, uint aX, uint aY = 1, uint aZ = 1, uint aT = 1, void* aTextureData = NULL);
-		// Copy Constructor.
-		image(image& aInput);
-		// Move Constructor.
-		image(image&& aInput) noexcept;
 		// Destructor
 		~image();
 
-		// Copy Assignment.
-		image& operator=(image& aRhs);
-		// Move Assignment.
-		image& operator=(image&& aRhs) noexcept;
-
 		// Scheduled Operations
-		void copy(VkCommandBuffer aCommandBuffer, VkOffset3D aDestinationOffset, uint32_t aDestinationArrayLayer, buffer& aSourceData, size_t aSourceOffset, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount = UINT32_MAX);
-		void copy(VkCommandBuffer aCommandBuffer, buffer& aSourceData, std::vector<VkBufferImageCopy> aRegionList);
-		void copy(VkCommandBuffer aCommandBuffer, VkOffset3D aDestinationOffset, uint32_t aDestinationArrayLayer, image& aSourceData, VkOffset3D aSourceOffset, uint32_t aSourceArrayLayer, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount = UINT32_MAX);
-		void copy(VkCommandBuffer aCommandBuffer, image& aSourceData, std::vector<VkImageCopy> aRegionList);
+		void copy(VkCommandBuffer aCommandBuffer, VkOffset3D aDestinationOffset, uint32_t aDestinationArrayLayer, std::shared_ptr<buffer> aSourceData, size_t aSourceOffset, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount = UINT32_MAX);
+		void copy(VkCommandBuffer aCommandBuffer, std::shared_ptr<buffer> aSourceData, std::vector<VkBufferImageCopy> aRegionList);
+		void copy(VkCommandBuffer aCommandBuffer, VkOffset3D aDestinationOffset, uint32_t aDestinationArrayLayer, std::shared_ptr<image> aSourceData, VkOffset3D aSourceOffset, uint32_t aSourceArrayLayer, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount = UINT32_MAX);
+		void copy(VkCommandBuffer aCommandBuffer, std::shared_ptr<image> aSourceData, std::vector<VkImageCopy> aRegionList);
 		void transition(
 			VkCommandBuffer aCommandBuffer,
 			layout aCurrentLayout, layout aFinalLayout,
@@ -414,10 +405,10 @@ namespace geodesy::core::gcl {
 		);
 
 		// Immediate Operations
-		VkResult copy(VkOffset3D aDestinationOffset, uint32_t aDestinationArrayLayer, buffer& aSourceData, size_t aSourceOffset, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount = UINT32_MAX);
-		VkResult copy(buffer& aSourceData, std::vector<VkBufferImageCopy> aRegionList);
-		VkResult copy(VkOffset3D aDestinationOffset, uint32_t aDestinationArrayLayer, image& aSourceData, VkOffset3D aSourceOffset, uint32_t aSourceArrayLayer, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount = UINT32_MAX);
-		VkResult copy(image& aSourceData, std::vector<VkImageCopy> aRegionList);
+		VkResult copy(VkOffset3D aDestinationOffset, uint32_t aDestinationArrayLayer, std::shared_ptr<buffer> aSourceData, size_t aSourceOffset, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount = UINT32_MAX);
+		VkResult copy(std::shared_ptr<buffer> aSourceData, std::vector<VkBufferImageCopy> aRegionList);
+		VkResult copy(VkOffset3D aDestinationOffset, uint32_t aDestinationArrayLayer, std::shared_ptr<image> aSourceData, VkOffset3D aSourceOffset, uint32_t aSourceArrayLayer, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount = UINT32_MAX);
+		VkResult copy(std::shared_ptr<image> aSourceData, std::vector<VkImageCopy> aRegionList);
 		VkResult transition(
 			layout aCurrentLayout, layout aFinalLayout,
 			uint32_t aMipLevel = 0, uint32_t aMipLevelCount = UINT32_MAX,

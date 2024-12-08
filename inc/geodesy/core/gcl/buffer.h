@@ -25,7 +25,7 @@ namespace geodesy::core::gcl {
 
 	class image;
 
-	class buffer {
+	class buffer : public std::enable_shared_from_this<buffer> {
 	public:
 
 		friend class image;
@@ -68,27 +68,22 @@ namespace geodesy::core::gcl {
 		buffer(std::shared_ptr<context> aContext, create_info aCreateInfo, size_t aBufferSize, void* aBufferData = NULL);
 		buffer(std::shared_ptr<context> aContext, uint aMemoryType, uint aBufferUsage, size_t aBufferSize, void* aBufferData = NULL);
 		buffer(std::shared_ptr<context> aContext, uint aMemoryType, uint aBufferUsage, size_t aElementCount, size_t aBufferSize, void* aBufferData = NULL);
-		buffer(const buffer& aInput);
-		buffer(buffer&& aInput) noexcept;
 		~buffer();
-
-		buffer& operator=(const buffer& aRhs);
-		buffer& operator=(buffer&& aRhs) noexcept;
 		
-		void copy(VkCommandBuffer aCommandBuffer, size_t aDestinationOffset, const buffer& aSourceData, size_t aSourceOffset, size_t aRegionSize);
-		void copy(VkCommandBuffer aCommandBuffer, const buffer& aSourceData, std::vector<VkBufferCopy> aRegionList);
-		void copy(VkCommandBuffer aCommandBuffer, size_t aDestinationOffset, const image& aSourceData, VkOffset3D aSourceOffset, uint32_t aSourceArrayLayer, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount = UINT32_MAX);
-		void copy(VkCommandBuffer aCommandBuffer, const image& aSourceData, std::vector<VkBufferImageCopy> aRegionList);
+		void copy(VkCommandBuffer aCommandBuffer, size_t aDestinationOffset, std::shared_ptr<buffer> aSourceData, size_t aSourceOffset, size_t aRegionSize);
+		void copy(VkCommandBuffer aCommandBuffer, std::shared_ptr<buffer> aSourceData, std::vector<VkBufferCopy> aRegionList);
+		void copy(VkCommandBuffer aCommandBuffer, size_t aDestinationOffset, std::shared_ptr<image> aSourceData, VkOffset3D aSourceOffset, uint32_t aSourceArrayLayer, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount = UINT32_MAX);
+		void copy(VkCommandBuffer aCommandBuffer, std::shared_ptr<image> aSourceData, std::vector<VkBufferImageCopy> aRegionList);
 
 		// void write(VkCommandBuffer aCommandBuffer, size_t aDestinationOffset, void* aSourceData, size_t aSourceOffset, size_t aRegionSize);
 		// void write(VkCommandBuffer aCommandBuffer, void* aSourceData, std::vector<VkBufferCopy> aRegionList);
 		// void read(VkCommandBuffer aCommandBuffer, size_t aSourceOffset, void* aDestinationData, size_t aDestinationOffset, size_t aRegionSize);
 		// void read(VkCommandBuffer aCommandBuffer, void* aDestinationData, std::vector<VkBufferCopy> aRegionList);
 
-		VkResult copy(size_t aDestinationOffset, const buffer& aSourceData, size_t aSourceOffset, size_t aRegionSize);
-		VkResult copy(const buffer& aSourceData, std::vector<VkBufferCopy> aRegionList);
-		VkResult copy(size_t aDestinationOffset, const image& aSourceData, VkOffset3D aSourceOffset, uint32_t aSourceArrayLayer, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount = UINT32_MAX);
-		VkResult copy(const image& aSourceData, std::vector<VkBufferImageCopy> aRegionList);
+		VkResult copy(size_t aDestinationOffset, std::shared_ptr<buffer> aSourceData, size_t aSourceOffset, size_t aRegionSize);
+		VkResult copy(std::shared_ptr<buffer> aSourceData, std::vector<VkBufferCopy> aRegionList);
+		VkResult copy(size_t aDestinationOffset, std::shared_ptr<image> aSourceData, VkOffset3D aSourceOffset, uint32_t aSourceArrayLayer, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount = UINT32_MAX);
+		VkResult copy(std::shared_ptr<image> aSourceData, std::vector<VkBufferImageCopy> aRegionList);
 
 		VkResult write(size_t aDestinationOffset, void* aSourceData, size_t aSourceOffset, size_t aRegionSize);
 		VkResult write(void* aSourceData, std::vector<VkBufferCopy> aRegionList);
