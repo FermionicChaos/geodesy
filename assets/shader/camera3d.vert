@@ -8,6 +8,7 @@ layout (location = 1) out vec3 WorldNormal;
 layout (location = 2) out vec3 WorldTangent;
 layout (location = 3) out vec3 WorldBitangent;
 layout (location = 4) out vec3 TextureCoordinate;
+layout (location = 5) out vec4 InterpolatedVertexColor;
 
 layout (location = 0) in vec3   VertexPosition;
 layout (location = 1) in vec3   VertexNormal;
@@ -40,7 +41,6 @@ void main() {
     vec4 n = vec4(VertexNormal, 1.0);
 	vec4 t = vec4(VertexTangent, 1.0);
 	vec4 b = vec4(VertexBitangent, 1.0);
-	vec4 vd = vec4(0.0, 0.0, 0.0, 1.0);
 
     mat4 mt = mat4(0.0f);
     if (VertexBoneID[0] < MAX_BONE_COUNT) {
@@ -73,6 +73,8 @@ void main() {
 	WorldBitangent	= b.xyz;
 
     TextureCoordinate = VertexTextureCoordinate;
+
+    InterpolatedVertexColor = VertexColor;
 
 	mat4 ct = mat4(
 		1.0f, 0.0f, 0.0f, Camera3D.Position.x,

@@ -177,8 +177,8 @@ namespace geodesy::core::gfx {
 
 	mesh::mesh(std::shared_ptr<gcl::context> aContext, std::shared_ptr<mesh> aMesh) : mesh(aContext, aMesh->Vertex, aMesh->Topology) {}
 
-	void mesh::draw(VkCommandBuffer aCommandBuffer, std::shared_ptr<gcl::pipeline> aPipeline, std::shared_ptr<gcl::framebuffer> aFramebuffer, std::shared_ptr<gcl::descriptor::array> aDescriptorArray) {
-		aPipeline->draw(aCommandBuffer, aFramebuffer, { VertexBuffer }, IndexBuffer, aDescriptorArray);
-	}
+	// void mesh::draw(VkCommandBuffer aCommandBuffer, std::shared_ptr<gcl::pipeline> aPipeline, std::shared_ptr<gcl::framebuffer> aFramebuffer, std::shared_ptr<gcl::descriptor::array> aDescriptorArray) {
+	// 	aPipeline->draw(aCommandBuffer, aFramebuffer, { VertexBuffer }, IndexBuffer, aDescriptorArray);
+	// }
 
 }

@@ -380,6 +380,8 @@ namespace geodesy::core::gcl {
 		image();
 		// Loads image into host memory.
 		image(std::string aFilePath);
+		// Creates host image with specified format and dimensions, and singular value provided.
+		image(format aFormat, uint aX, uint aY = 1, uint aZ = 1, uint aT = 1, size_t aSourceSize = 0, void* aSourceData = NULL);
 		// Loads image into specified device memory.
 		image(std::shared_ptr<context> aContext, create_info aCreateInfo, std::string aFilePath);
 		// Converts Host image to Device image

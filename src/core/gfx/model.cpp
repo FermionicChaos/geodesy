@@ -62,6 +62,41 @@ static Assimp::Importer* ModelImporter = nullptr;
 
 namespace geodesy::core::gfx {
 
+	namespace {
+
+		struct texture_type_database {
+			std::string Name;
+			std::vector<aiTextureType> Type;
+			std::shared_ptr<gcl::image> DefaultTexture;
+		};
+
+	}
+
+	// Default values for each texture type as unsigned char arrays
+	static const unsigned char DefaultColorData[4] 			= {255, 255, 255, 255}; 	// White
+	static const unsigned char DefaultNormalData[4] 		= {128, 128, 255, 255};		// Up vector (0.5, 0.5, 1.0)
+	static const unsigned char DefaultHeightData[4] 		= {0, 0, 0, 0}; 			// No displacement
+	static const unsigned char DefaultEmissiveData[4] 		= {0, 0, 0, 0}; 			// No emission
+	static const unsigned char DefaultOpacityData[4] 		= {255, 255, 255, 255};  	// Fully opaque
+	static const unsigned char DefaultAOData[4] 			= {255, 255, 255, 255}; 	// No occlusion
+	static const unsigned char DefaultSpecularData[4] 		= {0, 0, 0, 255}; 			// No specularity
+	static const unsigned char DefaultAmbientData[4] 		= {0, 0, 0, 255}; 			// No ambient
+	static const unsigned char DefaultShininessData[4] 		= {0, 0, 0, 255}; 			// No shininess
+	static const unsigned char DefaultMetallicData[4] 		= {0, 0, 0, 255}; 			// Non-metallic, smooth
+
+   static std::vector<texture_type_database> TextureTypeDatabase = {
+		{ "Color", 				{ aiTextureType_DIFFUSE, aiTextureType_BASE_COLOR }, 				std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultColorData), (void*)DefaultColorData) 			},
+		{ "Normal", 			{ aiTextureType_NORMALS, aiTextureType_NORMAL_CAMERA }, 			std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultNormalData), (void*)DefaultNormalData) 			},
+		{ "Height", 			{ aiTextureType_HEIGHT, aiTextureType_DISPLACEMENT }, 				std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultHeightData), (void*)DefaultHeightData) 			},
+		{ "Emissive", 			{ aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR }, 			std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultEmissiveData), (void*)DefaultEmissiveData) 		},
+		{ "Opacity", 			{ aiTextureType_OPACITY }, 											std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultOpacityData), (void*)DefaultOpacityData) 		},
+		{ "AmbientOcclusion", 	{ aiTextureType_LIGHTMAP, aiTextureType_AMBIENT_OCCLUSION }, 		std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultAOData), (void*)DefaultAOData) 					},
+		{ "Specular", 			{ aiTextureType_SPECULAR }, 										std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultSpecularData), (void*)DefaultSpecularData) 		},
+		{ "AmbientLighting", 	{ aiTextureType_AMBIENT }, 											std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultAmbientData), (void*)DefaultAmbientData) 		},
+		{ "Shininess", 			{ aiTextureType_SHININESS }, 										std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultShininessData), (void*)DefaultShininessData) 	},
+		{ "MetallicRoughness", 	{ aiTextureType_METALNESS, aiTextureType_DIFFUSE_ROUGHNESS }, 		std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultMetallicData), (void*)DefaultMetallicData) 		}
+   };
+
 	static std::string absolute_texture_path(std::string aModelPath, aiMaterial *aMaterial, std::vector<aiTextureType> aTextureTypeList) {
 		// This function searches a list of texture types, and returns the first texture path it finds.
 		// This is to reduce code duplication when searching for equivalent textures in a material.
@@ -570,74 +605,17 @@ namespace geodesy::core::gfx {
 
 			this->Material[i]->Name = Mat->GetName().C_Str();
 
-			// TODO: Load material properties later.
-			// for (size_t j = 0; j < Mat->mNumProperties; j++) {
-			// 	aiMaterialProperty* Prop = Mat->mProperties[j];
-			// 	// Interpret property data types, such as images, scalars and so on.
-
-			// 	// Using a switch case statement, print out the property info type from mType.
-			// 	std::cout << "Key: " << Prop->mKey.C_Str() << " ";
-			// 	switch(Prop->mType) {
-			// 		case aiPTI_Float:
-			// 			std::cout << "Type: Float" << std::endl;
-			// 			break;
-			// 		case aiPTI_Double:
-			// 			std::cout << "Type: Double" << std::endl;
-			// 			break;
-			// 		case aiPTI_String:
-			// 			std::cout << "Type: String" << std::endl;
-			// 			break;
-			// 		case aiPTI_Integer:
-			// 			std::cout << "Type: Integer" << std::endl;
-			// 			break;
-			// 		case aiPTI_Buffer:
-			// 			std::cout << "Type: Buffer" << std::endl;
-			// 			break;
-			// 		default:
-			// 			std::cout << "Type: Unknown" << std::endl;
-			// 			break;
-			// 	}
-			// }
-
-			std::map<std::string, std::shared_ptr<gcl::image>> Texture;
-
-			Texture["Color"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_DIFFUSE, aiTextureType_BASE_COLOR });
-			Texture["Normal"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_NORMALS, aiTextureType_NORMAL_CAMERA });
-			Texture["Height"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_HEIGHT, aiTextureType_DISPLACEMENT });
-			Texture["Emissive"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR });
-			Texture["Opacity"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_OPACITY });
-			Texture["AmbientOcclusion"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_LIGHTMAP, aiTextureType_AMBIENT_OCCLUSION });
-
-			// Load legacy textures.
-			Texture["Specular"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_SPECULAR });
-			Texture["AmbientLighting"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_AMBIENT });
-			Texture["Shininess"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_SHININESS });
-
-			// Load PBR textures.
-			Texture["MetallicRoughness"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_METALNESS, aiTextureType_DIFFUSE_ROUGHNESS });
-
-			// Transfer non-empty elements
-			for (auto& [Key, Value] : Texture) {
-				if (Value != nullptr) {
-					this->Material[i]->Texture[Key] = Value;
+			for (size_t j = 0; j < TextureTypeDatabase.size(); j++) {
+				std::shared_ptr<gcl::image> LoadedTexture = load_texture(aFileManager, this->Directory, Mat, TextureTypeDatabase[i].Type);
+				if (LoadedTexture != nullptr) {
+					// Load texture
+					this->Material[i]->Texture[TextureTypeDatabase[j].Name] = LoadedTexture;
+				}
+				else {
+					// Load default texture
+					this->Material[i]->Texture[TextureTypeDatabase[j].Name] = TextureTypeDatabase[j].DefaultTexture;
 				}
 			}
-
-			// // Load common textures.
-			// this->Material[i]->Color = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_DIFFUSE, aiTextureType_BASE_COLOR });
-			// this->Material[i]->Normal = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_NORMALS, aiTextureType_NORMAL_CAMERA });
-			// this->Material[i]->Height = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_HEIGHT, aiTextureType_DISPLACEMENT });
-			// this->Material[i]->Emissive = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR });
-			// this->Material[i]->Opacity = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_OPACITY });
-			// this->Material[i]->AmbientOcclusion = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_LIGHTMAP, aiTextureType_AMBIENT_OCCLUSION });
-
-			// // Load legacy textures.
-			// this->Material[i]->Specular = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_SPECULAR });
-			// this->Material[i]->AmbientLighting = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_AMBIENT });
-			// this->Material[i]->Shininess = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_SHININESS });
-
-			// // Load PBR textures.
-			// this->Material[i]->MetallicRoughness = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_METALNESS, aiTextureType_DIFFUSE_ROUGHNESS });
 
 		}
 

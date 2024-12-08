@@ -121,6 +121,7 @@ namespace geodesy::core::gcl {
 	}
 
 	void descriptor::array::array::bind(uint32_t aSet, uint32_t aBinding, uint32_t aArrayElement, std::shared_ptr<image> aImage, image::layout aImageLayout) {
+		if ((aSet >= this->DescriptorSetLayoutBinding.size()) || (aBinding >= this->DescriptorSetLayoutBinding[aSet].size())) return;
 		VkDescriptorImageInfo DII{};
 		DII.imageView			= aImage->View;
 		DII.imageLayout			= (VkImageLayout)aImageLayout;
@@ -140,6 +141,7 @@ namespace geodesy::core::gcl {
 	}
 	
 	void descriptor::array::bind(uint32_t aSet, uint32_t aBinding, uint32_t aArrayElement, std::shared_ptr<buffer> aBuffer, size_t aSize, size_t aOffset) {
+		if ((aSet >= this->DescriptorSetLayoutBinding.size()) || (aBinding >= this->DescriptorSetLayoutBinding[aSet].size())) return;
 		VkDescriptorBufferInfo DBI{};
 		DBI.buffer				= aBuffer->Handle;
 		DBI.offset				= aOffset;
@@ -159,6 +161,7 @@ namespace geodesy::core::gcl {
 	}
 	
 	void descriptor::array::bind(uint32_t aSet, uint32_t aBinding, uint32_t aArrayElement, VkBufferView aBufferView) {
+		if ((aSet >= this->DescriptorSetLayoutBinding.size()) || (aBinding >= this->DescriptorSetLayoutBinding[aSet].size())) return;
 		VkWriteDescriptorSet WDS {};
 		WDS.sType				= VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 		WDS.pNext				= NULL;

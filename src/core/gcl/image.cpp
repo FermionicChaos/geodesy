@@ -611,6 +611,31 @@ namespace geodesy::core::gcl {
 		this->CreateInfo.arrayLayers = 1;
 	}
 
+	image::image(format aFormat, uint aX, uint aY, uint aZ, uint aT, size_t aSourceSize, void* aSourceData) : image() {
+		this->CreateInfo.format = (VkFormat)aFormat;
+		this->CreateInfo.extent = {aX, aY, aZ};
+		this->CreateInfo.arrayLayers = aT;
+			
+		size_t PixelSize = bytes_per_pixel(aFormat);
+
+		this->HostSize = aX * aY * aZ * aT * PixelSize;
+		this->HostData = malloc(this->HostSize);
+
+		// Check if source data is provided.
+		if (aSourceSize != 0) {
+			// Check if provided data matches pixel size
+			if (aSourceSize != PixelSize || aSourceData == nullptr) {
+		    	throw std::runtime_error("Invalid source data or size does not match pixel format");
+			}
+			for (size_t i = 0; i < (this->HostSize / PixelSize); i++) {
+		        memcpy((char*)this->HostData + i * PixelSize, aSourceData, PixelSize);
+		    }
+		}
+		else {
+			memset(this->HostData, 0, this->HostSize);
+		}
+	}
+
 	image::image(std::shared_ptr<context> aContext, create_info aCreateInfo, std::string aFilePath) : image(aFilePath) {
 
 	}
@@ -1210,6 +1235,7 @@ namespace geodesy::core::gcl {
 		this->Context			= nullptr;
 		this->CreateInfo		= {};
 		this->Handle			= VK_NULL_HANDLE;
+		this->View 				= VK_NULL_HANDLE;
 		this->MemoryType		= 0;
 		this->MemoryHandle		= VK_NULL_HANDLE;
 		this->CreateInfo.sType						= VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;

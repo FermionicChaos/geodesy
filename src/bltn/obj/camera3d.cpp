@@ -171,10 +171,11 @@ namespace geodesy::bltn::obj {
 				Renderer[i][j].DescriptorArray->bind(1, 3, 0, Material->Texture["Emission"]);
 				Renderer[i][j].DescriptorArray->bind(1, 4, 0, Material->Texture["Opacity"]);
 				Renderer[i][j].DescriptorArray->bind(1, 5, 0, Material->Texture["AmbientOcclusion"]);
-				Renderer[i][j].DescriptorArray->bind(1, 5, 0, Material->Texture["Metallic"]);
+				Renderer[i][j].DescriptorArray->bind(1, 6, 0, Material->Texture["MetallicRoughness"]);
 
 				Result = Context->begin(Renderer[i][j].DrawCommand);
-				Mesh->draw(Renderer[i][j].DrawCommand, this->Pipeline, Renderer[i][j].Framebuffer, Renderer[i][j].DescriptorArray);
+				std::vector<std::shared_ptr<buffer>> VertexBuffer = { Mesh->VertexBuffer, MeshInstance[j]->VertexWeightBuffer };
+				this->Pipeline->draw(Renderer[i][j].DrawCommand, Renderer[i][j].Framebuffer, VertexBuffer, Mesh->IndexBuffer, Renderer[i][j].DescriptorArray);
 				Result = Context->end(Renderer[i][j].DrawCommand);
 			}
 		}
