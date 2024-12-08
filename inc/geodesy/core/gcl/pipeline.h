@@ -10,7 +10,6 @@
 
 #include "config.h"
 #include "device.h"
-#include "context.h"
 #include "descriptor.h"
 #include "buffer.h"
 #include "image.h"
@@ -221,6 +220,12 @@ namespace geodesy::core::gcl {
 			std::shared_ptr<descriptor::array> 							aDescriptorArray = nullptr
 		);
 
+		VkResult draw(
+			std::shared_ptr<framebuffer> 								aFramebuffer,
+			std::vector<std::shared_ptr<buffer>> 						aVertexBuffer = {},
+			std::shared_ptr<buffer> 									aIndexBuffer = nullptr,
+			std::shared_ptr<descriptor::array> 							aDescriptorArray = nullptr
+		);
 		VkResult draw(
 			std::vector<std::shared_ptr<image>> 						aImage,
 			std::vector<std::shared_ptr<buffer>> 						aVertexBuffer = {},

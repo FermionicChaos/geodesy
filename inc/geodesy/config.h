@@ -28,6 +28,9 @@ namespace geodesy {
 		namespace gcl {
 			class context;
 		}
+		namespace gfx {
+			class model;
+		}
 	}
 	namespace ecs {
 		class object;

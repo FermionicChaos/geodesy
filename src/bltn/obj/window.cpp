@@ -47,6 +47,7 @@ namespace geodesy::bltn::obj {
 	ecs::subject(aContext, aStage, aName, aFrameResolution, aFrameRate, aFrameCount, aAttachmentCount) {
 		// The default renderer of window is that it takes an image and samples it.
 		// Uses only a quad for basic shaping features, and window parameters.
+		/*
 		engine* Engine = aContext->Device->Engine;
 		std::vector<std::string> AssetPath = {
 			"assets/models/quad.obj",
@@ -70,7 +71,7 @@ namespace geodesy::bltn::obj {
 		std::shared_ptr<shader> PixelShader = std::dynamic_pointer_cast<shader>(Asset[2]);
 
 		// Convert Host model into device model.
-		this->Model = std::make_shared<model>(aContext, TextureCreateInfo, HostModel);
+		this->Model = std::make_shared<model>(aContext, HostModel, TextureCreateInfo);
 		std::vector<std::shared_ptr<shader>> ShaderList = { VertexShader, PixelShader };
 		this->Rasterizer = std::make_shared<pipeline::rasterizer>(ShaderList, aFrameResolution);
 
@@ -96,12 +97,13 @@ namespace geodesy::bltn::obj {
 
 		// Copy Paste
 		Rasterizer->Multisample.rasterizationSamples		= VK_SAMPLE_COUNT_1_BIT;
+		*/
 
 
 	}
 
-	std::shared_ptr<core::gfx::renderer> window::make_default_renderer(ecs::object* aObject) {
-		std::shared_ptr<core::gfx::renderer> Renderer = std::make_shared<default_renderer>(this->Context.get(), this, aObject);
+	std::vector<std::vector<core::gfx::draw_call>> window::default_renderer(ecs::object* aObject) {
+		std::vector<std::vector<core::gfx::draw_call>> Renderer;
 		return Renderer;
 	}
 	

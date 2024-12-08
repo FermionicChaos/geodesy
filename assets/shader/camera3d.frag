@@ -8,7 +8,6 @@
 layout (location = 0) out vec4 PixelColor;
 layout (location = 1) out vec4 PixelPosition;
 layout (location = 2) out vec4 PixelNormal;
-layout (location = 3) out vec4 PixelSpecular;
 
 // Transformed vertex data, interpolated from the vertex shader.
 layout (location = 0) in vec3 WorldPosition;
@@ -16,29 +15,30 @@ layout (location = 1) in vec3 WorldNormal;
 layout (location = 2) in vec3 WorldTangent;
 layout (location = 3) in vec3 WorldBitangent;
 layout (location = 4) in vec3 TextureCoordinate;
+layout (location = 5) in vec4 InterpolatedVertexColor;
 
 // Camera3D information.
 layout (set = 0, binding = 0) uniform Camera3DUBO {
-    mat4 Projection;
-    mat4 Rotation;
 	vec3 Position;
+    mat4 Rotation;
+    mat4 Projection;
 } Camera3D;
 
-// Material texture inputs.
-layout (set = 2, binding = 0) uniform sampler2D SurfaceColor; 		// Color of the Surface
-layout (set = 2, binding = 1) uniform sampler2D SurfaceNormalMap; 	// Normal Map of the Surface.
-layout (set = 2, binding = 2) uniform sampler2D SurfaceHeightMap; 	// Bump Map of the surface.
-layout (set = 2, binding = 4) uniform sampler2D SurfaceEmission; 	// Light Emission of surface.
-layout (set = 2, binding = 5) uniform sampler2D SurfaceOpacity; 	// Opacity of the Surface.
-layout (set = 2, binding = 6) uniform sampler2D SurfaceAOC; 		// Opacity of the Surface.
-
-// PBR Specific
-layout (set = 2, binding = 7) uniform sampler2D SurfaceMetallicRoughness;
-
-layout (set = 2, binding = 8) uniform MaterialUBO {
+layout (set = 0, binding = 3) uniform MaterialUBO {
 	float ParallaxScale;
 	int ParallaxIterations;
+	float VertexColorWeight;
+	float RefractionIndex;
 } Material;
+
+// Material texture inputs.
+layout (set = 1, binding = 0) uniform sampler2D SurfaceColor; 				// Color of the Surface
+layout (set = 1, binding = 1) uniform sampler2D SurfaceNormalMap; 			// Normal Map of the Surface.
+layout (set = 1, binding = 2) uniform sampler2D SurfaceHeightMap; 			// Bump Map of the surface.
+layout (set = 1, binding = 3) uniform sampler2D SurfaceEmission; 			// Light Emission of surface.
+layout (set = 1, binding = 4) uniform sampler2D SurfaceOpacity; 			// Opacity of the Surface.
+layout (set = 1, binding = 5) uniform sampler2D SurfaceAOC; 				// Opacity of the Surface.
+layout (set = 1, binding = 6) uniform sampler2D SurfaceMetallicRoughness;	// PBR Specific
 
 vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
 
@@ -111,7 +111,7 @@ void main() {
 	// Calculate UV coordinates after applying the height map.
 	vec2 UV = bisection_parallax(TextureCoordinate.xy, TBN);
 
-	// Determin Modified World Space Normals of surface applying material properties.
+	// Determine Modified World Space Normals of surface applying material properties.
     // Acquire the surface normals of the normal map with the modified UV coordinates.
     vec3 TangentSurfaceNormal = texture(SurfaceNormalMap, UV).rgb;
     // Convert normal from [0, 1] range to [-1, 1]
@@ -123,6 +123,6 @@ void main() {
 	PixelPosition = vec4(WorldPosition, 1.0) + PixelNormal * texture(SurfaceHeightMap, UV).r;
 
 	// Simple Tranmsmission of the surface color.
-	PixelColor = texture(SurfaceColor, UV);
+	PixelColor = mix(texture(SurfaceColor, UV), InterpolatedVertexColor, Material.VertexColorWeight);
 
 }

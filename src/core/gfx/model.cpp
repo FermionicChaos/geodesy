@@ -27,7 +27,7 @@ static Assimp::Importer* ModelImporter = nullptr;
 // denote them as $ \vec{v} $ so they are not confused with bone space vertices
 // $ \vec{v}^{bs} $. This is to eliminate ambiguity in mathematical symbols which
 // many don't care for when describing something. The being said, in the node hierarchy
-// it is neccessary to map mesh space vertices $ \vec{v} \rightarrow \vec{v}^{bs} $
+// it is necessary to map mesh space vertices $ \vec{v} \rightarrow \vec{v}^{bs} $
 // so that the node hierarchy and its associated animations can then be applied to 
 // the mesh. 
 
@@ -61,6 +61,41 @@ static Assimp::Importer* ModelImporter = nullptr;
 
 
 namespace geodesy::core::gfx {
+
+	namespace {
+
+		struct texture_type_database {
+			std::string Name;
+			std::vector<aiTextureType> Type;
+			std::shared_ptr<gcl::image> DefaultTexture;
+		};
+
+	}
+
+	// Default values for each texture type as unsigned char arrays
+	static const unsigned char DefaultColorData[4] 			= {255, 255, 255, 255}; 	// White
+	static const unsigned char DefaultNormalData[4] 		= {128, 128, 255, 255};		// Up vector (0.5, 0.5, 1.0)
+	static const unsigned char DefaultHeightData[4] 		= {0, 0, 0, 0}; 			// No displacement
+	static const unsigned char DefaultEmissiveData[4] 		= {0, 0, 0, 0}; 			// No emission
+	static const unsigned char DefaultOpacityData[4] 		= {255, 255, 255, 255};  	// Fully opaque
+	static const unsigned char DefaultAOData[4] 			= {255, 255, 255, 255}; 	// No occlusion
+	static const unsigned char DefaultSpecularData[4] 		= {0, 0, 0, 255}; 			// No specularity
+	static const unsigned char DefaultAmbientData[4] 		= {0, 0, 0, 255}; 			// No ambient
+	static const unsigned char DefaultShininessData[4] 		= {0, 0, 0, 255}; 			// No shininess
+	static const unsigned char DefaultMetallicData[4] 		= {0, 0, 0, 255}; 			// Non-metallic, smooth
+
+   static std::vector<texture_type_database> TextureTypeDatabase = {
+		{ "Color", 				{ aiTextureType_DIFFUSE, aiTextureType_BASE_COLOR }, 				std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultColorData), (void*)DefaultColorData) 			},
+		{ "Normal", 			{ aiTextureType_NORMALS, aiTextureType_NORMAL_CAMERA }, 			std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultNormalData), (void*)DefaultNormalData) 			},
+		{ "Height", 			{ aiTextureType_HEIGHT, aiTextureType_DISPLACEMENT }, 				std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultHeightData), (void*)DefaultHeightData) 			},
+		{ "Emissive", 			{ aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR }, 			std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultEmissiveData), (void*)DefaultEmissiveData) 		},
+		{ "Opacity", 			{ aiTextureType_OPACITY }, 											std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultOpacityData), (void*)DefaultOpacityData) 		},
+		{ "AmbientOcclusion", 	{ aiTextureType_LIGHTMAP, aiTextureType_AMBIENT_OCCLUSION }, 		std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultAOData), (void*)DefaultAOData) 					},
+		{ "Specular", 			{ aiTextureType_SPECULAR }, 										std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultSpecularData), (void*)DefaultSpecularData) 		},
+		{ "AmbientLighting", 	{ aiTextureType_AMBIENT }, 											std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultAmbientData), (void*)DefaultAmbientData) 		},
+		{ "Shininess", 			{ aiTextureType_SHININESS }, 										std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultShininessData), (void*)DefaultShininessData) 	},
+		{ "MetallicRoughness", 	{ aiTextureType_METALNESS, aiTextureType_DIFFUSE_ROUGHNESS }, 		std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultMetallicData), (void*)DefaultMetallicData) 		}
+   };
 
 	static std::string absolute_texture_path(std::string aModelPath, aiMaterial *aMaterial, std::vector<aiTextureType> aTextureTypeList) {
 		// This function searches a list of texture types, and returns the first texture path it finds.
@@ -150,7 +185,7 @@ namespace geodesy::core::gfx {
 				);
 			}
 			// Load Mesh Instance Data
-			aModelNode.MeshInstance[i] = mesh::instance(MeshIndex, Mesh->mNumVertices, BoneData, Mesh->mMaterialIndex);
+			aModelNode.MeshInstance[i] = mesh::instance(MeshIndex, aModelNode.global_transform(), Mesh->mNumVertices, BoneData, Mesh->mMaterialIndex);
 		}
 	}
 
@@ -187,6 +222,25 @@ namespace geodesy::core::gfx {
 		this->zero_out();
 	}
 
+	model::node::node(std::shared_ptr<gcl::context> aContext, const node& aNode) {
+		this->Model 	= aNode.Model;
+		this->Root 		= this;
+		this->Parent 	= nullptr;
+		this->Child 	= std::vector<node>(aNode.Child.size());
+		for (size_t i = 0; i < aNode.Child.size(); i++) {
+			this->Child[i] 			= node(aContext, aNode.Child[i]);
+			this->Child[i].Root 	= this->Root;
+			this->Child[i].Parent 	= this;
+		}
+		this->Name 				= aNode.Name;
+		this->Weight 			= aNode.Weight;
+		this->Transformation 	= aNode.Transformation;
+		this->MeshInstance 		= std::vector<mesh::instance>(aNode.MeshInstance.size());
+		for (size_t i = 0; i < aNode.MeshInstance.size(); i++) {
+			this->MeshInstance[i] = mesh::instance(aContext, aNode.MeshInstance[i]);
+		}
+	}
+
 	model::node::node(const node& aInput) : node() {
 		this->Root 		= this;
 		this->Parent 	= nullptr;
@@ -203,10 +257,10 @@ namespace geodesy::core::gfx {
 
 	model::node& model::node::operator=(const node& aRhs) {
 		if (this == &aRhs) return *this;
+		this->Model 				= aRhs.Model;
 		this->Name					= aRhs.Name;
 		this->Transformation		= aRhs.Transformation;
 		this->MeshInstance 			= aRhs.MeshInstance;
-		this->Animation 			= aRhs.Animation;
 		this->Child.resize(aRhs.Child.size());
 		for (size_t i = 0; i < aRhs.Child.size(); i++) {
 			this->Child[i].Root 		= this->Root;
@@ -288,7 +342,6 @@ namespace geodesy::core::gfx {
 		// instead. If there are animations associated with the node hierarchy,
 		// Then the animation transformations will be used in a weighted average.
 
-
 		//tex:
 		// It is the reponsibility of the model class to insure that the sum of the contribution
 		// factors (weights) is equal to 1.
@@ -296,17 +349,18 @@ namespace geodesy::core::gfx {
 		// $$ T = T^{base} \cdot w^{base} + \sum_{\forall i \in A} T_{i}^{A} \cdot w_{i}^{A} $$ 
 		//
 
-		// BUG: Why does this not work?
+		// Bind Pose Transform
 		math::mat<float, 4, 4> NodeTransform = (this->Transformation * this->Weight);
-		// Checks if there are animations at the Root Node.
-		if (this->Root->Animation.size() > 0) {
-			// If there are, iterate through them, get their transforms and
-			// their contribution factors (weights).
-			for (animation& Anim : this->Root->Animation) {
-				// NodeTransform += AnimationTransform * Contribution Factor
-				NodeTransform += Anim[this->Name][aTime]*Anim.Weight;
-			}
-		}
+
+		// Overrides/Averages Animation Transformations with Bind Pose Transform based on weights.
+		// if (this->Root->Animation.size() > 0) {
+		// 	// If there are, iterate through them, get their transforms and
+		// 	// their contribution factors (weights).
+		// 	for (animation& Anim : this->Root->Animation) {
+		// 		// NodeTransform += AnimationTransform * Contribution Factor
+		// 		NodeTransform += Anim[this->Name][aTime]*Anim.Weight;
+		// 	}
+		// }
 
 		// Recursively apply parent transformations.
 		if (this->Parent != nullptr) {
@@ -366,10 +420,11 @@ namespace geodesy::core::gfx {
 	}
 
 	model::model() {
-
+		this->Time = 0.0;
 	}
 
 	model::model(std::string aFilePath, file::manager* aFileManager) : file(aFilePath) {
+		this->Time = 0.0;
 		if (aFilePath.length() == 0) return;
 		const aiScene *Scene = ModelImporter->ReadFile(aFilePath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
 
@@ -391,14 +446,14 @@ namespace geodesy::core::gfx {
 
 		// Extract Scene Hiearchy
 		fill_and_traverse(Scene, this->Hierarchy, Scene->mRootNode);
+		this->Hierarchy.Model = this;
 
-		// Extract Scene Animations. Animations will be tied to the node structure
-		// since animation info is what animates the node structure. The reason why
-		// elements are extracted as stack variables is simply for readability.
-		this->Hierarchy.Animation = std::vector<animation>(Scene->mNumAnimations);
-		for (size_t i = 0; i < this->Hierarchy.Animation.size(); i++) {
-			aiAnimation* RA 	= Scene->mAnimations[i];
-			animation& LA 		= this->Hierarchy.Animation[i];
+		// Previously incorrect. Animations will be tied to model and not node hierarchy.
+		// Each animation contains a map of node animations which are tied to the node hierarchy.
+		this->Animation = std::vector<animation>(Scene->mNumAnimations);
+		for (size_t i = 0; i < this->Animation.size(); i++) {
+			aiAnimation* RA 		= Scene->mAnimations[i];
+			animation& LA 			= this->Animation[i];
 			LA.Name					= RA->mName.C_Str();
 			LA.Weight				= 0.0f; // Animation Disabled until specified otherwise.
 			LA.Duration				= RA->mDuration;
@@ -408,8 +463,8 @@ namespace geodesy::core::gfx {
 				// Get Node Animation Data Structure
 				aiNodeAnim* RNA 										= RA->mChannels[j];
 				std::string NodeName 									= RNA->mNodeName.C_Str();
-				this->Hierarchy.Animation[i].NodeAnimMap[NodeName] 		= animation::node_anim();
-				animation::node_anim& LNA 								= this->Hierarchy.Animation[i].NodeAnimMap[NodeName];
+				this->Animation[i].NodeAnimMap[NodeName] 				= animation::node_anim();
+				animation::node_anim& LNA 								= this->Animation[i].NodeAnimMap[NodeName];
 
 				// Initialize Vectors For Key Data
 				LNA.PositionKey = std::vector<animation::key<math::vec<float, 3>>>(RNA->mNumPositionKeys);	
@@ -551,74 +606,17 @@ namespace geodesy::core::gfx {
 
 			this->Material[i]->Name = Mat->GetName().C_Str();
 
-			// TODO: Load material properties later.
-			// for (size_t j = 0; j < Mat->mNumProperties; j++) {
-			// 	aiMaterialProperty* Prop = Mat->mProperties[j];
-			// 	// Interpret property data types, such as images, scalars and so on.
-
-			// 	// Using a switch case statement, print out the property info type from mType.
-			// 	std::cout << "Key: " << Prop->mKey.C_Str() << " ";
-			// 	switch(Prop->mType) {
-			// 		case aiPTI_Float:
-			// 			std::cout << "Type: Float" << std::endl;
-			// 			break;
-			// 		case aiPTI_Double:
-			// 			std::cout << "Type: Double" << std::endl;
-			// 			break;
-			// 		case aiPTI_String:
-			// 			std::cout << "Type: String" << std::endl;
-			// 			break;
-			// 		case aiPTI_Integer:
-			// 			std::cout << "Type: Integer" << std::endl;
-			// 			break;
-			// 		case aiPTI_Buffer:
-			// 			std::cout << "Type: Buffer" << std::endl;
-			// 			break;
-			// 		default:
-			// 			std::cout << "Type: Unknown" << std::endl;
-			// 			break;
-			// 	}
-			// }
-
-			std::map<std::string, std::shared_ptr<gcl::image>> Texture;
-
-			Texture["Color"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_DIFFUSE, aiTextureType_BASE_COLOR });
-			Texture["Normal"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_NORMALS, aiTextureType_NORMAL_CAMERA });
-			Texture["Height"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_HEIGHT, aiTextureType_DISPLACEMENT });
-			Texture["Emissive"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR });
-			Texture["Opacity"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_OPACITY });
-			Texture["AmbientOcclusion"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_LIGHTMAP, aiTextureType_AMBIENT_OCCLUSION });
-
-			// Load legacy textures.
-			Texture["Specular"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_SPECULAR });
-			Texture["AmbientLighting"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_AMBIENT });
-			Texture["Shininess"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_SHININESS });
-
-			// Load PBR textures.
-			Texture["MetallicRoughness"] = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_METALNESS, aiTextureType_DIFFUSE_ROUGHNESS });
-
-			// Transfer non-empty elements
-			for (auto& [Key, Value] : Texture) {
-				if (Value != nullptr) {
-					this->Material[i]->Texture[Key] = Value;
+			for (size_t j = 0; j < TextureTypeDatabase.size(); j++) {
+				std::shared_ptr<gcl::image> LoadedTexture = load_texture(aFileManager, this->Directory, Mat, TextureTypeDatabase[i].Type);
+				if (LoadedTexture != nullptr) {
+					// Load texture
+					this->Material[i]->Texture[TextureTypeDatabase[j].Name] = LoadedTexture;
+				}
+				else {
+					// Load default texture
+					this->Material[i]->Texture[TextureTypeDatabase[j].Name] = TextureTypeDatabase[j].DefaultTexture;
 				}
 			}
-
-			// // Load common textures.
-			// this->Material[i]->Color = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_DIFFUSE, aiTextureType_BASE_COLOR });
-			// this->Material[i]->Normal = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_NORMALS, aiTextureType_NORMAL_CAMERA });
-			// this->Material[i]->Height = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_HEIGHT, aiTextureType_DISPLACEMENT });
-			// this->Material[i]->Emissive = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR });
-			// this->Material[i]->Opacity = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_OPACITY });
-			// this->Material[i]->AmbientOcclusion = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_LIGHTMAP, aiTextureType_AMBIENT_OCCLUSION });
-
-			// // Load legacy textures.
-			// this->Material[i]->Specular = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_SPECULAR });
-			// this->Material[i]->AmbientLighting = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_AMBIENT });
-			// this->Material[i]->Shininess = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_SHININESS });
-
-			// // Load PBR textures.
-			// this->Material[i]->MetallicRoughness = load_texture(aFileManager, this->Directory, Mat, { aiTextureType_METALNESS, aiTextureType_DIFFUSE_ROUGHNESS });
 
 		}
 
@@ -629,17 +627,16 @@ namespace geodesy::core::gfx {
 	}
 
 
-	model::model(std::shared_ptr<gcl::context>, std::string aFilePath) : model(aFilePath) {
+	model::model(std::shared_ptr<gcl::context>, std::string aFilePath, gcl::image::create_info aCreateInfo) : model(aFilePath) {
 
 	}
 
-	model::model(std::shared_ptr<gcl::context> aContext, gcl::image::create_info aCreateInfo, std::shared_ptr<model> aModel) : model() {
+	model::model(std::shared_ptr<gcl::context> aContext, std::shared_ptr<model> aModel, gcl::image::create_info aCreateInfo) : model() {
 		this->Name = aModel->Name;
-		this->Hierarchy = aModel->Hierarchy;
+		this->Hierarchy = node(aContext, aModel->Hierarchy);
 		this->Time = aModel->Time;
 
-		// TODO: Don't forget to create Hierarchy device representation (Future Effort)
-
+		this->Context = aContext;
 		// Load Meshes into device memory represntation.
 		this->Mesh = std::vector<std::shared_ptr<gfx::mesh>>(aModel->Mesh.size());
 		for (std::size_t i = 0; i < aModel->Mesh.size(); i++) {

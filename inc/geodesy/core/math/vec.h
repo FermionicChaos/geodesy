@@ -3,6 +3,8 @@
 #define GEODESY_CORE_MATH_VEC_H
 
 #include "config.h"
+#include "complex.h"
+#include "quaternion.h"
 
 namespace geodesy::core::math {
 
@@ -74,7 +76,7 @@ namespace geodesy::core::math {
 
 		bool operator==(const vec<T, N>& aRhs) const {
 			bool Out = true;
-			for (std::size_t i = 0; i < N; i++) {
+			for (std::size_t i = 0; i < this->size(); i++) {
 				Out &= ((*this)[i] == aRhs[i]);
 			}
 			return Out;
@@ -82,7 +84,7 @@ namespace geodesy::core::math {
 
 		bool operator>(const vec<T, N>& aRhs) const {
 			bool Out = true;
-			for (std::size_t i = 0; i < N; i++) {
+			for (std::size_t i = 0; i < this->size(); i++) {
 				Out &= ((*this)[i] > aRhs[i]);
 			}
 			return Out;
@@ -90,7 +92,7 @@ namespace geodesy::core::math {
 
 		bool operator<(const vec<T, N>& aRhs) const {
 			bool Out = true;
-			for (std::size_t i = 0; i < N; i++) {
+			for (std::size_t i = 0; i < this->size(); i++) {
 				Out &= ((*this)[i] < aRhs[i]);
 			}
 			return Out;
@@ -98,7 +100,7 @@ namespace geodesy::core::math {
 
 		bool operator>=(const vec<T, N>& aRhs) const {
 			bool Out = true;
-			for (std::size_t i = 0; i < N; i++) {
+			for (std::size_t i = 0; i < this->size(); i++) {
 				Out &= ((*this)[i] >= aRhs[i]);
 			}
 			return Out;
@@ -106,7 +108,7 @@ namespace geodesy::core::math {
 
 		bool operator<=(const vec<T, N>& aRhs) const {
 			bool Out = true;
-			for (std::size_t i = 0; i < N; i++) {
+			for (std::size_t i = 0; i < this->size(); i++) {
 				Out &= ((*this)[i] <= aRhs[i]);
 			}
 			return Out;
@@ -117,7 +119,7 @@ namespace geodesy::core::math {
 		using std::array<T, N>::array;
 
 		vec() {
-			for (std::size_t i = 0; i < N; i++) {
+			for (std::size_t i = 0; i < this->size(); i++) {
 				(*this)[i] = T();
 			}
 		}
@@ -136,22 +138,11 @@ namespace geodesy::core::math {
 		// Dot product
 		T operator*(const vec& aRhs) const {
 			T Out = T();
-			for (std::size_t i = 0; i < N; i++) {
+			for (std::size_t i = 0; i < this->size(); i++) {
 				Out += (*this)[i] * aRhs[i];
 			}
 			return Out;
 		}
-
-		// // Accessors for readability
-    	// T& x() { return (*this)[0]; }
-    	// T& y() { return (*this)[1]; }
-    	// T& z() { return (*this)[2]; }
-    	// T& w() { return (*this)[3]; }
-
-    	// const T& x() const { return (*this)[0]; }
-    	// const T& y() const { return (*this)[1]; }
-    	// const T& z() const { return (*this)[2]; }
-    	// const T& w() const { return (*this)[3]; }
 
 	};
 
@@ -179,12 +170,21 @@ namespace geodesy::core::math {
 		return std::sqrt(aVector * aVector);
 	}
 
+	// Arbitrary rotation of a vector around an axis by an angle.
+	template <typename T> inline
+	vec<T, 3> rotate(vec<T, 3> aInput, T aAngle, vec<T, 3> aAxis) {
+		quaternion<T> r 	= quaternion<T>(0.0, aInput[0], aInput[1], aInput[2]);
+		quaternion<T> q 	= exp((aAngle / 2.0) * quaternion<T>(0.0, aAxis[0], aAxis[1], aAxis[2]));
+		r = q * r * (~q);
+		return vec<T, 3>(r[1], r[2], r[3]);
+	}
+
 	template<typename T, std::size_t N> inline
-	std::ostream& operator<<(std::ostream& aOutStream, const vec<T, N>& aVector) {
+	std::ostream& operator<<(std::ostream& aOutStream, const vec<T, N>& aArg) {
 		aOutStream << "{ ";
-		for (std::size_t i = 0; i < N; i++) {
-			aOutStream << aVector[i];
-			if (i < N - 1) {
+		for (std::size_t i = 0; i < aArg.size(); i++) {
+			aOutStream << aArg[i];
+			if (i < aArg.size() - 1) {
 				aOutStream << ", ";
 			}
 		}

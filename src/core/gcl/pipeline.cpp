@@ -1,4 +1,5 @@
 #include <geodesy/core/gcl/pipeline.h>
+#include <geodesy/core/gcl/context.h>
 
 #include "glslang_util.h"
 
@@ -761,39 +762,46 @@ namespace geodesy::core::gcl {
 	}
 
 	VkResult pipeline::draw(
+		std::shared_ptr<framebuffer> 								aFramebuffer,
+		std::vector<std::shared_ptr<buffer>> 						aVertexBuffer,
+		std::shared_ptr<buffer> 									aIndexBuffer,
+		std::shared_ptr<descriptor::array> 							aDescriptorArray
+	) {
+		VkResult Result = VK_SUCCESS;
+
+		device::operation DeviceOperation = device::operation::GRAPHICS_AND_COMPUTE;
+
+		VkCommandBuffer DrawCommand = this->Context->allocate_command_buffer(DeviceOperation);
+
+		Result = this->Context->begin(DrawCommand);
+		this->draw(DrawCommand, aFramebuffer, aVertexBuffer, aIndexBuffer, aDescriptorArray);
+		Result = this->Context->end(DrawCommand);
+
+		Result = this->Context->execute_and_wait(DeviceOperation, DrawCommand);
+
+		return Result;
+	}
+
+	VkResult pipeline::draw(
 		std::vector<std::shared_ptr<image>> 						aImage,
 		std::vector<std::shared_ptr<buffer>> 						aVertexBuffer,
 		std::shared_ptr<buffer> 									aIndexBuffer,
 		std::map<std::pair<int, int>, std::shared_ptr<buffer>> 		aUniformBuffer,
 		std::map<std::pair<int, int>, std::shared_ptr<image>> 		aSamplerImage
 	) {
+		// Error code tracking.
 		VkResult Result = VK_SUCCESS;
-		VkSamplerCreateInfo SamplerCreateInfo{};
-		SamplerCreateInfo.sType						= VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		SamplerCreateInfo.pNext						= NULL;
-		SamplerCreateInfo.flags						= 0;
-		SamplerCreateInfo.magFilter					= VK_FILTER_LINEAR;
-		SamplerCreateInfo.minFilter					= VK_FILTER_LINEAR;
-		SamplerCreateInfo.mipmapMode				= VK_SAMPLER_MIPMAP_MODE_LINEAR;
-		SamplerCreateInfo.addressModeU				= VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		SamplerCreateInfo.addressModeV				= VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		SamplerCreateInfo.addressModeW				= VK_SAMPLER_ADDRESS_MODE_REPEAT;
-		SamplerCreateInfo.mipLodBias				= 0.0f;
-		SamplerCreateInfo.anisotropyEnable			= VK_FALSE;
-		SamplerCreateInfo.maxAnisotropy				= 1.0f;
-		SamplerCreateInfo.compareEnable				= VK_FALSE;
-		SamplerCreateInfo.compareOp					= VK_COMPARE_OP_ALWAYS;
-		SamplerCreateInfo.minLod					= 0.0f;
-		SamplerCreateInfo.maxLod					= 0.0f;
-		SamplerCreateInfo.borderColor				= VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK;
-		SamplerCreateInfo.unnormalizedCoordinates 	= VK_FALSE;
+
+		// Operation which the GPU will execute
 		device::operation DeviceOperation = device::operation::GRAPHICS_AND_COMPUTE;
+
+		// TODO: Get Rasterizer resolution, change later.
 		std::shared_ptr<rasterizer> Rasterizer = std::dynamic_pointer_cast<rasterizer>(this->CreateInfo);
-		VkRect2D RenderArea = { { 0, 0 }, { Rasterizer->Resolution[0], Rasterizer->Resolution[1] } };
-		// Allocated Resources.
+
+		// Allocated GPU Resources needed to execute.
 		VkCommandBuffer CommandBuffer = this->Context->allocate_command_buffer(DeviceOperation);
-		std::shared_ptr<framebuffer> Framebuffer = std::make_shared<framebuffer>(this->Context, this->shared_from_this(), aImage, Rasterizer->Resolution);
-		std::shared_ptr<descriptor::array> DescriptorArray = std::make_shared<descriptor::array>(this->Context, this->DescriptorPool, this->shared_from_this(), SamplerCreateInfo);
+		std::shared_ptr<framebuffer> Framebuffer = Context->create_framebuffer(this->shared_from_this(), aImage, Rasterizer->Resolution);
+		std::shared_ptr<descriptor::array> DescriptorArray = Context->create_descriptor_array(this->shared_from_this());
 
 		// Bind uniform buffers.
 		for (auto& [SetBinding, Buffer] : aUniformBuffer) {
@@ -802,7 +810,7 @@ namespace geodesy::core::gcl {
 
 		// Bind sampler images.
 		for (auto& [SetBinding, Image] : aSamplerImage) {
-			DescriptorArray->bind(SetBinding.first, SetBinding.second, 0, Image, (VkImageLayout)image::layout::SHADER_READ_ONLY_OPTIMAL);
+			DescriptorArray->bind(SetBinding.first, SetBinding.second, 0, Image, image::layout::SHADER_READ_ONLY_OPTIMAL);
 		}
 
 		// Write Command Buffer here.

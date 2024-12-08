@@ -1,4 +1,5 @@
 #include <geodesy/core/gcl/swapchain.h>
+#include <geodesy/core/gcl/context.h>
 
 #include <algorithm>
 

@@ -1,124 +1,38 @@
 #include <geodesy/bltn/obj/camera3d.h>
 
+#include <iostream>
+
 namespace geodesy::bltn::obj {
 
 	using namespace geodesy::core;
 	using namespace geodesy::core::gfx;
 	using namespace geodesy::core::gcl;
 
-	// Localized to camera3d.cpp
-	namespace {
-
-		// This constitutes the default renderer of the geodesy
-		// engine. Since this is localized to object.cpp, for any
-		// derived class of object, it can override and define its
-		// own renderer.
-		class default_renderer : public core::gfx::renderer {
-		public:
-
-			default_renderer(core::gcl::context* aContext, camera3d* aCamera3D, ecs::object* aObject);
-
-		};
-
-		default_renderer::default_renderer(core::gcl::context* aContext, camera3d* aCamera3D, ecs::object* aObject) : core::gfx::renderer(aContext, aCamera3D, aObject) {
-
-			// DescriptorSet for Object, Camera3D
-			// DescriptorSet for mesh instance
-			// DescriptorSet for material
-
-			// Using the existing GPU resources of both Camera3D & the generic Object,
-			// generate the proper draw calls for the object.
-
-			// Camera3D has a default render pass, framebuffers encapsulating the various image views
-			// for the images used by the render target. Along with a default set of pipelines used
-			// for each subpass of the render pass.
-
-			// Object has a model, which consists of a node hierarchy, rigged mesh instances, and so on.
-			// The meshes them selves, and their node meta data is stored GPU side for each object. 
-
-			// describes how camera will render object.
-			std::shared_ptr<model> Model = aObject->Model;
-			std::vector<std::shared_ptr<mesh>> MeshList = Model->Mesh;
-			std::vector<mesh::instance*> MeshInstanceList = Model->Hierarchy.gather_mesh_instances();
-
-			// Generate Descriptor Sets for each pipeline.
-
-			this->DrawCall = std::vector<std::vector<draw_call>>(aCamera3D->Framechain->Image.size());
-			for (size_t FrameIndex = 0; FrameIndex < aCamera3D->Framechain->Image.size(); FrameIndex++) {
-				// Allocate a draw call per mesh instance.
-				this->DrawCall[FrameIndex] = std::vector<draw_call>(MeshInstanceList.size());
-				for (size_t InstanceIndex = 0; InstanceIndex < MeshInstanceList.size(); InstanceIndex++) {
-					// Extract Mesh from MeshList.
-					mesh::instance* MeshInstance = MeshInstanceList[InstanceIndex];
-					std::shared_ptr<mesh> Mesh = MeshList[MeshInstance->Index];
-					std::shared_ptr<material> Material = Model->Material[MeshInstance->MaterialIndex];
-
-					// Create Command Buffer for draw call.
-					VkCommandBuffer Cmd = aContext->allocate_command_buffer(device::GRAPHICS_AND_COMPUTE);
-					std::shared_ptr<descriptor::array> Uniform;
-
-					// VkRect2D RenderArea = { { 0, 0 }, { aCamera3D->Resolution[0], aCamera3D->Resolution[1] } };
-					aContext->begin(Cmd);
-					// aCamera3D->Pipeline->begin(Cmd, aCamera3D->Frame[FrameIndex].Buffer, RenderArea);
-					//Uniform = aCamera3D->Pipeline[0]->create_uniform_array();
-
-					// Bind Object & Camera3D Uniform Buffers.
-					// Bind Mesh Instance Transform Uniform Buffer.
-					// Bind Material Uniform Buffers & Textures.
-
-
-					/*
-					// Vertex Shader Bindings
-					Uniform.bind(0, 0, Mesh->UniformBuffer);
-					Uniform.bind(0, 1, Object->UniformBuffer);
-					Uniform.bind(0, 2, Camera3D->UniformBuffer);
-
-					// Pixel Shader Bindings
-					Uniform.bind(1, 0, Mesh->Texture[0]);
-					Uniform.bind(1, 1, Mesh->Texture[1]);
-					Uniform.bind(1, 2, Mesh->Texture[2]);
-					Uniform.bind(1, 3, Mesh->Texture[3]);
-					Uniform.bind(1, 4, Mesh->Texture[4]);
-					Uniform.bind(1, 5, Mesh->Texture[5]);
-					*/
-					// Bind Uniform Buffers here.
-					// Mesh->draw(Cmd, aCamera3D->Pipeline, Uniform);
-					aCamera3D->Pipeline->end(Cmd);
-					aContext->end(Cmd);
-
-					this->DrawCall[FrameIndex][InstanceIndex].Command = Cmd;
-
-				}
-			}
-		}
-
-	}
-
 	camera3d::geometry_buffer::geometry_buffer(std::shared_ptr<core::gcl::context> aContext, core::math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount) : framechain(aContext, aFrameRate, aFrameCount) {
 		// New API design?
 		image::create_info DepthCreateInfo;
-		DepthCreateInfo.Layout		= image::layout::SHADER_READ_ONLY_OPTIMAL;
-		DepthCreateInfo.Sample		= image::sample::COUNT_1;
-		DepthCreateInfo.Tiling		= image::tiling::OPTIMAL;
+		DepthCreateInfo.Layout		= image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		DepthCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
 		DepthCreateInfo.Usage		= image::usage::SAMPLED | image::usage::DEPTH_STENCIL_ATTACHMENT  | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
 
 		image::create_info ColorCreateInfo;
 		ColorCreateInfo.Layout		= image::layout::SHADER_READ_ONLY_OPTIMAL;
-		ColorCreateInfo.Sample		= image::sample::COUNT_1;
-		ColorCreateInfo.Tiling		= image::tiling::OPTIMAL;
 		ColorCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
 		ColorCreateInfo.Usage		= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
 
+		image::format ColorFormat = image::format::B8G8R8A8_UNORM; //image::format::R32G32B32A32_SFLOAT;
+		image::format DepthFormat = image::format::D32_SFLOAT;
+
+		this->Resolution = aResolution;
 		for (std::size_t i = 0; i < this->Image.size(); i++) {
 			// This is the finalized color output.
-			this->Image[i]["Color"] = std::make_shared<image>(aContext, ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
+			this->Image[i]["Color"] 		= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
 			// Opaque Geometry Buffer, used for Opaque and Transparent mesh instances.
-			this->Image[i]["OGB.Color"] = std::make_shared<image>(aContext, ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Position"] = std::make_shared<image>(aContext, ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Normal"] = std::make_shared<image>(aContext, ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Depth"] = std::make_shared<image>(aContext, DepthCreateInfo, image::D32_SFLOAT, aResolution[0], aResolution[1]);
-			this->Image[i]["FinalColor"] = std::make_shared<image>(aContext, ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Color"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Position"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Normal"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Depth"] 	= aContext->create_image(DepthCreateInfo, DepthFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["FinalColor"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
 		}
 	}
 
@@ -129,79 +43,139 @@ namespace geodesy::bltn::obj {
 		core::math::vec<uint, 3> 				aFrameResolution, 
 		double 									aFrameRate, 
 		uint32_t 								aFrameCount
-	) : ecs::subject(aContext, aStage, aName, aFrameResolution, aFrameRate, aFrameCount, 4) 
+	) : ecs::subject(aContext, aStage, aName, aFrameResolution, aFrameRate, aFrameCount, 4, { 0.0f, -10.0f, 0.0f }, { 90.0f, 90.0f }) 
 	{
 		VkResult Result = VK_SUCCESS;
 		engine* Engine = aContext->Device->Engine;
 
-		// Create Geometry Buffer Images
+		// List of assets Camera3D will load into memory.
+		std::vector<std::string> AssetList = {
+			"assets/shader/camera3d.vert",
+			"assets/shader/camera3d.frag"
+		};
+
+		// Loaded host memory assets for this object's possession.
+		this->Asset = Engine->FileManager.open(AssetList);
+
+		// Allocate GPU resources.
 		this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(std::make_shared<geometry_buffer>(aContext, aFrameResolution, aFrameRate, aFrameCount));
 
-		// Open Shaders.
-		std::string VertexShaderPath = "assets/shader/camera3d.vert";
-		std::string PixelShaderPath = "assets/shader/camera3d.frag";
+		// Grab shaders from asset list, compile, and link.
+		std::shared_ptr<gcl::shader> VertexShader = std::dynamic_pointer_cast<gcl::shader>(Asset[0]);
+		std::shared_ptr<gcl::shader> PixelShader = std::dynamic_pointer_cast<gcl::shader>(Asset[1]);
+		std::vector<std::shared_ptr<gcl::shader>> ShaderList = { VertexShader, PixelShader };
+		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::make_shared<pipeline::rasterizer>(ShaderList, aFrameResolution, VK_FORMAT_D32_SFLOAT);
 
-		std::shared_ptr<gcl::shader> VertexShader = std::dynamic_pointer_cast<gcl::shader>(Engine->FileManager.open(VertexShaderPath));
-		std::shared_ptr<gcl::shader> PixelShader = std::dynamic_pointer_cast<gcl::shader>(Engine->FileManager.open(PixelShaderPath));
+		// This code specifies how the vextex data is to be interpreted from the bound vertex buffers.
+		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 0, offsetof(gfx::mesh::vertex, Position));
+		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 1, offsetof(gfx::mesh::vertex, Normal));
+		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 2, offsetof(gfx::mesh::vertex, Tangent));
+		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 3, offsetof(gfx::mesh::vertex, Bitangent));
+		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 4, offsetof(gfx::mesh::vertex, TextureCoordinate));
+		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 5, offsetof(gfx::mesh::vertex, Color));
+		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 1, sizeof(gfx::mesh::vertex::weight), 6, offsetof(gfx::mesh::vertex::weight, BoneID));
+		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 1, sizeof(gfx::mesh::vertex::weight), 7, offsetof(gfx::mesh::vertex::weight, BoneWeight));
+		
+		// Select output attachments for pipeline.
+		Rasterizer->attach(0, this->current_frame()["OGB.Color"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
+		Rasterizer->attach(1, this->current_frame()["OGB.Position"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
+		Rasterizer->attach(2, this->current_frame()["OGB.Normal"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
+		Rasterizer->attach(3, this->current_frame()["OGB.Depth"], 		image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
-		// Create Graphics Pipeline for rendering (REQUIRES RENDER PASS)
-		{
-			std::vector<std::shared_ptr<gcl::shader>> ShaderList = { VertexShader, PixelShader };
-			pipeline::rasterizer Rasterizer(ShaderList, this->Framechain->Resolution, VK_FORMAT_D32_SFLOAT);
+		// How to intepret vertex data in rasterization.
+		Rasterizer->InputAssembly.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		Rasterizer->InputAssembly.primitiveRestartEnable	= false;
 
-			// This code specifies how the vextex data is to be interpreted from the bound vertex buffers.
-			Rasterizer.bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 0, offsetof(gfx::mesh::vertex, Position));
-			Rasterizer.bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 1, offsetof(gfx::mesh::vertex, Normal));
-			Rasterizer.bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 2, offsetof(gfx::mesh::vertex, Tangent));
-			Rasterizer.bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 3, offsetof(gfx::mesh::vertex, Bitangent));
-			Rasterizer.bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 4, offsetof(gfx::mesh::vertex, TextureCoordinate));
-			Rasterizer.bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 5, offsetof(gfx::mesh::vertex, Color));
-			Rasterizer.bind(VK_VERTEX_INPUT_RATE_VERTEX, 1, sizeof(gfx::mesh::vertex::weight), 6, offsetof(gfx::mesh::vertex::weight, BoneID));
-			Rasterizer.bind(VK_VERTEX_INPUT_RATE_VERTEX, 1, sizeof(gfx::mesh::vertex::weight), 7, offsetof(gfx::mesh::vertex::weight, BoneWeight));
+		// Rasterizer Info
+		Rasterizer->Rasterizer.rasterizerDiscardEnable		= VK_FALSE;
+		Rasterizer->Rasterizer.polygonMode					= VK_POLYGON_MODE_FILL;
+		Rasterizer->Rasterizer.cullMode						= VK_CULL_MODE_NONE;
+		Rasterizer->Rasterizer.frontFace					= VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
-			// TODO: Fix Later, don't let VkAttachmentDescription be determined by shader parser.
-			// Rasterizer.attach(0, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-			// Rasterizer.attach(1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-			// Rasterizer.attach(2, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-			// Rasterizer.attach(3, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-			// Rasterizer.attach(4, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL); // Depth Buffer
+		// Copy Paste
+		Rasterizer->Multisample.rasterizationSamples		= VK_SAMPLE_COUNT_1_BIT;
 
-			// This code specifies how
+		// Oncoming Depth Value [OPERATOR] Depth Value In Buffer
+		// Needed for 3D graphics.
+		Rasterizer->DepthStencil.depthTestEnable			= VK_TRUE;
+		Rasterizer->DepthStencil.depthWriteEnable			= VK_TRUE;
+		Rasterizer->DepthStencil.depthCompareOp				= VK_COMPARE_OP_GREATER; // Camera, +z is closer.
+		// Rasterizer->DepthStencil.minDepthBounds				= -1.0f;
+		// Rasterizer->DepthStencil.maxDepthBounds				= +1.0f;
 
-			// How to intepret vertex data in rasterization.
-			Rasterizer.InputAssembly.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-			Rasterizer.InputAssembly.primitiveRestartEnable		= false;
+		// Create render pipeline for camera3d.
+		this->Pipeline = Context->create_pipeline(Rasterizer);
 
-			// Rasterizer Info
-			Rasterizer.Rasterizer.rasterizerDiscardEnable		= VK_FALSE;
-			Rasterizer.Rasterizer.polygonMode					= VK_POLYGON_MODE_FILL;
-			Rasterizer.Rasterizer.cullMode						= VK_CULL_MODE_BACK_BIT;
-			Rasterizer.Rasterizer.frontFace						= VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		buffer::create_info UBCI;
+		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
+		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 
-			// Copy Paste
-			Rasterizer.Multisample.rasterizationSamples			= VK_SAMPLE_COUNT_1_BIT;
+		camera_uniform_data UniformData;
+		float AspectRatio = (float)aFrameResolution[1] / (float)aFrameResolution[0];
+		UniformData.Position 		= this->Position;
+		UniformData.Rotation 		= {
+			DirectionRight[0], 		DirectionRight[1], 		DirectionRight[2], 		0.0f,
+			-DirectionUp[0], 		-DirectionUp[1], 		-DirectionUp[2], 		0.0f,
+			DirectionFront[0], 		DirectionFront[1], 		DirectionFront[2], 		0.0f,
+			0.0f, 					0.0f, 					0.0f, 					1.0f
+		};
+		UniformData.Projection 		= math::perspective(math::radians(90.0f), AspectRatio, 0.1f, 100.0f);
+		std::cout << UniformData.Projection << std::endl;
 
-			// Oncoming Depth Value [OPERATOR] Depth Value In Buffer
-			// Needed for 3D graphics.
-			Rasterizer.DepthStencil.depthTestEnable				= VK_TRUE;
-			Rasterizer.DepthStencil.depthWriteEnable			= VK_TRUE;
-			Rasterizer.DepthStencil.depthCompareOp				= VK_COMPARE_OP_GREATER; // Camera, +z is closer.
-			Rasterizer.DepthStencil.minDepthBounds				= -1.0f;
-			Rasterizer.DepthStencil.maxDepthBounds				= +1.0f;
-
-			// TODO: Changed rasterizer info into shared pointer for lifetime preservation, update later.
-			//this->Pipeline = std::make_shared<gcl::pipeline>(aContext, Rasterizer);
-		}
-
-
+		this->CameraUniformBuffer = Context->create_buffer(UBCI, sizeof(UniformData), &UniformData);
+		this->CameraUniformBuffer->map_memory(0, sizeof(UniformData));
 	}
 
 	camera3d::~camera3d() {
 
 	}
 
-	std::shared_ptr<core::gfx::renderer> camera3d::make_default_renderer(object* aObject) {
-		return std::make_shared<default_renderer>(this->Context.get(), this, aObject);
+	std::vector<std::vector<core::gfx::draw_call>> camera3d::default_renderer(object* aObject) {
+		// Gather list of mesh instances throughout model hierarchy.
+		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy.gather_mesh_instances();
+
+		std::vector<std::vector<draw_call>> Renderer(this->Framechain->Image.size(), std::vector<draw_call>(MeshInstance.size()));
+
+		for (size_t i = 0; i < this->Framechain->Image.size(); i++) {
+			for (size_t j = 0; j < MeshInstance.size(); j++) {
+				// Get references for readability.
+				VkResult Result = VK_SUCCESS;
+				std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[MeshInstance[j]->Index];
+				std::shared_ptr<material> Material = aObject->Model->Material[MeshInstance[j]->MaterialIndex];
+
+				std::vector<std::shared_ptr<image>> ImageOutputList = {
+					this->Framechain->Image[i]["OGB.Color"],
+					this->Framechain->Image[i]["OGB.Position"],
+					this->Framechain->Image[i]["OGB.Normal"],
+					this->Framechain->Image[i]["OGB.Depth"]
+				};
+				Renderer[i][j].Framebuffer = Context->create_framebuffer(this->Pipeline, ImageOutputList, this->Framechain->Resolution);
+				Renderer[i][j].DescriptorArray = Context->create_descriptor_array(this->Pipeline);
+				Renderer[i][j].DrawCommand = this->CommandPool->allocate();
+
+				// Bind Object Uniform Buffers
+				Renderer[i][j].DescriptorArray->bind(0, 0, 0, this->CameraUniformBuffer);			// Camera Position, Orientation, Projection
+				Renderer[i][j].DescriptorArray->bind(0, 1, 0, aObject->UniformBuffer);				// Object Position, Orientation, Scale
+				Renderer[i][j].DescriptorArray->bind(0, 2, 0, MeshInstance[j]->UniformBuffer); 		// Mesh Instance Transform
+				Renderer[i][j].DescriptorArray->bind(0, 3, 0, Material->UniformBuffer); 			// Material Properties
+
+				// Bind Material Textures.
+				Renderer[i][j].DescriptorArray->bind(1, 0, 0, Material->Texture["Color"]);
+				Renderer[i][j].DescriptorArray->bind(1, 1, 0, Material->Texture["Normal"]);
+				Renderer[i][j].DescriptorArray->bind(1, 2, 0, Material->Texture["Height"]);
+				Renderer[i][j].DescriptorArray->bind(1, 3, 0, Material->Texture["Emission"]);
+				Renderer[i][j].DescriptorArray->bind(1, 4, 0, Material->Texture["Opacity"]);
+				Renderer[i][j].DescriptorArray->bind(1, 5, 0, Material->Texture["AmbientOcclusion"]);
+				Renderer[i][j].DescriptorArray->bind(1, 6, 0, Material->Texture["MetallicRoughness"]);
+
+				Result = Context->begin(Renderer[i][j].DrawCommand);
+				std::vector<std::shared_ptr<buffer>> VertexBuffer = { Mesh->VertexBuffer, MeshInstance[j]->VertexWeightBuffer };
+				this->Pipeline->draw(Renderer[i][j].DrawCommand, Renderer[i][j].Framebuffer, VertexBuffer, Mesh->IndexBuffer, Renderer[i][j].DescriptorArray);
+				Result = Context->end(Renderer[i][j].DrawCommand);
+			}
+		}
+		
+		return Renderer;
 	}
 
 

@@ -12,8 +12,6 @@ namespace geodesy::core::gfx {
 
 	using namespace math;
 
-    animation::node_anim::node_anim() {}
-
 	mat<float, 4, 4> animation::node_anim::operator[](double aTime) const {
 		mat<float, 4, 4> T;
 		mat<float, 4, 4> R;
@@ -94,8 +92,8 @@ namespace geodesy::core::gfx {
 	animation::animation() {
 		this->Name = "";
 		this->Weight = 0.0f;
-		this->Duration = 0.0f;
-		this->TicksPerSecond = 0.0f;
+		this->Duration = 0.0;
+		this->TicksPerSecond = 0.0;
 	}
 
 	animation::node_anim animation::operator[](std::string aNodeName) {

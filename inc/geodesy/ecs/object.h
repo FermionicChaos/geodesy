@@ -23,6 +23,11 @@ namespace geodesy::ecs {
 			std::vector<VkSubmitInfo> ComputeOperations;
 		};
 
+		struct uniform_data {
+			alignas(16) core::math::vec<float, 3> Position;
+			alignas(16) core::math::mat<float, 4, 4> Orientation;
+		};
+
 		enum motion {
 			STATIC,			// Object doesn't move.
 			DYNAMIC,		// Object
@@ -42,9 +47,9 @@ namespace geodesy::ecs {
 		float																		Mass;				// Kilogram			[kg]
 		float																		Time;				// Second 			[s]
 		core::math::vec<float, 3>													Position;			// Meter			[m]
-		core::math::vec<float, 3>													DirectionX;			// Right			[Normalized]
-		core::math::vec<float, 3>													DirectionY;			// Up				[Normalized]
-		core::math::vec<float, 3>													DirectionZ;			// Backward			[Normalized]
+		core::math::vec<float, 3>													DirectionRight;		// Right			[Normalized]
+		core::math::vec<float, 3>													DirectionUp;		// Up				[Normalized]
+		core::math::vec<float, 3>													DirectionFront;		// Backward			[Normalized]
 		core::math::vec<float, 3>													LinearMomentum;		// Linear Momentum	[kg*m/s]
 		core::math::vec<float, 3>													AngularMomentum;	// Angular Momentum [kg*m/s]
 
@@ -54,7 +59,7 @@ namespace geodesy::ecs {
 		bool 																		Gravity;			// Determines if the object is affected by gravity.
 		bool 																		Collision;			// Determines if object is affected by collisions.
 
-		std::map<std::string, std::shared_ptr<core::io::file>> 						Asset;
+		std::vector<std::shared_ptr<core::io::file>> 								Asset;
 
 		// ! ----- Device Data ----- ! //
 		// ^ This is the data that exists on the GPU.
@@ -62,13 +67,14 @@ namespace geodesy::ecs {
 		std::shared_ptr<core::gcl::context> 										Context;
 		std::shared_ptr<core::phys::mesh>											CollisionBox;
 		std::shared_ptr<core::gfx::model>											Model;
-		std::map<subject*, std::shared_ptr<core::gfx::renderer>>					Renderer;
 		std::shared_ptr<core::gcl::buffer> 											UniformBuffer;
+		std::map<subject*, std::vector<std::vector<core::gfx::draw_call>>>			Renderer;
 
-		object(std::shared_ptr<core::gcl::context> aContext, stage* aStage, std::string aName);
+		object(std::shared_ptr<core::gcl::context> aContext, stage* aStage, std::string aName, core::math::vec<float, 3> aPosition = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 2> aDirection = { 90.0f, 90.0f });
 		~object();
 
 		virtual bool is_subject();
+
 		virtual void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f });
 		virtual std::vector<core::gfx::draw_call> draw(subject* aSubject);
 

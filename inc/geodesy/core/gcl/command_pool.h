@@ -3,7 +3,8 @@
 #define GEODESY_CORE_GCL_COMMAND_POOL_H
 
 #include "../../config.h"
-#include "context.h"
+#include "config.h"
+#include "device.h"
 
 namespace geodesy::core::gcl {
 

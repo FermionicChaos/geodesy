@@ -9,9 +9,9 @@
 namespace geodesy::core::gfx {
 
 	draw_call::draw_call() {
-		Command 				= VK_NULL_HANDLE;
 		DistanceFromSubject 	= 0.0f;
 		TransparencyMode 		= material::transparency::OPAQUE;
+		DrawCommand 				= VK_NULL_HANDLE;
 	}
 
 	renderer::renderer(core::gcl::context* aContext, ecs::subject* aSubject, ecs::object* aObject) {
@@ -23,6 +23,14 @@ namespace geodesy::core::gfx {
 
 	renderer::~renderer() {
 
+	}
+
+	std::vector<VkCommandBuffer> convert(std::vector<draw_call> aDrawCallList) {
+		std::vector<VkCommandBuffer> CommandBufferList(aDrawCallList.size());
+		for (size_t i = 0; i < aDrawCallList.size(); i++) {
+			CommandBufferList[i] = aDrawCallList[i].DrawCommand;
+		}
+		return CommandBufferList;
 	}
 
 }

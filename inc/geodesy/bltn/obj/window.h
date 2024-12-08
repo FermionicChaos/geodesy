@@ -32,7 +32,7 @@ namespace geodesy::bltn::obj {
 
 		window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, std::string aName, core::math::vec<uint, 3> aFrameResolution, double aFrameRate, uint32_t aFrameCount, uint32_t aAttachmentCount);
 
-		std::shared_ptr<core::gfx::renderer> make_default_renderer(ecs::object* aObject) override;
+		std::vector<std::vector<core::gfx::draw_call>> default_renderer(ecs::object* aObject) override;
 		
 	};
 

@@ -16,36 +16,32 @@ namespace geodesy::core::gfx {
 	class animation {
 	public:
 
+		// Template Code for Keyframe Animation
 		template <typename T>
 		struct key {
-			double		Time;
+			double		Time; 		// Time in Ticks
 			T			Value;
 		};
 
 		struct node_anim {
-			std::vector<key<math::vec<float, 3>>> 			PositionKey;
-			std::vector<key<math::quaternion<float>>> 		RotationKey;
-			std::vector<key<math::vec<float, 3>>> 			ScalingKey;
-			node_anim();
-			math::mat<float, 4, 4> operator[](double aTime) const;
+			std::vector<key<math::vec<float, 3>>> PositionKey;
+			std::vector<key<math::quaternion<float>>> RotationKey;
+			std::vector<key<math::vec<float, 3>>> ScalingKey;
+			math::mat<float, 4, 4> operator[](double aTime) const; // Expects Time in Ticks
 		};
 
-		struct mesh_anim {
-
-		};
+		struct mesh_anim {};
 
 		std::string 						Name;
 		float 								Weight;
-		float 								Duration;
-		float 								TicksPerSecond;
+		double 								Duration;				// Duration is in Ticks
+		double 								TicksPerSecond;			// Conversion Factor for Ticks to Seconds
 		std::map<std::string, node_anim> 	NodeAnimMap;
 		std::map<std::string, mesh_anim> 	MeshAnimMap;
 
 		animation();
 
 		node_anim operator[](std::string aNodeName);
-
-	private:
 
 	};
 

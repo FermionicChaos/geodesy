@@ -10,6 +10,17 @@ namespace geodesy::core::math {
 		constexpr double pi = 3.14159265358979323846;
 		constexpr double e = 2.71828182845904523536;
 	}
+
+	template <typename T>
+	T radians(T aDegrees) {
+		return aDegrees * constant::pi / 180.0;
+	}
+
+	template <typename T>
+	T degrees(T aRadians) {
+		return aRadians * 180.0 / constant::pi;
+	}
+	
 }
 
 #endif // !GEODESY_CORE_MATH_CONSTANTS_H

@@ -19,6 +19,7 @@
 #include <geodesy/core/util/variable.h>
 
 #include <geodesy/core/gcl/pipeline.h>
+#include <geodesy/core/gcl/context.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -102,6 +103,7 @@ namespace geodesy::core::gcl {
 		this->Tiling = image::tiling::OPTIMAL;
 		this->Memory = 0;
 		this->Usage = image::usage::TRANSFER_DST | image::usage::TRANSFER_SRC;
+		this->MipLevels = false;
 	}
 
 	image::create_info::create_info(int aSample, int aTiling, int aMemory, int aUsage) : create_info() {
@@ -581,6 +583,7 @@ namespace geodesy::core::gcl {
 		if (!stbi_is_hdr(aFilePath.c_str())) {
 			this->HostData = (void*)stbi_load(aFilePath.c_str(), &lWidth, &lHeight, &lChannels, STBI_rgb_alpha);
 			lChannels += 1;
+			lChannels = std::min(lChannels, 4);
 			// Determine VkFormat based on the number of channels.
 			switch (lChannels) {
 			case 1: this->CreateInfo.format = VK_FORMAT_R8_SRGB; break;
@@ -607,6 +610,31 @@ namespace geodesy::core::gcl {
 		this->CreateInfo.extent.height = lHeight;
 		this->CreateInfo.extent.depth = 1;
 		this->CreateInfo.arrayLayers = 1;
+	}
+
+	image::image(format aFormat, uint aX, uint aY, uint aZ, uint aT, size_t aSourceSize, void* aSourceData) : image() {
+		this->CreateInfo.format = (VkFormat)aFormat;
+		this->CreateInfo.extent = {aX, aY, aZ};
+		this->CreateInfo.arrayLayers = aT;
+			
+		size_t PixelSize = bytes_per_pixel(aFormat);
+
+		this->HostSize = aX * aY * aZ * aT * PixelSize;
+		this->HostData = malloc(this->HostSize);
+
+		// Check if source data is provided.
+		if (aSourceSize != 0) {
+			// Check if provided data matches pixel size
+			if (aSourceSize != PixelSize || aSourceData == nullptr) {
+		    	throw std::runtime_error("Invalid source data or size does not match pixel format");
+			}
+			for (size_t i = 0; i < (this->HostSize / PixelSize); i++) {
+		        memcpy((char*)this->HostData + i * PixelSize, aSourceData, PixelSize);
+		    }
+		}
+		else {
+			memset(this->HostData, 0, this->HostSize);
+		}
 	}
 
 	image::image(std::shared_ptr<context> aContext, create_info aCreateInfo, std::string aFilePath) : image(aFilePath) {
@@ -641,7 +669,12 @@ namespace geodesy::core::gcl {
 		}
 		this->CreateInfo.format						= (VkFormat)aFormat;
 		this->CreateInfo.extent						= { aX, aY, aZ };
-		this->CreateInfo.mipLevels					= std::floor(std::log2(std::max(std::max(aX, aY), aZ))) + 1;
+		if (aCreateInfo.MipLevels) {
+			this->CreateInfo.mipLevels					= std::floor(std::log2(std::max(std::max(aX, aY), aZ))) + 1;
+		}
+		else {
+			this->CreateInfo.mipLevels					= 1;
+		}
 		this->CreateInfo.arrayLayers				= aT;
 		this->CreateInfo.samples					= (VkSampleCountFlagBits)aCreateInfo.Sample;
 		this->CreateInfo.tiling						= (VkImageTiling)aCreateInfo.Tiling;
@@ -698,79 +731,13 @@ namespace geodesy::core::gcl {
 		this->View = this->view();
 	}
 
-	// Copy Constructor.
-	image::image(image& aInput) : 
-	image(
-		aInput.Context, 
-		create_info(aInput.CreateInfo.samples, aInput.CreateInfo.tiling, this->MemoryType, aInput.CreateInfo.usage), 
-		(format)aInput.CreateInfo.format, 
-		aInput.CreateInfo.extent.width, aInput.CreateInfo.extent.height, aInput.CreateInfo.extent.depth, aInput.CreateInfo.arrayLayers, 
-		NULL
-	) {
-		VkResult Result = VK_SUCCESS;
-		std::vector<VkImageCopy> RegionList(this->CreateInfo.mipLevels);
-		VkExtent3D d = { aInput.CreateInfo.extent.width, aInput.CreateInfo.extent.height, aInput.CreateInfo.extent.depth };
-		for (uint32_t i = 0; i < this->CreateInfo.mipLevels; i++) {
-			VkImageCopy Region;
-			Region.srcSubresource.aspectMask				= aspect_flag(this->CreateInfo.format);
-			Region.srcSubresource.mipLevel					= i;
-			Region.srcSubresource.baseArrayLayer			= 0;
-			Region.srcSubresource.layerCount				= aInput.CreateInfo.arrayLayers;
-			Region.srcOffset								= { 0, 0, 0 };
-			Region.srcSubresource.aspectMask				= aspect_flag(this->CreateInfo.format);
-			Region.srcSubresource.mipLevel					= i;
-			Region.srcSubresource.baseArrayLayer			= 0;
-			Region.srcSubresource.layerCount				= aInput.CreateInfo.arrayLayers;
-			Region.dstOffset								= { 0, 0, 0 };
-			Region.extent									= { (d.width >> i) ? d.width >> i : 1, (d.height >> i) ? d.height >> i : 1, (d.depth >> i) ? d.depth >> i : 1 };
-			RegionList.push_back(Region);
-		}
-
-		// Copy the image.
-		Result = this->copy(aInput, RegionList);
-	}
-
-	// Move Constructor.
-	image::image(image&& aInput) noexcept {
-		this->Context 		= aInput.Context;
-		
-		this->CreateInfo 	= aInput.CreateInfo;
-		this->Handle 		= aInput.Handle;
-
-		this->MemoryType 	= aInput.MemoryType;
-		this->MemoryHandle 	= aInput.MemoryHandle;
-		aInput.zero_out();
-	}
-
 	// Destructor
 	image::~image() {
 		this->clear();
 	}
 
-	// Copy Assignment.
-	image& image::operator=(image& aRhs) {
-		if (this == &aRhs) return *this;
-		this->clear();
-		*this = image(aRhs);
-		return *this;
-	}
-
-	// Move Assignment.
-	image& image::operator=(image&& aRhs) noexcept {
-		this->clear();
-		this->Context 		= aRhs.Context;
-
-		this->CreateInfo 	= aRhs.CreateInfo;
-		this->Handle 		= aRhs.Handle;
-
-		this->MemoryType 	= aRhs.MemoryType;
-		this->MemoryHandle 	= aRhs.MemoryHandle;
-		aRhs.zero_out();
-		return *this;
-	}
-
 	// Device Operation Support: T.
-	void image::copy(VkCommandBuffer aCommandBuffer, VkOffset3D aDestinationOffset, uint32_t aDestinationArrayLayer, buffer& aSourceData, size_t aSourceOffset, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount) {
+	void image::copy(VkCommandBuffer aCommandBuffer, VkOffset3D aDestinationOffset, uint32_t aDestinationArrayLayer, std::shared_ptr<buffer> aSourceData, size_t aSourceOffset, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount) {
 		VkBufferImageCopy Region{};
 		Region.bufferOffset 		= aSourceOffset;
 		Region.bufferRowLength 		= 0;
@@ -782,13 +749,13 @@ namespace geodesy::core::gcl {
 		this->copy(aCommandBuffer, aSourceData, RegionList);
 	}
 
-	void image::copy(VkCommandBuffer aCommandBuffer, buffer& aSourceData, std::vector<VkBufferImageCopy> aRegionList) {
-		vkCmdCopyBufferToImage(aCommandBuffer, aSourceData.Handle, this->Handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, aRegionList.size(), aRegionList.data());
+	void image::copy(VkCommandBuffer aCommandBuffer, std::shared_ptr<buffer> aSourceData, std::vector<VkBufferImageCopy> aRegionList) {
+		vkCmdCopyBufferToImage(aCommandBuffer, aSourceData->Handle, this->Handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, aRegionList.size(), aRegionList.data());
 	}
 
-	void image::copy(VkCommandBuffer aCommandBuffer, VkOffset3D aDestinationOffset, uint32_t aDestinationArrayLayer, image& aSourceData, VkOffset3D aSourceOffset, uint32_t aSourceArrayLayer, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount) {
+	void image::copy(VkCommandBuffer aCommandBuffer, VkOffset3D aDestinationOffset, uint32_t aDestinationArrayLayer, std::shared_ptr<image> aSourceData, VkOffset3D aSourceOffset, uint32_t aSourceArrayLayer, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount) {
 		VkImageCopy Region{};
-		Region.srcSubresource 		= { aspect_flag(aSourceData.CreateInfo.format), 0, aSourceArrayLayer, aArrayLayerCount };
+		Region.srcSubresource 		= { aspect_flag(aSourceData->CreateInfo.format), 0, aSourceArrayLayer, aArrayLayerCount };
 		Region.srcOffset 			= aSourceOffset;
 		Region.dstSubresource 		= { aspect_flag(this->CreateInfo.format), 0, aDestinationArrayLayer, aArrayLayerCount };
 		Region.dstOffset 			= aDestinationOffset;
@@ -797,10 +764,10 @@ namespace geodesy::core::gcl {
 		this->copy(aCommandBuffer, aSourceData, RegionList);
 	}
 
-	void image::copy(VkCommandBuffer aCommandBuffer, image& aSourceData, std::vector<VkImageCopy> aRegionList) {
+	void image::copy(VkCommandBuffer aCommandBuffer, std::shared_ptr<image> aSourceData, std::vector<VkImageCopy> aRegionList) {
 		vkCmdCopyImage(
 			aCommandBuffer, 
-			aSourceData.Handle, 	VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 
+			aSourceData->Handle, 	VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, 
 			this->Handle, 			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
 			aRegionList.size(), aRegionList.data()
 		);
@@ -831,7 +798,7 @@ namespace geodesy::core::gcl {
 		);
 	}
 
-	VkResult image::copy(VkOffset3D aDestinationOffset, uint32_t aDestinationArrayLayer, buffer& aSourceData, size_t aSourceOffset, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount) {
+	VkResult image::copy(VkOffset3D aDestinationOffset, uint32_t aDestinationArrayLayer, std::shared_ptr<buffer> aSourceData, size_t aSourceOffset, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount) {
 		VkBufferImageCopy Region{};
 		Region.bufferOffset 						= aSourceOffset;
 		Region.bufferRowLength 						= 0;
@@ -843,7 +810,7 @@ namespace geodesy::core::gcl {
 		return this->copy(aSourceData, RegionList);
 	}
 
-	VkResult image::copy(buffer& aSourceData, std::vector<VkBufferImageCopy> aRegionList) {
+	VkResult image::copy(std::shared_ptr<buffer> aSourceData, std::vector<VkBufferImageCopy> aRegionList) {
 		VkResult Result = VK_SUCCESS;
 		VkCommandBuffer CommandBuffer = Context->allocate_command_buffer(device::operation::TRANSFER);
 		Result = Context->begin(CommandBuffer);
@@ -854,9 +821,9 @@ namespace geodesy::core::gcl {
 		return Result;
 	}
 
-	VkResult image::copy(VkOffset3D aDestinationOffset, uint32_t aDestinationArrayLayer, image& aSourceData, VkOffset3D aSourceOffset, uint32_t aSourceArrayLayer, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount) {
+	VkResult image::copy(VkOffset3D aDestinationOffset, uint32_t aDestinationArrayLayer, std::shared_ptr<image> aSourceData, VkOffset3D aSourceOffset, uint32_t aSourceArrayLayer, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount) {
 		VkImageCopy Region {};
-		Region.srcSubresource 	= { aspect_flag(aSourceData.CreateInfo.format), 0, aSourceArrayLayer, std::min(aArrayLayerCount, this->CreateInfo.arrayLayers - aSourceArrayLayer) };
+		Region.srcSubresource 	= { aspect_flag(aSourceData->CreateInfo.format), 0, aSourceArrayLayer, std::min(aArrayLayerCount, this->CreateInfo.arrayLayers - aSourceArrayLayer) };
 		Region.srcOffset 		= aSourceOffset;
 		Region.dstSubresource 	= { aspect_flag(this->CreateInfo.format), 0, aDestinationArrayLayer, std::min(aArrayLayerCount, this->CreateInfo.arrayLayers - aDestinationArrayLayer) };
 		Region.dstOffset 		= aDestinationOffset;
@@ -865,7 +832,7 @@ namespace geodesy::core::gcl {
 		return this->copy(aSourceData, RegionList);
 	}
 
-	VkResult image::copy(image& aSourceData, std::vector<VkImageCopy> aRegionList) {
+	VkResult image::copy(std::shared_ptr<image> aSourceData, std::vector<VkImageCopy> aRegionList) {
 		VkResult Result = VK_SUCCESS;
 		VkCommandBuffer CommandBuffer = Context->allocate_command_buffer(device::operation::TRANSFER);
 		Result = Context->begin(CommandBuffer);
@@ -1035,7 +1002,7 @@ namespace geodesy::core::gcl {
 			}
 		}
 
-		buffer StagingBuffer(
+		std::shared_ptr<buffer> StagingBuffer = std::make_shared<buffer>(
 			Context,
 			device::memory::DEVICE_LOCAL,
 			buffer::TRANSFER_SRC | buffer::TRANSFER_DST,
@@ -1047,7 +1014,7 @@ namespace geodesy::core::gcl {
 			size_t RegionSize = Region.imageExtent.width * Region.imageExtent.height * Region.imageExtent.depth * Region.imageSubresource.layerCount * bytes_per_pixel(this->CreateInfo.format);
 			
 			// Write data to device buffer.
-			Result = StagingBuffer.write(0, aSourceData, Region.bufferOffset, RegionSize);
+			Result = StagingBuffer->write(0, aSourceData, Region.bufferOffset, RegionSize);
 
 			// Copy data from device buffer to image.
 			Result = this->copy(Region.imageOffset, Region.imageSubresource.baseArrayLayer, StagingBuffer, Region.bufferOffset, Region.imageExtent, Region.imageSubresource.layerCount);
@@ -1083,7 +1050,7 @@ namespace geodesy::core::gcl {
 			}
 		}
 
-		buffer StagingBuffer(
+		std::shared_ptr<buffer> StagingBuffer = std::make_shared<buffer>(
 			Context,
 			device::memory::DEVICE_LOCAL,
 			buffer::TRANSFER_SRC | buffer::TRANSFER_DST,
@@ -1095,10 +1062,10 @@ namespace geodesy::core::gcl {
 			size_t RegionSize = Region.imageExtent.width * Region.imageExtent.height * Region.imageExtent.depth * Region.imageSubresource.layerCount * bytes_per_pixel(this->CreateInfo.format);
 
 			// Copy data from texture to staging buffer
-			Result = StagingBuffer.copy(0, *this, Region.imageOffset, Region.imageSubresource.baseArrayLayer, Region.imageExtent, Region.imageSubresource.layerCount);
+			Result = StagingBuffer->copy(0, this->shared_from_this(), Region.imageOffset, Region.imageSubresource.baseArrayLayer, Region.imageExtent, Region.imageSubresource.layerCount);
 
 			// Read data from device buffer.
-			Result = StagingBuffer.read(0, aDestinationData, Region.bufferOffset, RegionSize);
+			Result = StagingBuffer->read(0, aDestinationData, Region.bufferOffset, RegionSize);
 			
 		}
 
@@ -1203,6 +1170,7 @@ namespace geodesy::core::gcl {
 		this->Context			= nullptr;
 		this->CreateInfo		= {};
 		this->Handle			= VK_NULL_HANDLE;
+		this->View 				= VK_NULL_HANDLE;
 		this->MemoryType		= 0;
 		this->MemoryHandle		= VK_NULL_HANDLE;
 		this->CreateInfo.sType						= VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
