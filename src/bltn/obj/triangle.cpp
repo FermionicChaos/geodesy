@@ -11,12 +11,16 @@ namespace geodesy::bltn::obj {
 
 		std::vector<std::string> AssetList = {
 			"../glTF-Sample-Models/2.0/Box/glTF/Box.gltf",
+			// "../glTF-Sample-Models/2.0/BoomBox/glTF/BoomBox.gltf",
+			// "../glTF-Sample-Models/2.0/WaterBottle/glTF/WaterBottle.gltf",
 		};
 
 		this->Asset = Engine->FileManager.open(AssetList);
 
 		// Get Host model copy.
 		std::shared_ptr<core::gfx::model> HostModel = std::dynamic_pointer_cast<core::gfx::model>(Asset[0]);
+
+		// Set color texture
 
 		gcl::image::create_info MaterialTextureInfo;
 		MaterialTextureInfo.Layout 		= image::layout::SHADER_READ_ONLY_OPTIMAL;

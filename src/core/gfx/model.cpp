@@ -185,7 +185,7 @@ namespace geodesy::core::gfx {
 				);
 			}
 			// Load Mesh Instance Data
-			aModelNode.MeshInstance[i] = mesh::instance(MeshIndex, Mesh->mNumVertices, BoneData, Mesh->mMaterialIndex);
+			aModelNode.MeshInstance[i] = mesh::instance(MeshIndex, aModelNode.global_transform(), Mesh->mNumVertices, BoneData, Mesh->mMaterialIndex);
 		}
 	}
 
@@ -223,6 +223,7 @@ namespace geodesy::core::gfx {
 	}
 
 	model::node::node(std::shared_ptr<gcl::context> aContext, const node& aNode) {
+		this->Model 	= aNode.Model;
 		this->Root 		= this;
 		this->Parent 	= nullptr;
 		this->Child 	= std::vector<node>(aNode.Child.size());
@@ -234,7 +235,6 @@ namespace geodesy::core::gfx {
 		this->Name 				= aNode.Name;
 		this->Weight 			= aNode.Weight;
 		this->Transformation 	= aNode.Transformation;
-		this->Animation 		= aNode.Animation;
 		this->MeshInstance 		= std::vector<mesh::instance>(aNode.MeshInstance.size());
 		for (size_t i = 0; i < aNode.MeshInstance.size(); i++) {
 			this->MeshInstance[i] = mesh::instance(aContext, aNode.MeshInstance[i]);
@@ -257,10 +257,10 @@ namespace geodesy::core::gfx {
 
 	model::node& model::node::operator=(const node& aRhs) {
 		if (this == &aRhs) return *this;
+		this->Model 				= aRhs.Model;
 		this->Name					= aRhs.Name;
 		this->Transformation		= aRhs.Transformation;
 		this->MeshInstance 			= aRhs.MeshInstance;
-		this->Animation 			= aRhs.Animation;
 		this->Child.resize(aRhs.Child.size());
 		for (size_t i = 0; i < aRhs.Child.size(); i++) {
 			this->Child[i].Root 		= this->Root;
@@ -342,7 +342,6 @@ namespace geodesy::core::gfx {
 		// instead. If there are animations associated with the node hierarchy,
 		// Then the animation transformations will be used in a weighted average.
 
-
 		//tex:
 		// It is the reponsibility of the model class to insure that the sum of the contribution
 		// factors (weights) is equal to 1.
@@ -350,17 +349,18 @@ namespace geodesy::core::gfx {
 		// $$ T = T^{base} \cdot w^{base} + \sum_{\forall i \in A} T_{i}^{A} \cdot w_{i}^{A} $$ 
 		//
 
-		// BUG: Why does this not work?
+		// Bind Pose Transform
 		math::mat<float, 4, 4> NodeTransform = (this->Transformation * this->Weight);
-		// Checks if there are animations at the Root Node.
-		if (this->Root->Animation.size() > 0) {
-			// If there are, iterate through them, get their transforms and
-			// their contribution factors (weights).
-			for (animation& Anim : this->Root->Animation) {
-				// NodeTransform += AnimationTransform * Contribution Factor
-				NodeTransform += Anim[this->Name][aTime]*Anim.Weight;
-			}
-		}
+
+		// Overrides/Averages Animation Transformations with Bind Pose Transform based on weights.
+		// if (this->Root->Animation.size() > 0) {
+		// 	// If there are, iterate through them, get their transforms and
+		// 	// their contribution factors (weights).
+		// 	for (animation& Anim : this->Root->Animation) {
+		// 		// NodeTransform += AnimationTransform * Contribution Factor
+		// 		NodeTransform += Anim[this->Name][aTime]*Anim.Weight;
+		// 	}
+		// }
 
 		// Recursively apply parent transformations.
 		if (this->Parent != nullptr) {
@@ -446,13 +446,12 @@ namespace geodesy::core::gfx {
 		// Extract Scene Hiearchy
 		fill_and_traverse(Scene, this->Hierarchy, Scene->mRootNode);
 
-		// Extract Scene Animations. Animations will be tied to the node structure
-		// since animation info is what animates the node structure. The reason why
-		// elements are extracted as stack variables is simply for readability.
-		this->Hierarchy.Animation = std::vector<animation>(Scene->mNumAnimations);
-		for (size_t i = 0; i < this->Hierarchy.Animation.size(); i++) {
-			aiAnimation* RA 	= Scene->mAnimations[i];
-			animation& LA 		= this->Hierarchy.Animation[i];
+		// Previously incorrect. Animations will be tied to model and not node hierarchy.
+		// Each animation contains a map of node animations which are tied to the node hierarchy.
+		this->Animation = std::vector<animation>(Scene->mNumAnimations);
+		for (size_t i = 0; i < this->Animation.size(); i++) {
+			aiAnimation* RA 		= Scene->mAnimations[i];
+			animation& LA 			= this->Animation[i];
 			LA.Name					= RA->mName.C_Str();
 			LA.Weight				= 0.0f; // Animation Disabled until specified otherwise.
 			LA.Duration				= RA->mDuration;
@@ -462,8 +461,8 @@ namespace geodesy::core::gfx {
 				// Get Node Animation Data Structure
 				aiNodeAnim* RNA 										= RA->mChannels[j];
 				std::string NodeName 									= RNA->mNodeName.C_Str();
-				this->Hierarchy.Animation[i].NodeAnimMap[NodeName] 		= animation::node_anim();
-				animation::node_anim& LNA 								= this->Hierarchy.Animation[i].NodeAnimMap[NodeName];
+				this->Animation[i].NodeAnimMap[NodeName] 				= animation::node_anim();
+				animation::node_anim& LNA 								= this->Animation[i].NodeAnimMap[NodeName];
 
 				// Initialize Vectors For Key Data
 				LNA.PositionKey = std::vector<animation::key<math::vec<float, 3>>>(RNA->mNumPositionKeys);	

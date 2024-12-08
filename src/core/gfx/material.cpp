@@ -13,10 +13,10 @@ namespace geodesy::core::gfx {
     namespace {
 
         struct material_data{
-	        alignas(16) float ParallaxScale;
-	        alignas(16) int ParallaxIterations;
-	        alignas(16) float VertexColorWeight;
-	        alignas(16) float RefractionIndex;
+	        alignas(4) float ParallaxScale;
+	        alignas(4) int ParallaxIterations;
+	        alignas(4) float VertexColorWeight;
+	        alignas(4) float RefractionIndex;
             material_data();
         };
 

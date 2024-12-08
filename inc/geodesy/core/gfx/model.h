@@ -20,6 +20,7 @@ namespace geodesy::core::gfx {
 		struct node {
 
 			// Traversal Data
+			model*								Model;
 			node*								Root;
 			node*								Parent;
 			std::vector<node>					Child;
@@ -28,8 +29,7 @@ namespace geodesy::core::gfx {
 			std::string							Name;				// Name of the Node in Hierarchy
 			float 								Weight;				// Default Weight of the Node is 1.0f. 
 			math::mat<float, 4, 4>				Transformation;		// Static Bone to Model Space Transform Component = T0*T1*T2*...*Tn*Vbs
-			std::vector<animation> 				Animation; 			// Overrides 
-			std::vector<mesh::instance> 		MeshInstance; 		//
+			std::vector<mesh::instance> 		MeshInstance; 		// Mesh Instance located in node hierarchy.
 
 			node();
 			node(std::shared_ptr<gcl::context> aContext, const node& aNode);
@@ -51,7 +51,7 @@ namespace geodesy::core::gfx {
 			size_t instance_count() const;
 			// For this node, it will calculate the model transform for a node at a particular time.
 			// It uses the node's animation data to calculate the transform.
-			math::mat<float, 4, 4> global_transform(double aTime);
+			math::mat<float, 4, 4> global_transform(double aTime = 0.0f);
 			// Gathers a list of references to MeshInstance objects.
 			std::vector<mesh::instance*> gather_mesh_instances();
 
@@ -70,19 +70,20 @@ namespace geodesy::core::gfx {
 
 		// --------------- Aggregate Model Resources --------------- //
 
-		// Node Hierarchy
+		// Model Metadata
 		std::string										Name;
-		node											Hierarchy;			// Root Node Hierarchy 
 		double 											Time;
 
 		// Resources
 		std::shared_ptr<gcl::context> 					Context;
+		node											Hierarchy;			// Root Node Hierarchy 
+		std::vector<animation> 							Animation; 			// Overrides Bind Pose Transform
 		std::vector<std::shared_ptr<mesh>> 				Mesh;
 		std::vector<std::shared_ptr<material>> 			Material;
 		std::vector<std::shared_ptr<gcl::image>> 		Texture;
 		// std::vector<std::shared_ptr<light>> 			Light;				// Not Relevant To Model, open as stage.
 		// std::vector<std::shared_ptr<camera>> 		Camera;			// Not Relevant To Model, open as stage.
-		std::shared_ptr<gcl::buffer> 					UniformBuffer;
+		// std::shared_ptr<gcl::buffer> 					UniformBuffer;
 
 		model();
 		model(std::string aFilePath, file::manager* aFileManager = nullptr);

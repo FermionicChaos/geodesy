@@ -9,7 +9,7 @@ namespace geodesy::bltn::obj {
 	class camera3d : public ecs::subject {
 	public:
 
-		struct uniform_data {
+		struct camera_uniform_data {
 			alignas(16) core::math::vec<float, 3> Position;
 			alignas(16) core::math::mat<float, 4, 4> Rotation;
 			alignas(16) core::math::mat<float, 4, 4> Projection;

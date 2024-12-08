@@ -48,8 +48,9 @@ namespace geodesy::core::gfx {
 		this->Context 	= nullptr;
 	}
 
-	mesh::instance::instance(int aMeshIndex, uint aVertexCount, const std::vector<bone>& aBoneData, uint aMaterialIndex) : instance() {
+	mesh::instance::instance(int aMeshIndex, math::mat<float, 4, 4> aTransform, uint aVertexCount, const std::vector<bone>& aBoneData, uint aMaterialIndex) : instance() {
 		this->Index 		= aMeshIndex;
+		this->Transform 	= aTransform;
 		this->Vertex 		= std::vector<vertex::weight>(aVertexCount);
 		this->Bone 			= aBoneData;
 		this->MaterialIndex = aMaterialIndex;

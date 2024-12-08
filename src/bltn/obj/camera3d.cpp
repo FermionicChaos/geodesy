@@ -6,21 +6,10 @@ namespace geodesy::bltn::obj {
 	using namespace geodesy::core::gfx;
 	using namespace geodesy::core::gcl;
 
-	namespace { 
-
-		// This is needed to be able to pass the camera3d object to the shader.
-		struct Camera3DUBO {
-			alignas(16) math::vec<float, 3> Position;
-			alignas(16) math::mat<float, 4, 4> Orientation;
-			alignas(16) math::mat<float, 4, 4> Projection;
-		};
-
-	}
-
 	camera3d::geometry_buffer::geometry_buffer(std::shared_ptr<core::gcl::context> aContext, core::math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount) : framechain(aContext, aFrameRate, aFrameCount) {
 		// New API design?
 		image::create_info DepthCreateInfo;
-		DepthCreateInfo.Layout		= image::layout::SHADER_READ_ONLY_OPTIMAL;
+		DepthCreateInfo.Layout		= image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		DepthCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
 		DepthCreateInfo.Usage		= image::usage::SAMPLED | image::usage::DEPTH_STENCIL_ATTACHMENT  | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
 
@@ -29,16 +18,19 @@ namespace geodesy::bltn::obj {
 		ColorCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
 		ColorCreateInfo.Usage		= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
 
+		image::format ColorFormat = image::format::B8G8R8A8_UNORM; //image::format::R32G32B32A32_SFLOAT;
+		image::format DepthFormat = image::format::D32_SFLOAT;
+
 		this->Resolution = aResolution;
 		for (std::size_t i = 0; i < this->Image.size(); i++) {
 			// This is the finalized color output.
-			this->Image[i]["Color"] 		= aContext->create_image(ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
+			this->Image[i]["Color"] 		= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
 			// Opaque Geometry Buffer, used for Opaque and Transparent mesh instances.
-			this->Image[i]["OGB.Color"] 	= aContext->create_image(ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Position"] 	= aContext->create_image(ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Normal"] 	= aContext->create_image(ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Depth"] 	= aContext->create_image(DepthCreateInfo, image::D32_SFLOAT, aResolution[0], aResolution[1]);
-			this->Image[i]["FinalColor"] 	= aContext->create_image(ColorCreateInfo, image::R32G32B32A32_SFLOAT, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Color"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Position"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Normal"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Depth"] 	= aContext->create_image(DepthCreateInfo, DepthFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["FinalColor"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
 		}
 	}
 
@@ -116,7 +108,7 @@ namespace geodesy::bltn::obj {
 		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
 		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 
-		uniform_data UniformData;
+		camera_uniform_data UniformData;
 		float AspectRatio = (float)aFrameResolution[0] / (float)aFrameResolution[1];
 		UniformData.Position 		= this->Position;
 		UniformData.Rotation 			= {
@@ -127,8 +119,8 @@ namespace geodesy::bltn::obj {
 		};
 		UniformData.Projection 		= math::perspective(math::radians(90.0f), AspectRatio, 0.1f, 100.0f);
 
-		this->CameraUniformBuffer = Context->create_buffer(UBCI, sizeof(uniform_data), &UniformData);
-		this->CameraUniformBuffer->map_memory(0, sizeof(uniform_data));
+		this->CameraUniformBuffer = Context->create_buffer(UBCI, sizeof(UniformData), &UniformData);
+		this->CameraUniformBuffer->map_memory(0, sizeof(UniformData));
 	}
 
 	camera3d::~camera3d() {
@@ -159,7 +151,7 @@ namespace geodesy::bltn::obj {
 				Renderer[i][j].DrawCommand = this->CommandPool->allocate();
 
 				// Bind Object Uniform Buffers
-				Renderer[i][j].DescriptorArray->bind(0, 0, 0, this->UniformBuffer);					// Camera Position, Orientation, Projection
+				Renderer[i][j].DescriptorArray->bind(0, 0, 0, this->CameraUniformBuffer);			// Camera Position, Orientation, Projection
 				Renderer[i][j].DescriptorArray->bind(0, 1, 0, aObject->UniformBuffer);				// Object Position, Orientation, Scale
 				Renderer[i][j].DescriptorArray->bind(0, 2, 0, MeshInstance[j]->UniformBuffer); 		// Mesh Instance Transform
 				Renderer[i][j].DescriptorArray->bind(0, 3, 0, Material->UniformBuffer); 			// Material Properties

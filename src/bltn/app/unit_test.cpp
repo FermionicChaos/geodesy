@@ -75,10 +75,10 @@ namespace geodesy::bltn {
 		WindowCreateInfo.Swapchain.ImageUsage = image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_DST | image::usage::TRANSFER_SRC;
 		Window = std::make_shared<system_window>(DeviceContext, Engine->PrimaryDisplay, std::string("Triangle Demo with Texture Data"), WindowCreateInfo, math::vec<int, 2>(0, 0), math::vec<int, 2>(Resolution[0], Resolution[1]));
 
-		// std::shared_ptr<camera3d> Camera3D = std::make_shared<camera3d>(DeviceContext, nullptr, "Camera3D", Resolution, 0.333, 4);
-		// std::shared_ptr<object> Quad = std::dynamic_pointer_cast<object>(std::make_shared<triangle>(DeviceContext, nullptr, "Quad"));
+		std::shared_ptr<camera3d> Camera3D = std::make_shared<camera3d>(DeviceContext, nullptr, "Camera3D", Resolution, 0.333, 4);
+		std::shared_ptr<object> Quad = std::dynamic_pointer_cast<object>(std::make_shared<triangle>(DeviceContext, nullptr, "Quad"));
 
-		///*
+		/*
 		float Scalar = 1.0f;
 
 		image::create_info MaterialTextureInfo;
@@ -153,30 +153,34 @@ namespace geodesy::bltn {
 			// Result = Engine->execute_render_operations(this);
 			
 
-			// std::vector<gfx::draw_call> DrawCall = Quad->draw(Camera3D.get());
+			std::vector<gfx::draw_call> DrawCall = Quad->draw(Camera3D.get());
 
-			// std::vector<VkCommandBuffer> DrawCommand = convert(DrawCall);
+			std::vector<VkCommandBuffer> DrawCommand = convert(DrawCall);
 
-			// VkSubmitInfo SubmitInfo{};
-			// SubmitInfo.sType				= VK_STRUCTURE_TYPE_SUBMIT_INFO;
-			// SubmitInfo.pNext				= NULL;
-			// SubmitInfo.waitSemaphoreCount	= 0;
-			// SubmitInfo.pWaitSemaphores		= NULL;
-			// SubmitInfo.pWaitDstStageMask	= NULL;
-			// SubmitInfo.commandBufferCount	= DrawCommand.size();
-			// SubmitInfo.pCommandBuffers		= DrawCommand.data();
+			VkSubmitInfo SubmitInfo{};
+			SubmitInfo.sType				= VK_STRUCTURE_TYPE_SUBMIT_INFO;
+			SubmitInfo.pNext				= NULL;
+			SubmitInfo.waitSemaphoreCount	= 0;
+			SubmitInfo.pWaitSemaphores		= NULL;
+			SubmitInfo.pWaitDstStageMask	= NULL;
+			SubmitInfo.commandBufferCount	= DrawCommand.size();
+			SubmitInfo.pCommandBuffers		= DrawCommand.data();
 
-			// DeviceContext->execute_and_wait(device::operation::GRAPHICS_AND_COMPUTE, { SubmitInfo });
+			DeviceContext->execute_and_wait(device::operation::GRAPHICS_AND_COMPUTE, { SubmitInfo });
 
-			// Window->next_frame_now();
+			Window->next_frame_now();
 
-			// VkExtent3D Extent = { Resolution[0], Resolution[1], 1 };
-			// // Copy data to window.
-			// // Window->current_frame()["Color"]->copy({ 0, 0, 0 }, 0, Camera3D->current_frame()["OGB.Color"], { 0, 0, 0 }, 0, Extent);
+			VkExtent3D Extent = { Resolution[0], Resolution[1], 1 };
+			// Copy data to window.
+			Camera3D->current_frame()["OGB.Color"]->transition(image::layout::SHADER_READ_ONLY_OPTIMAL, image::layout::TRANSFER_SRC_OPTIMAL);
+			Window->current_frame()["Color"]->transition(image::layout::PRESENT_SRC_KHR, image::layout::TRANSFER_DST_OPTIMAL);
+			Window->current_frame()["Color"]->copy({ 0, 0, 0 }, 0, Camera3D->current_frame()["OGB.Color"], { 0, 0, 0 }, 0, Extent);
+			Camera3D->current_frame()["OGB.Color"]->transition(image::layout::TRANSFER_SRC_OPTIMAL, image::layout::SHADER_READ_ONLY_OPTIMAL);
+			Window->current_frame()["Color"]->transition(image::layout::TRANSFER_DST_OPTIMAL, image::layout::PRESENT_SRC_KHR);
 
-			// Window->present_frame_now();
+			Window->present_frame_now();
 
-			///*
+			/*
 			// Acquire next image from swapchain.
 			Result = Window->next_frame(VK_NULL_HANDLE, Fence);
 

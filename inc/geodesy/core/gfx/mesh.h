@@ -30,7 +30,7 @@ namespace geodesy::core::gfx {
 			std::shared_ptr<gcl::buffer> 	UniformBuffer;
 
 			instance();
-			instance(int aMeshIndex, uint aVertexCount, const std::vector<bone>& aBoneData, uint aMaterialIndex);
+			instance(int aMeshIndex, math::mat<float, 4, 4> aTransform, uint aVertexCount, const std::vector<bone>& aBoneData, uint aMaterialIndex);
 			instance(std::shared_ptr<gcl::context> aContext, const instance& aInstance);
 
 			void update(double DeltaTime);

@@ -71,6 +71,8 @@ namespace geodesy::ecs {
 
 		this->Time += aDeltaTime;
 
+		this->Model->update(aDeltaTime);
+
 		//return UpdateInfo;
 	}
 
