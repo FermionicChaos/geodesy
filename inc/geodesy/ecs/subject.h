@@ -2,6 +2,18 @@
 #ifndef GEODESY_CORE_SUBJECT_H
 #define GEODESY_CORE_SUBJECT_H
 
+#include "../config.h"
+
+#include "../core/io.h"
+#include "../core/math.h"
+#include "../core/util.h"
+#include "../core/lgc.h"
+#include "../core/phys.h"
+#include "../core/hid.h"
+#include "../core/gcl.h"
+#include "../core/gfx.h"
+#include "../core/sfx.h"
+
 #include "object.h"
 
 namespace geodesy::ecs {

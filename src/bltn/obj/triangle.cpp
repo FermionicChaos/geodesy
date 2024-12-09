@@ -10,10 +10,10 @@ namespace geodesy::bltn::obj {
 		engine* Engine = aContext->Device->Engine;
 
 		std::vector<std::string> AssetList = {
-			"../glTF-Sample-Models/2.0/Box/glTF/Box.gltf",
+			// "../glTF-Sample-Models/2.0/Box/glTF/Box.gltf",
 			// "../glTF-Sample-Models/2.0/BoomBox/glTF/BoomBox.gltf",
 			// "../glTF-Sample-Models/2.0/WaterBottle/glTF/WaterBottle.gltf",
-			// "../glTF-Sample-Models/2.0/Lantern/glTF/Lantern.gltf",
+			"../glTF-Sample-Models/2.0/Lantern/glTF/Lantern.gltf",
 		};
 
 		this->Asset = Engine->FileManager.open(AssetList);

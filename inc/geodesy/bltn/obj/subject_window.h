@@ -15,8 +15,10 @@ be referenced by a system_window class for presentation.
 
 namespace geodesy::bltn::obj {
 
-	class subject_window {
+	class subject_window : public ecs::object {
 	public:
+
+		subject_window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, std::string aName, std::shared_ptr<ecs::subject> aSubject);
 
 	};
 

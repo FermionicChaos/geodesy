@@ -148,12 +148,12 @@ namespace geodesy::ecs {
 		for (std::shared_ptr<object> Obj : aStage->Object) {
 			// Gather draw calls on object.
 			std::vector<gfx::draw_call> DrawCall = Obj->draw(this);
-			// Seperate command buffers.
+			// Extract Command Buffers from Draw Calls.
 			std::vector<VkCommandBuffer> ExtractedCommandBuffer(DrawCall.size());
 			for (std::size_t i = 0; i < DrawCall.size(); i++) {
 				ExtractedCommandBuffer[i] = DrawCall[i].DrawCommand;
 			}
-			// Append to list.
+			// Aggregate into a single list of command buffers.
 			this->Framechain->DrawCommand[this->Framechain->DrawIndex].insert(this->Framechain->DrawCommand[this->Framechain->DrawIndex].end(), ExtractedCommandBuffer.begin(), ExtractedCommandBuffer.end());
 		}
 

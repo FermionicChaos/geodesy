@@ -71,19 +71,31 @@ namespace geodesy::ecs {
 
 		this->Time += aDeltaTime;
 
-		this->Model->update(aDeltaTime);
+		if (this->Model.get() != nullptr) {
+			// TODO: Update Model animation later.
+			// this->Model->update(aDeltaTime);
+		}
 
 		//return UpdateInfo;
 	}
 
 	std::vector<gfx::draw_call> object::draw(subject* aSubject) {
+		std::vector<gfx::draw_call> DrawCallList;
+		
+		// If the subject is the same as the object, return the draw call list empty.
+		// A subject cannot draw itself.
+		if (this == aSubject) return DrawCallList;
+
 		// NOTE: A single draw call represents a single mesh instance in the model.
 		if (this->Renderer.count(aSubject) == 0) {
 			this->Renderer[aSubject] = aSubject->default_renderer(this);
-		} 
+		}
+
+		// Get draw calls from this object for the subject.
+		DrawCallList = this->Renderer[aSubject][aSubject->Framechain->DrawIndex];
 
 		// Return a vector of the draw calls for the subject, and target draw index.
-		return Renderer[aSubject][aSubject->Framechain->DrawIndex];
+		return DrawCallList;
 	}
 
 }

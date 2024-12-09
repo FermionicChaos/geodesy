@@ -60,6 +60,18 @@ namespace geodesy::ecs {
 		stage(std::shared_ptr<core::gcl::context> aContext, std::string aName);
 		~stage();
 
+		template<typename T, typename... Args>
+		std::shared_ptr<T> create_object(std::string aName, Args&&... aArgs) {
+			std::shared_ptr<T> NewObject = std::make_shared<T>(
+				this->Context,
+				this,
+				std::move(aName),
+				std::forward<Args>(aArgs)...
+			);
+			this->Object.push_back(NewObject);
+			return NewObject;
+		}
+
 		virtual object::update_info update(double aDeltaTime);
 		virtual subject::render_info render();
 

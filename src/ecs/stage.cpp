@@ -1,6 +1,6 @@
 #include <geodesy/ecs/stage.h>
 
-#define ENABLE_MULTITHREADED_PROCESSING
+// #define ENABLE_MULTITHREADED_PROCESSING
 
 #ifdef ENABLE_MULTITHREADED_PROCESSING
 #include <omp.h>

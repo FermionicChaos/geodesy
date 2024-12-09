@@ -4,8 +4,8 @@
 
 namespace geodesy::bltn::stg {
 
-	canvas::canvas(std::shared_ptr<core::gcl::context> aContext, std::string aName) : ecs::stage(aContext, aName) {
-
+	canvas::canvas(std::shared_ptr<core::gcl::context> aContext, std::string aName, std::shared_ptr<obj::window> aWindow) : ecs::stage(aContext, aName) {
+		this->Window = aWindow;	
 	}
 
 	ecs::subject::render_info canvas::render() {
@@ -13,22 +13,18 @@ namespace geodesy::bltn::stg {
 		// and not an object.
 		VkResult Result = VK_SUCCESS;
 		ecs::subject::render_info RenderInfo;
-		for (std::shared_ptr<obj::window> Win : this->Window) {
 
-			// Check if window is ready to be drawn to.
-			if (!Win->ready_to_render()) continue;
+		// Get next frame of primary window.
+		Result = Window->next_frame();
 
-			// TODO: Figure out how to use semaphores to synchronize the rendering of the window.
-			Result = Win->next_frame();
+		std::vector<VkSubmitInfo> SubmitInfo = Window->render(this);
 
-			std::vector<VkSubmitInfo> SubmitInfo = Win->render(this);
+		VkPresentInfoKHR PresentInfo = Window->present_frame();
 
-			VkPresentInfoKHR PresentInfo = Win->present_frame();
-
-			// Append to RenderInfo
-			RenderInfo.SubmitInfo.insert(RenderInfo.SubmitInfo.end(), SubmitInfo.begin(), SubmitInfo.end());
-			RenderInfo.PresentInfo.push_back(PresentInfo);
-		}
+		// Append to RenderInfo
+		RenderInfo.SubmitInfo.insert(RenderInfo.SubmitInfo.end(), SubmitInfo.begin(), SubmitInfo.end());
+		RenderInfo.PresentInfo.push_back(PresentInfo);
+		
 		return RenderInfo;
 	}
 
