@@ -270,7 +270,7 @@ namespace geodesy::core::gcl {
 				this->ColorAttachment[Location].Description.flags				= 0;
 				this->ColorAttachment[Location].Description.format				= (VkFormat)image::t2f(this->ColorAttachment[Location].Variable.Type.ID);
 				this->ColorAttachment[Location].Description.samples				= VK_SAMPLE_COUNT_1_BIT;
-				this->ColorAttachment[Location].Description.loadOp				= VK_ATTACHMENT_LOAD_OP_CLEAR;
+				this->ColorAttachment[Location].Description.loadOp				= VK_ATTACHMENT_LOAD_OP_LOAD;
 				this->ColorAttachment[Location].Description.storeOp				= VK_ATTACHMENT_STORE_OP_STORE;
 				this->ColorAttachment[Location].Description.stencilLoadOp		= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				this->ColorAttachment[Location].Description.stencilStoreOp		= VK_ATTACHMENT_STORE_OP_DONT_CARE;
