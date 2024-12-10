@@ -48,7 +48,11 @@ namespace geodesy::ecs {
 		return Result;
 	}
 
-	std::map<std::string, std::shared_ptr<core::gcl::image>> subject::current_frame() {
+	std::map<std::string, std::shared_ptr<core::gcl::image>> subject::read_frame() {
+		return this->Framechain->Image[this->Framechain->ReadIndex];
+	}
+
+	std::map<std::string, std::shared_ptr<core::gcl::image>> subject::draw_frame() {
 		return this->Framechain->Image[this->Framechain->DrawIndex];
 	}
 
@@ -145,6 +149,7 @@ namespace geodesy::ecs {
 
 		// This is the default render methods for a subject, it does
 		// not sort objects by render order, and does not use semaphores
+		this->Framechain->DrawCommand[this->Framechain->DrawIndex].clear();
 		for (std::shared_ptr<object> Obj : aStage->Object) {
 			// Gather draw calls on object.
 			std::vector<gfx::draw_call> DrawCall = Obj->draw(this);

@@ -77,10 +77,10 @@ namespace geodesy::bltn::obj {
 		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 1, sizeof(gfx::mesh::vertex::weight), 7, offsetof(gfx::mesh::vertex::weight, BoneWeight));
 		
 		// Select output attachments for pipeline.
-		Rasterizer->attach(0, this->current_frame()["OGB.Color"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
-		Rasterizer->attach(1, this->current_frame()["OGB.Position"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
-		Rasterizer->attach(2, this->current_frame()["OGB.Normal"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
-		Rasterizer->attach(3, this->current_frame()["OGB.Depth"], 		image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+		Rasterizer->attach(0, this->draw_frame()["OGB.Color"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
+		Rasterizer->attach(1, this->draw_frame()["OGB.Position"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
+		Rasterizer->attach(2, this->draw_frame()["OGB.Normal"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
+		Rasterizer->attach(3, this->draw_frame()["OGB.Depth"], 		image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 		// How to intepret vertex data in rasterization.
 		Rasterizer->InputAssembly.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;

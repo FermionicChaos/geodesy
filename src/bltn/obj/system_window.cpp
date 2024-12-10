@@ -132,8 +132,23 @@ namespace geodesy::bltn::obj {
 		FrameRate = 60.0f;
 	}
 
-	system_window::system_window(std::shared_ptr<core::gcl::context> aContext, std::shared_ptr<system_display> aDisplay, std::string aName, const create_info& aCreateInfo, core::math::vec<int, 2> aPosition, core::math::vec<int, 2> aSize) :
-	window(aContext, nullptr, aName, core::math::vec<uint, 3>(aSize[0], aSize[1], 1u), aCreateInfo.FrameRate, aCreateInfo.Swapchain.FrameCount, 1u) {
+	system_window::system_window(
+		std::shared_ptr<gcl::context> aContext, 
+		std::shared_ptr<system_display> aDisplay, 
+		std::string aName, 
+		const create_info& aCreateInfo, 
+		math::vec<int, 2> aPosition, 
+		math::vec<int, 2> aSize
+	) : window(
+		aContext, 
+		nullptr, 
+		aName, 
+		aCreateInfo.Swapchain.PixelFormat,
+		math::vec<uint, 3>(aSize[0], aSize[1], 1u), 
+		aCreateInfo.FrameRate, 
+		aCreateInfo.Swapchain.FrameCount, 
+		1u
+	) {
 		VkResult Result = VK_SUCCESS;
 		core::math::vec<uint, 3> FramebufferResolution;
 
@@ -158,7 +173,6 @@ namespace geodesy::bltn::obj {
 			this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(Swapchain);
 		}
 
-		// Acquire Swapchain Images.	
 	}
 
 	system_window::system_window(std::shared_ptr<core::gcl::context> aContext, std::shared_ptr<system_display> aDisplay, std::string aName, const create_info& aCreateInfo, core::math::vec<float, 3> aPosition, core::math::vec<float, 2> aSize) :
@@ -196,6 +210,7 @@ namespace geodesy::bltn::obj {
 			}
 		}
 		this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(Swapchain);
+		this->draw_frame()["Color"]->transition(image::layout::PRESENT_SRC_KHR, image::layout::SHADER_READ_ONLY_OPTIMAL);
 		return ReturnValue;
 	}
 
@@ -210,6 +225,7 @@ namespace geodesy::bltn::obj {
 		PresentInfo.pSwapchains				= &Swapchain->Handle;
 		PresentInfo.pImageIndices			= &Swapchain->DrawIndex;
 		PresentInfo.pResults				= NULL;
+		this->draw_frame()["Color"]->transition(image::layout::SHADER_READ_ONLY_OPTIMAL, image::layout::PRESENT_SRC_KHR);
 		return PresentInfo;
 	}
 

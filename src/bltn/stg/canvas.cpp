@@ -15,7 +15,7 @@ namespace geodesy::bltn::stg {
 		ecs::subject::render_info RenderInfo;
 
 		// Get next frame of primary window.
-		Result = Window->next_frame();
+		Result = Window->next_frame_now();
 
 		std::vector<VkSubmitInfo> SubmitInfo = Window->render(this);
 

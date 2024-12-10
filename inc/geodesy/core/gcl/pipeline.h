@@ -139,6 +139,7 @@ namespace geodesy::core::gcl {
 
 			// attach attaches an image to a pipeline's output, conveying the format and layout of the image during rendering.
 			void attach(uint32_t aAttachmentIndex, std::shared_ptr<image> aAttachmentImage, image::layout aImageLayout);
+			void attach(uint32_t aAttachmentIndex, image::format aFormat, image::sample aSampleCount, image::layout aImageLayout);
 
 			void resize(math::vec<uint, 3> aResolution);
 

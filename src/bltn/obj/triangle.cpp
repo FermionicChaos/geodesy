@@ -6,7 +6,7 @@ namespace geodesy::bltn::obj {
 	using namespace gcl;
 	using namespace gfx;
 
-	triangle::triangle(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, std::string aName) : ecs::object(aContext, aStage, aName, { 0.0f, 0.0f, 0.0f }) {
+	triangle::triangle(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, std::string aName) : ecs::object(aContext, aStage, aName, { 0.0f, 10.0f, -10.0f }, { 0.0f, 90.0f }) {
 		engine* Engine = aContext->Device->Engine;
 
 		std::vector<std::string> AssetList = {

@@ -374,21 +374,25 @@ namespace geodesy::core::gcl {
 	}
 
 	void pipeline::rasterizer::attach(uint32_t aAttachmentIndex, std::shared_ptr<image> aAttachmentImage, image::layout aImageLayout) {
+		this->attach(aAttachmentIndex, (image::format)aAttachmentImage->CreateInfo.format, (image::sample)aAttachmentImage->CreateInfo.samples, aImageLayout);
+	}
+
+	void pipeline::rasterizer::attach(uint32_t aAttachmentIndex, image::format aFormat, image::sample aSampleCount, image::layout aImageLayout) {
 		if (aAttachmentIndex < this->ColorAttachment.size()) {
-			this->ColorAttachment[aAttachmentIndex].Description.format			= aAttachmentImage->CreateInfo.format;
-			this->ColorAttachment[aAttachmentIndex].Description.samples			= aAttachmentImage->CreateInfo.samples;
+			this->ColorAttachment[aAttachmentIndex].Description.format			= (VkFormat)aFormat;
+			this->ColorAttachment[aAttachmentIndex].Description.samples			= (VkSampleCountFlagBits)aSampleCount;
 			this->ColorAttachment[aAttachmentIndex].Description.initialLayout	= (VkImageLayout)aImageLayout;
 			this->ColorAttachment[aAttachmentIndex].Description.finalLayout		= (VkImageLayout)aImageLayout;
 		}
 		else if (aAttachmentIndex == this->ColorAttachment.size()) {
-			this->DepthAttachment.Description.format							= aAttachmentImage->CreateInfo.format;
-			this->DepthAttachment.Description.samples							= aAttachmentImage->CreateInfo.samples;
+			this->DepthAttachment.Description.format							= (VkFormat)aFormat;
+			this->DepthAttachment.Description.samples							= (VkSampleCountFlagBits)aSampleCount;
 			this->DepthAttachment.Description.initialLayout						= (VkImageLayout)aImageLayout;
 			this->DepthAttachment.Description.finalLayout						= (VkImageLayout)aImageLayout;
 		}
 		else if (aAttachmentIndex == this->ColorAttachment.size() + 1) {
-			this->StencilAttachment.Description.format							= aAttachmentImage->CreateInfo.format;
-			this->StencilAttachment.Description.samples							= aAttachmentImage->CreateInfo.samples;
+			this->StencilAttachment.Description.format							= (VkFormat)aFormat;
+			this->StencilAttachment.Description.samples							= (VkSampleCountFlagBits)aSampleCount;
 			this->StencilAttachment.Description.initialLayout					= (VkImageLayout)aImageLayout;
 			this->StencilAttachment.Description.finalLayout						= (VkImageLayout)aImageLayout;
 		}

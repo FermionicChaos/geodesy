@@ -88,11 +88,21 @@ namespace geodesy::ecs {
 		std::map<std::shared_ptr<gcl::context>, subject::render_info> RenderOperations;
 
 		for (auto& Stg : this->Stage) {
-			// Render stage.
+			// Gather render information from each stage.
 			subject::render_info RenderInfo = Stg->render();
-			RenderOperations[Stg->Context] = subject::render_info();
-			RenderOperations[Stg->Context].SubmitInfo = purify_execution_vector(RenderInfo.SubmitInfo);
-			RenderOperations[Stg->Context].PresentInfo = purify_presentation_vector(RenderInfo.PresentInfo);
+			// Purify empty elements.
+			RenderInfo.SubmitInfo = purify_execution_vector(RenderInfo.SubmitInfo);
+			RenderInfo.PresentInfo = purify_presentation_vector(RenderInfo.PresentInfo);
+			// Check if Context key exists in map.
+			if (RenderOperations.count(Stg->Context) == 0) {
+				// If no key exists, simply add.
+				RenderOperations[Stg->Context] = RenderInfo;
+			} 
+			else {
+				// If element exists, append new Submissions/Presentations.
+				RenderOperations[Stg->Context].SubmitInfo.insert(RenderOperations[Stg->Context].SubmitInfo.end(), RenderInfo.SubmitInfo.begin(), RenderInfo.SubmitInfo.end());
+				RenderOperations[Stg->Context].PresentInfo.insert(RenderOperations[Stg->Context].PresentInfo.end(), RenderInfo.PresentInfo.begin(), RenderInfo.PresentInfo.end());
+			}
 		}
 
 		return RenderOperations;

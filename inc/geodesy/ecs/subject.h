@@ -48,7 +48,8 @@ namespace geodesy::ecs {
 
 		bool ready_to_render();
 		VkResult next_frame_now();
-		std::map<std::string, std::shared_ptr<core::gcl::image>> current_frame();
+		std::map<std::string, std::shared_ptr<core::gcl::image>> read_frame();
+		std::map<std::string, std::shared_ptr<core::gcl::image>> draw_frame();
 		VkResult present_frame_now();
 
 		virtual std::vector<std::vector<core::gfx::draw_call>> default_renderer(object* aObject);
