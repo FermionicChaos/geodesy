@@ -7,8 +7,8 @@ namespace geodesy::ecs {
 	using namespace gcl;
 
 	object::object(std::shared_ptr<core::gcl::context> aContext, stage* aStage, std::string aName, math::vec<float, 3> aPosition, math::vec<float, 2> aDirection) {
-		float Theta 					= math::radians(aDirection[0]);
-		float Phi 						= math::radians(aDirection[1]);
+		float Theta 					= math::radians(aDirection[0] + 90.0f);
+		float Phi 						= math::radians(aDirection[1] + 90.0f);
 		this->Engine 					= aContext->Device->Engine;
 		this->Stage 					= aStage;
 		this->Name 						= aName;

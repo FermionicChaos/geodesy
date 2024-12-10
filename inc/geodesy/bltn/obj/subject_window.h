@@ -30,7 +30,7 @@ namespace geodesy::bltn::obj {
 			std::shared_ptr<ecs::subject> aSubjectSource, 
 			core::math::vec<float, 2> aSize,
 			core::math::vec<float, 3> aPosition = { 0.0f, 0.0f, 0.5f },
-			core::math::vec<float, 2> aDirection = { 90.0f, 270.0f }
+			core::math::vec<float, 2> aDirection = { 180.0f, 0.0f }
 		);
 
 		std::vector<core::gfx::draw_call> draw(ecs::subject* aSubject) override;
