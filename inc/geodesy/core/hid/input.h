@@ -16,6 +16,13 @@ namespace geodesy::core::hid {
 	class input {
 	public:
 
+		enum type {
+			KEYBOARD,
+			MOUSE,
+			JOYSTICK
+		};
+
+		type 			Event;
 		keyboard 		Keyboard;
 		mouse 			Mouse;
 		// joystick Joystick;

@@ -5,6 +5,8 @@
 #include "gcl/config.h"
 #include "gcl/device.h"
 #include "gcl/command_pool.h"
+#include "gcl/command_batch.h"
+#include "gcl/submission_batch.h"
 #include "gcl/buffer.h"
 #include "gcl/image.h"
 #include "gcl/shader.h"

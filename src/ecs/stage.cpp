@@ -80,7 +80,7 @@ namespace geodesy::ecs {
 			if (!RenderTarget->ready_to_render()) continue;
 
 			// Iterate to next frame.
-			VkResult Result = RenderTarget->next_frame();
+			VkResult Result = RenderTarget->next_frame_now();
 
 			// Render Target Render Stage.
 			std::vector<VkSubmitInfo> SubmitInfoList = RenderTarget->render(this);

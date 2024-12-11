@@ -89,6 +89,7 @@ namespace geodesy::ecs {
 
 		for (auto& Stg : this->Stage) {
 			// Gather render information from each stage.
+			//RenderOperations[Stg->Context] += Stg->render();
 			subject::render_info RenderInfo = Stg->render();
 			// Purify empty elements.
 			RenderInfo.SubmitInfo = purify_execution_vector(RenderInfo.SubmitInfo);

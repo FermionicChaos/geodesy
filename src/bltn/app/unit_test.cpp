@@ -75,14 +75,15 @@ namespace geodesy::bltn {
 		WindowCreateInfo.Swapchain.ImageUsage = image::usage::COLOR_ATTACHMENT | image::usage::SAMPLED | image::usage::TRANSFER_DST | image::usage::TRANSFER_SRC;
 		Window = std::make_shared<system_window>(DeviceContext, Engine->PrimaryDisplay, std::string("System Window"), WindowCreateInfo, math::vec<int, 2>(0, 0), math::vec<int, 2>(Resolution[0], Resolution[1]));
 
-		Window->InputTarget = Window;
-
 		this->create_stage<stg::scene3d>(DeviceContext, "3D Rendering Testing");
 		this->create_stage<stg::canvas>(DeviceContext, "Window Testing", std::dynamic_pointer_cast<obj::window>(Window));
 		// TODO: Swap stage/object from vector into std::map<std::string, T>.
 		//^ Implement API Later
 		//^ this->Stage["Window Testing"]->share_subject_from(this->Stage["3D Rendering Testing"], "Camera3D", math::vec<float, 2>(1.0f, 1.0f));
 		this->Stage[1]->create_object<obj::subject_window>("Camera3D Reflection", std::dynamic_pointer_cast<ecs::subject>(this->Stage[0]->Object[0]), math::vec<float, 2>(1.0f, 1.0f));
+
+		// Set Camera3D as Input Target for user input.
+		Window->InputTarget = this->Stage[0]->Object[0];
 
 		// Start main loop.
 		float t = 0.0f;
