@@ -1,6 +1,8 @@
 #include <geodesy/engine.h>
 #include <geodesy/ecs/object.h>
 
+#include <iostream>
+
 namespace geodesy::ecs {
 
 	using namespace core;
@@ -53,6 +55,18 @@ namespace geodesy::ecs {
 		return false;
 	}
 
+	void object::input(const core::hid::input& aInput) {
+
+		switch(aInput.Keyboard[hid::keyboard::KEY_W].Action) {
+		default:
+			break;
+		case hid::keyboard::action::KEY_PRESS:
+			std::cout << "hellow" << std::endl;
+			break;
+		}
+
+	}
+
 	void object::update(double aDeltaTime, math::vec<float, 3> aAppliedForce, math::vec<float, 3> aAppliedTorque) {
 		//update_info UpdateInfo;
 		// Newtons First Law: An object in motion tends to stay in motion.
@@ -65,7 +79,7 @@ namespace geodesy::ecs {
 		this->AngularMomentum += aAppliedTorque * aDeltaTime;
 
 		// How the object will move according to its current momentum.
-		this->Position += (this->LinearMomentum / this->Mass) * aDeltaTime;
+		this->Position += (this->LinearMomentum / this->Mass + this->InputVelocity) * aDeltaTime;
 
 		// TODO: Add update using angular momentum to change orientation of object over time.
 

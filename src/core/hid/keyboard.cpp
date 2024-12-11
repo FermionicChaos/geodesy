@@ -1,26 +1,21 @@
 #include <geodesy/core/hid/keyboard.h>
 
-namespace geodesy {
-	namespace core {
-		namespace hid {
+#include <string.h>
 
-			keyboard::keyboard() {
+namespace geodesy::core::hid {
 
-			}
-
-			keyboard::~keyboard() {
-
-			}
-
-			bool keyboard::operator[](int keyID) {
-				if ((Action[keyID] == KEY_PRESS) || (Action[keyID] == KEY_REPEAT)) {
-					return true;
-				}
-				else {
-					return false;
-				}
-			}
-
-		}
+	keyboard::keyboard() {
+		memset(this->Key, 0, sizeof(this->Key));
 	}
+
+	keyboard::~keyboard() {}
+
+	keyboard::key& keyboard::operator[](int aKeyID) {
+		return this->Key[aKeyID];
+	}
+
+	keyboard::key keyboard::operator[](int aKeyID) const {
+		return this->Key[aKeyID];
+	}
+
 }

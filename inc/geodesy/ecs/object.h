@@ -47,6 +47,7 @@ namespace geodesy::ecs {
 		float																		Mass;				// Kilogram			[kg]
 		float																		Time;				// Second 			[s]
 		core::math::vec<float, 3>													Position;			// Meter			[m]
+		float 																		Theta, Phi;			// Radians			[rad]
 		core::math::vec<float, 3>													DirectionRight;		// Right			[Normalized]
 		core::math::vec<float, 3>													DirectionUp;		// Up				[Normalized]
 		core::math::vec<float, 3>													DirectionFront;		// Backward			[Normalized]
@@ -75,8 +76,14 @@ namespace geodesy::ecs {
 
 		virtual bool is_subject();
 
+		virtual void input(const core::hid::input& aInput);
 		virtual void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f });
 		virtual std::vector<core::gfx::draw_call> draw(subject* aSubject);
+
+	protected:
+
+		core::math::vec<float, 3> InputVelocity;
+		core::math::vec<float, 3> InputForce;
 
 	};
 	

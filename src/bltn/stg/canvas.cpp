@@ -5,7 +5,8 @@
 namespace geodesy::bltn::stg {
 
 	canvas::canvas(std::shared_ptr<core::gcl::context> aContext, std::string aName, std::shared_ptr<obj::window> aWindow) : ecs::stage(aContext, aName) {
-		this->Window = aWindow;	
+		this->Window = aWindow;
+		// this->Object.push_back(aWindow);
 	}
 
 	ecs::subject::render_info canvas::render() {

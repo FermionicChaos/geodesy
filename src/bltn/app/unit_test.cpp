@@ -75,6 +75,8 @@ namespace geodesy::bltn {
 		WindowCreateInfo.Swapchain.ImageUsage = image::usage::COLOR_ATTACHMENT | image::usage::SAMPLED | image::usage::TRANSFER_DST | image::usage::TRANSFER_SRC;
 		Window = std::make_shared<system_window>(DeviceContext, Engine->PrimaryDisplay, std::string("System Window"), WindowCreateInfo, math::vec<int, 2>(0, 0), math::vec<int, 2>(Resolution[0], Resolution[1]));
 
+		Window->InputTarget = Window;
+
 		this->create_stage<stg::scene3d>(DeviceContext, "3D Rendering Testing");
 		this->create_stage<stg::canvas>(DeviceContext, "Window Testing", std::dynamic_pointer_cast<obj::window>(Window));
 		// TODO: Swap stage/object from vector into std::map<std::string, T>.
@@ -99,6 +101,7 @@ namespace geodesy::bltn {
 				math::vec<float, 2> SamplePoint = { 1.0f, 0.75f };
 				std::cout << "----- Performance Metrics -----" << std::endl;
 				std::cout << "Current Time:\t" << timer::get_time() << " s" << std::endl;
+				std::cout << "Current Time:\t" << Window->Time << " s" << std::endl;
 				std::cout << "Time Step:\t" << TimeStep * 1000 << " ms" << std::endl;
 				std::cout << "Work Time:\t" << Engine->ThreadController.work_time() * 1000.0 << " ms" << std::endl;
 				std::cout << "Halt Time:\t" << Engine->ThreadController.halt_time() * 1000.0 << " ms" << std::endl;

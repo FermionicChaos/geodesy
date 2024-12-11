@@ -243,7 +243,7 @@ namespace geodesy::bltn::obj {
 		glfwWindowHint(GLFW_CLIENT_API,				GLFW_NO_API);
 		glfwWindowHint(GLFW_REFRESH_RATE,			GLFW_DONT_CARE);
 		GLFWwindow* ReturnHandle = glfwCreateWindow(aWidth, aHeight, aTitle, aMonitor, aWindow);
-		if (ReturnHandle == NULL) {
+		if (ReturnHandle != NULL) {
 			// User pointer to forward input stream.
 			glfwSetWindowUserPointer(ReturnHandle, (void*)this);
 
@@ -273,6 +273,7 @@ namespace geodesy::bltn::obj {
 			// File drop
 			glfwSetDropCallback(ReturnHandle, system_window::file_drop_callback);
 		}
+		glfwSetInputMode(ReturnHandle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		return ReturnHandle;
 	}
 
@@ -342,8 +343,11 @@ namespace geodesy::bltn::obj {
 	}
 
 	void system_window::cursor_position_callback(GLFWwindow* aWindowHandle, double aPosX, double aPosY) {
+		static float CurrentTime = 0.0f;
 		system_window* Window = (system_window*)glfwGetWindowUserPointer(aWindowHandle);
-
+		float DeltaTime = CurrentTime - core::lgc::timer::get_time();
+		CurrentTime = core::lgc::timer::get_time();
+		Window->InputState.Mouse.Position = math::vec<float, 2>((float)aPosX, (float)aPosY);
 	}
 
 	void system_window::cursor_enter_callback(GLFWwindow* aWindowHandle, int aEntered) {
@@ -358,6 +362,11 @@ namespace geodesy::bltn::obj {
 
 	void system_window::key_callback(GLFWwindow* aWindowHandle, int aKey, int aScancode, int aAction, int aMods) {
 		system_window* Window = (system_window*)glfwGetWindowUserPointer(aWindowHandle);
+		Window->InputState.Keyboard[aKey] = { aAction, aMods, aScancode };
+		if (!Window->InputTarget.expired()) {
+			// If object still exists, pass through input.
+			Window->InputTarget.lock()->input(Window->InputState);
+		}
 	}
 
 	void system_window::character_callback(GLFWwindow* aWindowHandle, uint aCodepoint) {
