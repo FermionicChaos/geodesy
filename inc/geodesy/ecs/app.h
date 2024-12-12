@@ -47,8 +47,8 @@ namespace geodesy::ecs {
 		void init();
 		virtual void run() = 0;
 		
-		std::map<std::shared_ptr<core::gcl::context>, object::update_info> update(double aDeltaTime);
-		std::map<std::shared_ptr<core::gcl::context>, subject::render_info> render();
+		std::map<std::shared_ptr<core::gcl::context>, core::gcl::submission_batch> update(double aDeltaTime);
+		std::map<std::shared_ptr<core::gcl::context>, core::gcl::submission_batch> render();
 
 	};
 

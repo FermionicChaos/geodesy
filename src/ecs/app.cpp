@@ -6,54 +6,6 @@ namespace geodesy::ecs {
 
 	using namespace core;
 
-	static std::vector<VkSubmitInfo> purify_execution_vector(const std::vector<VkSubmitInfo>& aInput) {
-		size_t OutputCount = 0;
-		// Determine number of VkSubmitInfos that have non-zero command buffer count.
-		for (size_t i = 0; i < aInput.size(); i++) {
-			if (aInput[i].commandBufferCount > 0) {
-				OutputCount++;
-			}
-		}
-
-		// Create Output vector with only non-zero command buffer count VkSubmitInfos.
-		std::vector<VkSubmitInfo> Output(OutputCount);
-		size_t OutputOffset = 0;
-
-		// Iterate through input vector second time, copy non-zero VkSubmitInfos to Output.
-		for (size_t i = 0; i < aInput.size(); i++) {
-			if (aInput[i].commandBufferCount > 0) {
-				Output[OutputOffset] = aInput[i];
-				OutputOffset++;
-			}
-		}
-
-		return Output;
-	}
-
-	static std::vector<VkPresentInfoKHR> purify_presentation_vector(const std::vector<VkPresentInfoKHR>& aInput) {
-		size_t OutputCount = 0;
-		// Determine number of VkSubmitInfos that have non-zero command buffer count.
-		for (size_t i = 0; i < aInput.size(); i++) {
-			if (aInput[i].swapchainCount > 0) {
-				OutputCount++;
-			}
-		}
-
-		// Create Output vector with only non-zero command buffer count VkSubmitInfos.
-		std::vector<VkPresentInfoKHR> Output(OutputCount);
-		size_t OutputOffset = 0;
-
-		// Iterate through input vector second time, copy non-zero VkSubmitInfos to Output.
-		for (size_t i = 0; i < aInput.size(); i++) {
-			if (aInput[i].swapchainCount > 0) {
-				Output[OutputOffset] = aInput[i];
-				OutputOffset++;
-			}
-		}
-
-		return Output;
-	}
-
 	app::app(engine* aEngine, std::string aName, math::vec<uint, 3> aVersion) {
 		this->Engine = aEngine;
 		this->Name = aName;
@@ -67,42 +19,39 @@ namespace geodesy::ecs {
 		this->run();
 	}
 
-	std::map<std::shared_ptr<gcl::context>, object::update_info> app::update(double aDeltaTime) {
-		std::map<std::shared_ptr<gcl::context>, object::update_info> UpdateOperations;
+	std::map<std::shared_ptr<gcl::context>, gcl::submission_batch> app::update(double aDeltaTime) {
+		std::map<std::shared_ptr<gcl::context>, gcl::submission_batch> UpdateOperations;
 		this->Time += aDeltaTime;
 		// Iterate through each stage and update host resources, while acquiring device update operations.
 		for (auto& Stg : this->Stage) {
 			// Update entire stage.
-			object::update_info UpdateInfo = Stg->update(aDeltaTime);
-			// Initialize element in the map.
-			UpdateOperations[Stg->Context] = object::update_info();
-			// Remove empty elements.
-			UpdateOperations[Stg->Context].TransferOperations = purify_execution_vector(UpdateInfo.TransferOperations);
-			UpdateOperations[Stg->Context].ComputeOperations = purify_execution_vector(UpdateInfo.ComputeOperations);
+			gcl::submission_batch StageUpdateOperations = Stg->update(aDeltaTime);
+			if (UpdateOperations.count(Stg->Context) == 0) {
+				// If the context doesn't exist, create it.
+				UpdateOperations[Stg->Context] = StageUpdateOperations;
+			}
+			else {
+				// If the context does exist, append the operations.
+				UpdateOperations[Stg->Context] += StageUpdateOperations;
+			}
 		}
 
 		return UpdateOperations;
 	}
 
-	std::map<std::shared_ptr<gcl::context>, subject::render_info> app::render() {
-		std::map<std::shared_ptr<gcl::context>, subject::render_info> RenderOperations;
+	std::map<std::shared_ptr<gcl::context>, gcl::submission_batch> app::render() {
+		std::map<std::shared_ptr<gcl::context>, gcl::submission_batch> RenderOperations;
 
 		for (auto& Stg : this->Stage) {
 			// Gather render information from each stage.
-			//RenderOperations[Stg->Context] += Stg->render();
-			subject::render_info RenderInfo = Stg->render();
-			// Purify empty elements.
-			RenderInfo.SubmitInfo = purify_execution_vector(RenderInfo.SubmitInfo);
-			RenderInfo.PresentInfo = purify_presentation_vector(RenderInfo.PresentInfo);
-			// Check if Context key exists in map.
+			gcl::submission_batch StageRenderOperations = Stg->render();
 			if (RenderOperations.count(Stg->Context) == 0) {
-				// If no key exists, simply add.
-				RenderOperations[Stg->Context] = RenderInfo;
-			} 
+				// If the context doesn't exist, create it.
+				RenderOperations[Stg->Context] = StageRenderOperations;
+			}
 			else {
-				// If element exists, append new Submissions/Presentations.
-				RenderOperations[Stg->Context].SubmitInfo.insert(RenderOperations[Stg->Context].SubmitInfo.end(), RenderInfo.SubmitInfo.begin(), RenderInfo.SubmitInfo.end());
-				RenderOperations[Stg->Context].PresentInfo.insert(RenderOperations[Stg->Context].PresentInfo.end(), RenderInfo.PresentInfo.begin(), RenderInfo.PresentInfo.end());
+				// If the context does exist, append the operations.
+				RenderOperations[Stg->Context] += StageRenderOperations;
 			}
 		}
 

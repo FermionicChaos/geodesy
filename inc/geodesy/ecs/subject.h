@@ -21,16 +21,11 @@ namespace geodesy::ecs {
 	class subject : public object {
 	public:
 
-		struct render_info {
-			std::vector<VkSubmitInfo> 					SubmitInfo;
-			std::vector<VkPresentInfoKHR> 				PresentInfo;
-		};
-
 		std::shared_ptr<core::gcl::framechain> 						Framechain;
 		std::shared_ptr<core::gcl::pipeline> 						Pipeline;
 		std::shared_ptr<core::gcl::command_pool>					CommandPool;
 		std::shared_ptr<core::gcl::semaphore_pool> 					SemaphorePool;
-		std::vector<std::shared_ptr<core::gcl::command_batch>>		ObjectRenderingOperations;
+		std::vector<core::gcl::command_batch>						RenderingOperations;
 
 		subject(
 			std::shared_ptr<core::gcl::context> aContext, 
@@ -50,14 +45,14 @@ namespace geodesy::ecs {
 
 		bool ready_to_render();
 		VkResult next_frame_now();
-		std::map<std::string, std::shared_ptr<core::gcl::image>> read_frame();
-		std::map<std::string, std::shared_ptr<core::gcl::image>> draw_frame();
 		VkResult present_frame_now();
 
+		std::map<std::string, std::shared_ptr<core::gcl::image>> read_frame();
+		std::map<std::string, std::shared_ptr<core::gcl::image>> draw_frame();
 		virtual std::vector<std::vector<core::gfx::draw_call>> default_renderer(object* aObject);
-		virtual VkResult next_frame(VkSemaphore aSemaphore = VK_NULL_HANDLE, VkFence aFence = VK_NULL_HANDLE);
-		virtual std::vector<VkSubmitInfo> render(stage* aStage);
-		virtual VkPresentInfoKHR present_frame(const std::vector<VkSemaphore>& aWaitSemaphore = {});
+		virtual core::gcl::command_batch next_frame(std::shared_ptr<core::gcl::semaphore_pool> aSemaphorePool);
+		virtual core::gcl::submission_batch render(stage* aStage);
+		virtual std::vector<core::gcl::command_batch> present_frame(std::shared_ptr<core::gcl::semaphore_pool> aSemaphorePool);
 
 	};
 

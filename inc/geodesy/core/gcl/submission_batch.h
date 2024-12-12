@@ -20,7 +20,7 @@ namespace geodesy::core::gcl {
 		submission_batch& operator+=(const VkPresentInfoKHR& aPresentInfo);
 		submission_batch& operator+=(const std::vector<VkPresentInfoKHR>& aPresentInfoKHR);
 
-		submission_batch& operator+=(const submission_batch& aSubmissionBatch);
+		submission_batch& operator+=(submission_batch aSubmissionBatch);
 		submission_batch& operator+=(const std::vector<submission_batch>& aSubmissionBatch);
 
 	};

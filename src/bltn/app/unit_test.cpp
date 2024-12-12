@@ -19,8 +19,7 @@ namespace geodesy::bltn {
 	unit_test::unit_test(engine* aEngine) : ecs::app(aEngine, "geodesy-unit-test", { 1, 0, 0 }) {
 		std::vector<uint> OperationList = {
 			device::operation::TRANSFER,
-			device::operation::COMPUTE,
-			//device::operation::TRANSFER | device::operation::COMPUTE,
+			device::operation::TRANSFER_AND_COMPUTE,
 			device::operation::GRAPHICS_AND_COMPUTE,
 			device::operation::PRESENT
 		};

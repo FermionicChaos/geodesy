@@ -173,6 +173,26 @@ namespace geodesy::bltn::obj {
 			this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(Swapchain);
 		}
 
+		// Setup transition commands.
+		// TODO: Free command buffers later.
+		this->PredrawFrameTransition = std::vector<core::gcl::command_batch>(this->Framechain->Image.size());
+		this->PostdrawFrameTransition = std::vector<core::gcl::command_batch>(this->Framechain->Image.size());
+		for (size_t i = 0; i < this->Framechain->Image.size(); i++) {
+			// Prepare Predraw transition commands.
+			VkCommandBuffer PredrawFrameTransitionCmd = aContext->allocate_command_buffer(device::operation::GRAPHICS_AND_COMPUTE);
+			aContext->begin(PredrawFrameTransitionCmd);
+			this->Framechain->Image[i]["Color"]->transition(PredrawFrameTransitionCmd, image::layout::PRESENT_SRC_KHR, image::layout::SHADER_READ_ONLY_OPTIMAL);
+			aContext->end(PredrawFrameTransitionCmd);
+			this->PredrawFrameTransition[i] += PredrawFrameTransitionCmd;
+
+			// Prepare Postdraw transition commands.
+			VkCommandBuffer PostdrawFrameTransitionCmd = aContext->allocate_command_buffer(device::operation::GRAPHICS_AND_COMPUTE);
+			aContext->begin(PostdrawFrameTransitionCmd);
+			this->Framechain->Image[i]["Color"]->transition(PostdrawFrameTransitionCmd, image::layout::SHADER_READ_ONLY_OPTIMAL, image::layout::PRESENT_SRC_KHR);
+			aContext->end(PostdrawFrameTransitionCmd);
+			this->PostdrawFrameTransition[i] += PostdrawFrameTransitionCmd;
+		}
+
 	}
 
 	system_window::system_window(std::shared_ptr<core::gcl::context> aContext, std::shared_ptr<system_display> aDisplay, std::string aName, const create_info& aCreateInfo, core::math::vec<float, 3> aPosition, core::math::vec<float, 2> aSize) :
@@ -210,23 +230,26 @@ namespace geodesy::bltn::obj {
 			}
 		}
 		this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(Swapchain);
-		this->draw_frame()["Color"]->transition(image::layout::PRESENT_SRC_KHR, image::layout::SHADER_READ_ONLY_OPTIMAL);
 		return ReturnValue;
 	}
 
-	VkPresentInfoKHR system_window::present_frame(const std::vector<VkSemaphore>& aWaitSemaphore) {
-		VkPresentInfoKHR PresentInfo{};
+	core::gcl::command_batch system_window::next_frame(std::shared_ptr<core::gcl::semaphore_pool> aSemaphorePool) {
+		VkSemaphore Semaphore = aSemaphorePool->acquire();
+		// Acquire next image.
+		this->next_frame(Semaphore);
+		core::gcl::command_batch PredrawTransition = this->PredrawFrameTransition[this->Framechain->DrawIndex];
+		PredrawTransition.WaitSemaphoreList = { Semaphore };
+		PredrawTransition.WaitStageList = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		return PredrawTransition;
+	}
+
+	std::vector<core::gcl::command_batch> system_window::present_frame(std::shared_ptr<core::gcl::semaphore_pool> aSemaphorePool) {
 		std::shared_ptr<core::gcl::swapchain> Swapchain = std::dynamic_pointer_cast<core::gcl::swapchain>(this->Framechain);
-		PresentInfo.sType					= VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		PresentInfo.pNext					= NULL;
-		PresentInfo.waitSemaphoreCount		= aWaitSemaphore.size();
-		PresentInfo.pWaitSemaphores			= aWaitSemaphore.data();
-		PresentInfo.swapchainCount			= 1;
-		PresentInfo.pSwapchains				= &Swapchain->Handle;
-		PresentInfo.pImageIndices			= &Swapchain->DrawIndex;
-		PresentInfo.pResults				= NULL;
-		this->draw_frame()["Color"]->transition(image::layout::SHADER_READ_ONLY_OPTIMAL, image::layout::PRESENT_SRC_KHR);
-		return PresentInfo;
+		core::gcl::command_batch PostdrawTransition = this->PostdrawFrameTransition[Swapchain->DrawIndex];
+		core::gcl::command_batch PresentInfo;
+		PresentInfo.Swapchain = { Swapchain->Handle };
+		PresentInfo.ImageIndex = { Swapchain->DrawIndex };
+		return { PostdrawTransition, PresentInfo };
 	}
 
 	GLFWwindow* system_window::create_window_handle(window::property aSetting, int aWidth, int aHeight, const char* aTitle, GLFWmonitor* aMonitor, GLFWwindow* aWindow) {

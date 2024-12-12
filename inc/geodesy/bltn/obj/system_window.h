@@ -36,16 +36,19 @@ namespace geodesy::bltn::obj {
 			create_info();
 		};
 
-		std::weak_ptr<object> 		InputTarget;
-		core::hid::input 			InputState;
-		GLFWwindow* 				WindowHandle;
-		VkSurfaceKHR 				SurfaceHandle;
+		std::weak_ptr<object> 					InputTarget;
+		core::hid::input 						InputState;
+		GLFWwindow* 							WindowHandle;
+		VkSurfaceKHR 							SurfaceHandle;
+		std::vector<core::gcl::command_batch> 	PredrawFrameTransition;
+		std::vector<core::gcl::command_batch> 	PostdrawFrameTransition;
 
 		system_window(std::shared_ptr<core::gcl::context> aContext, std::shared_ptr<system_display> aDisplay, std::string aName, const create_info& aCreateInfo, core::math::vec<int, 2> aPosition, core::math::vec<int, 2> aSize);
 		system_window(std::shared_ptr<core::gcl::context> aContext, std::shared_ptr<system_display> aDisplay, std::string aName, const create_info& aCreateInfo, core::math::vec<float, 3> aPosition, core::math::vec<float, 2> aSize);
 
-		virtual VkResult next_frame(VkSemaphore aSemaphore = VK_NULL_HANDLE, VkFence aFence = VK_NULL_HANDLE) override;
-		virtual VkPresentInfoKHR present_frame(const std::vector<VkSemaphore>& aWaitSemaphore = {}) override;
+		VkResult next_frame(VkSemaphore aSemaphore = VK_NULL_HANDLE, VkFence aFence = VK_NULL_HANDLE);
+		virtual core::gcl::command_batch next_frame(std::shared_ptr<core::gcl::semaphore_pool> aSemaphorePool) override;
+		virtual std::vector<core::gcl::command_batch> present_frame(std::shared_ptr<core::gcl::semaphore_pool> aSemaphorePool) override;
 
 	private:
 

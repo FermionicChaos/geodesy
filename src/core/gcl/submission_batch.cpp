@@ -59,7 +59,7 @@ namespace geodesy::core::gcl {
 		return *this;
 	}
 
-	submission_batch& submission_batch::operator+=(const submission_batch& aSubmissionBatch) {
+	submission_batch& submission_batch::operator+=(submission_batch aSubmissionBatch) {
 		return (*this += std::vector<submission_batch>{aSubmissionBatch});
 	}
 
@@ -74,12 +74,33 @@ namespace geodesy::core::gcl {
 
 	submission_batch build(const std::vector<command_batch>& aCommandBatch) {
 		// TODO: figure out command_batch internals first.
-		submission_batch SubmissionBatch;
-		std::vector<VkSubmitInfo> SubmitInfo(aCommandBatch.size());
+		size_t SubmitCount = 0;
+		size_t PresentCount = 0;
 		for (size_t i = 0; i < aCommandBatch.size(); i++) {
-			SubmitInfo[i] = aCommandBatch[i].build();
+			// Checks whether command batch is submit info, present info, or empty.
+			if (aCommandBatch[i].CommandBufferList.size() > 0) {
+				SubmitCount++;
+			} 
+			else if (aCommandBatch[i].Swapchain.size() > 0) {
+				PresentCount++;
+			}
 		}
-
+		size_t m = 0, n = 0;
+		std::vector<VkSubmitInfo> SubmitInfo(SubmitCount);
+		std::vector<VkPresentInfoKHR> PresentInfo(PresentCount);
+		for (size_t i = 0; i < aCommandBatch.size(); i++) {
+			if (aCommandBatch[i].CommandBufferList.size() > 0) {
+				SubmitInfo[m] = aCommandBatch[i].build_submit_info();
+				m++;
+			} 
+			else if (aCommandBatch[i].Swapchain.size() > 0) {
+				PresentInfo[n] = aCommandBatch[i].build_present_info();
+				n++;
+			}
+		}
+		submission_batch SubmissionBatch;
+		SubmissionBatch.SubmitInfo = SubmitInfo;
+		SubmissionBatch.PresentInfo = PresentInfo;
 		return SubmissionBatch;
 	}
 

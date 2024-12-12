@@ -19,8 +19,9 @@ namespace geodesy::core::gcl {
 		semaphore_pool(std::shared_ptr<context> aContext, size_t aSemaphoreCount);
 		~semaphore_pool();
 
-		VkSemaphore aquire();
+		VkSemaphore acquire();
 		void release(VkSemaphore aSemaphore);
+		void reset();
 		
 	};
 }

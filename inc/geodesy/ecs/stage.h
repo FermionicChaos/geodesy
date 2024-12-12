@@ -72,8 +72,8 @@ namespace geodesy::ecs {
 			return NewObject;
 		}
 
-		virtual object::update_info update(double aDeltaTime);
-		virtual subject::render_info render();
+		virtual core::gcl::submission_batch update(double aDeltaTime);
+		virtual core::gcl::submission_batch render();
 
 		static std::vector<subject*> purify_by_subject(const std::vector<std::shared_ptr<object>>& aObjectList);
 		static std::vector<workload> determine_thread_workload(size_t aElementCount, size_t aThreadCount);

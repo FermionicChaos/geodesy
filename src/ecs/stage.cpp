@@ -22,8 +22,8 @@ namespace geodesy::ecs {
 	}
 
 	// Does Nothing by default.
-	object::update_info stage::update(double aDeltaTime) {
-		object::update_info StageUpdateInfo;
+	gcl::submission_batch stage::update(double aDeltaTime) {
+		gcl::submission_batch StageUpdateInfo;
 #ifdef ENABLE_MULTITHREADED_PROCESSING
 
 		/*
@@ -67,8 +67,8 @@ namespace geodesy::ecs {
 		return StageUpdateInfo;
 	}
 
-	subject::render_info stage::render() {
-		subject::render_info RenderInfo;
+	gcl::submission_batch stage::render() {
+		gcl::submission_batch RenderInfo;
 
 		// Generate list of render targets in this stage.
 		std::vector<subject*> RenderTargetList = stage::purify_by_subject(this->Object);
@@ -79,18 +79,14 @@ namespace geodesy::ecs {
 			// Check if Render Target is ready to render.
 			if (!RenderTarget->ready_to_render()) continue;
 
-			// Iterate to next frame.
-			VkResult Result = RenderTarget->next_frame_now();
+			// Clear out previous rendering operations.
+			RenderTarget->RenderingOperations = std::vector<gcl::command_batch>();
 
-			// Render Target Render Stage.
-			std::vector<VkSubmitInfo> SubmitInfoList = RenderTarget->render(this);
+			// Reset semaphore pool.
+			RenderTarget->SemaphorePool->reset();
 
-			// Gather Presentations by render target (only relevant for system_window)
-			VkPresentInfoKHR PresentInfo = RenderTarget->present_frame();
-
-			// Append to RenderInfo
-			RenderInfo.SubmitInfo.insert(RenderInfo.SubmitInfo.end(), SubmitInfoList.begin(), SubmitInfoList.end());
-			RenderInfo.PresentInfo.push_back(PresentInfo);
+			// Gather render operations per target.
+			RenderInfo += RenderTarget->render(this);
 		}
 
 		return RenderInfo;

@@ -18,11 +18,6 @@ namespace geodesy::ecs {
 	class object /* : public std::enable_shared_from_this<object> */ {
 	public:
 
-		struct update_info {
-			std::vector<VkSubmitInfo> TransferOperations;
-			std::vector<VkSubmitInfo> ComputeOperations;
-		};
-
 		struct uniform_data {
 			alignas(16) core::math::vec<float, 3> Position;
 			alignas(16) core::math::mat<float, 4, 4> Orientation;
