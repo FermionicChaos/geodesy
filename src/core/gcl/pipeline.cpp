@@ -901,7 +901,6 @@ namespace geodesy::core::gcl {
 		this->Timer = 1.0 / aFrameRate;
 		this->Context = aContext;
 		this->Image = std::vector<std::map<std::string, std::shared_ptr<image>>>(aFrameCount);
-		this->DrawCommand = std::vector<std::vector<VkCommandBuffer>>(aFrameCount);
 	}
 
 	framebuffer::framebuffer(std::shared_ptr<context> aContext, std::shared_ptr<pipeline> aPipeline, std::vector<std::shared_ptr<image>> aImageAttachements, math::vec<uint, 3> aResolution) {

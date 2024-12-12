@@ -146,41 +146,17 @@ namespace geodesy::ecs {
 
 	std::vector<VkSubmitInfo> subject::render(stage* aStage) {
 		std::vector<VkSubmitInfo> StageRender;
+		std::vector<gcl::submission_batch> SubmissionBatch;
 
-		// This is the default render methods for a subject, it does
-		// not sort objects by render order, and does not use semaphores
-		this->Framechain->DrawCommand[this->Framechain->DrawIndex].clear();
-		for (std::shared_ptr<object> Obj : aStage->Object) {
-			// Gather draw calls on object.
-			std::vector<gfx::draw_call> DrawCall = Obj->draw(this);
-			// Extract Command Buffers from Draw Calls.
-			std::vector<VkCommandBuffer> ExtractedCommandBuffer(DrawCall.size());
-			for (std::size_t i = 0; i < DrawCall.size(); i++) {
-				ExtractedCommandBuffer[i] = DrawCall[i].DrawCommand;
-			}
-			// Aggregate into a single list of command buffers.
-			this->Framechain->DrawCommand[this->Framechain->DrawIndex].insert(this->Framechain->DrawCommand[this->Framechain->DrawIndex].end(), ExtractedCommandBuffer.begin(), ExtractedCommandBuffer.end());
-		}
+		// Gather submissions from render target.
+		//SubmissionBatch += this->next_frame();
 
-		// No draw calls, return empty list.
-		if (this->Framechain->DrawCommand[this->Framechain->DrawIndex].size() == 0) {
-			return StageRender;
-		}
+		// This needs to be saved by the render target class so engine can reference command lists.
+		std::vector<std::vector<gcl::command_batch>> ObjectCommandBatch(aStage->Object.size());
 
-		// Fill out submit info structure.
-		VkSubmitInfo Submission{};
-		Submission.sType 					= VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		Submission.pNext 					= NULL;
-		Submission.waitSemaphoreCount 		= 0;
-		Submission.pWaitSemaphores 			= NULL;
-		Submission.pWaitDstStageMask 		= NULL;
-		Submission.commandBufferCount 		= this->Framechain->DrawCommand[this->Framechain->DrawIndex].size();
-		Submission.pCommandBuffers 			= this->Framechain->DrawCommand[this->Framechain->DrawIndex].data();
-		Submission.signalSemaphoreCount 	= 0;
-		Submission.pSignalSemaphores 		= NULL;
-
-		// Append to list.
-		StageRender.push_back(Submission);
+		// Gather commands on frame transition and presentation.
+		// (Should be 1 VkSubmitInfo & 1 VkPresentInfoKHR if system_window.)
+		//SubmissionBatch += this->present_frame();
 
 		return StageRender;
 	}

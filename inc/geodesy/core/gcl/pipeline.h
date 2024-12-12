@@ -251,7 +251,6 @@ namespace geodesy::core::gcl {
 		core::lgc::timer 												Timer;
 		std::shared_ptr<context> 										Context;
 		std::vector<std::map<std::string, std::shared_ptr<image>>> 		Image;
-		std::vector<std::vector<VkCommandBuffer>> 						DrawCommand;
 
 		framechain(std::shared_ptr<context> aContext, double aFrameRate, uint32_t aFrameCount);
 		virtual ~framechain() = default;

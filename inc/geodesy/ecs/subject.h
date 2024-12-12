@@ -26,9 +26,11 @@ namespace geodesy::ecs {
 			std::vector<VkPresentInfoKHR> 				PresentInfo;
 		};
 
-		std::shared_ptr<core::gcl::command_pool>				CommandPool;
-		std::shared_ptr<core::gcl::framechain> 					Framechain;
-		std::shared_ptr<core::gcl::pipeline> 					Pipeline;
+		std::shared_ptr<core::gcl::framechain> 						Framechain;
+		std::shared_ptr<core::gcl::pipeline> 						Pipeline;
+		std::shared_ptr<core::gcl::command_pool>					CommandPool;
+		std::shared_ptr<core::gcl::semaphore_pool> 					SemaphorePool;
+		std::vector<std::shared_ptr<core::gcl::command_batch>>		ObjectRenderingOperations;
 
 		subject(
 			std::shared_ptr<core::gcl::context> aContext, 
