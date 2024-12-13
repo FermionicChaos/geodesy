@@ -85,7 +85,7 @@ namespace geodesy::bltn::obj {
 		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 5, offsetof(gfx::mesh::vertex, Color));
 
 		// TODO: Change to shader read only optimal later?
-		Rasterizer->attach(0, aFormat, image::sample::COUNT_1, image::layout::PRESENT_SRC_KHR);
+		Rasterizer->attach(0, aFormat, image::sample::COUNT_1, image::layout::SHADER_READ_ONLY_OPTIMAL);
 
 		// How to intepret vertex data in rasterization.
 		Rasterizer->InputAssembly.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
