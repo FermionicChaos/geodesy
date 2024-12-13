@@ -23,7 +23,7 @@ namespace geodesy::bltn {
 			device::operation::GRAPHICS_AND_COMPUTE,
 			device::operation::PRESENT
 		};
-		TimeStep = 1.0 / 1000.0;
+		TimeStep = 1.0 / 10.0;
 		DeviceContext = Engine->create_device_context(Engine->PrimaryDevice, OperationList);
 		Window = nullptr;
 	}
@@ -70,7 +70,7 @@ namespace geodesy::bltn {
 
 		system_window::create_info WindowCreateInfo;
 		math::vec<uint, 3> Resolution = { 640, 480, 1 };
-		WindowCreateInfo.Swapchain.FrameRate = 0.333;
+		WindowCreateInfo.Swapchain.FrameRate = 60.0f;
 		WindowCreateInfo.Swapchain.ImageUsage = image::usage::COLOR_ATTACHMENT | image::usage::SAMPLED | image::usage::TRANSFER_DST | image::usage::TRANSFER_SRC;
 		Window = std::make_shared<system_window>(DeviceContext, Engine->PrimaryDisplay, std::string("System Window"), WindowCreateInfo, math::vec<int, 2>(0, 0), math::vec<int, 2>(Resolution[0], Resolution[1]));
 
