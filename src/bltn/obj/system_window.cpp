@@ -173,6 +173,12 @@ namespace geodesy::bltn::obj {
 			this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(Swapchain);
 		}
 
+		// Setup next image semaphore.
+		std::vector<VkSemaphore> NextImageSemaphoreList = aContext->create_semaphore(this->Framechain->Image.size(), 0);
+		for (size_t i = 0; i < NextImageSemaphoreList.size(); i++) {
+			this->NextImageSemaphore.push(NextImageSemaphoreList[i]);
+		}
+
 		// Setup transition commands.
 		// TODO: Free command buffers later.
 		this->PredrawFrameTransition = std::vector<core::gcl::command_batch>(this->Framechain->Image.size());
@@ -198,6 +204,21 @@ namespace geodesy::bltn::obj {
 	system_window::system_window(std::shared_ptr<core::gcl::context> aContext, std::shared_ptr<system_display> aDisplay, std::string aName, const create_info& aCreateInfo, core::math::vec<float, 3> aPosition, core::math::vec<float, 2> aSize) :
 		system_window(aContext, aDisplay, aName, aCreateInfo, core::math::vec<int, 2>(aPosition[0], aPosition[1]), core::math::vec<int, 2>(aSize[0], aSize[1])) {
 
+	}
+
+	system_window::~system_window() {
+		// Destroy Semaphores.
+		while (!this->NextImageSemaphore.empty()) {
+			VkSemaphore Semaphore = this->NextImageSemaphore.front();
+			this->NextImageSemaphore.pop();
+			this->Context->destroy_semaphore(Semaphore);
+		}
+		// Destroy Swapchain.
+		this->Framechain = nullptr;
+		// Destroy Vulkan Surface.
+		vkDestroySurfaceKHR(this->Context->Device->Engine->Handle, this->SurfaceHandle, NULL);
+		// Destroy GLFW Window.
+		this->destroy_window_handle(this->WindowHandle);
 	}
 
 	VkResult system_window::next_frame(VkSemaphore aSemaphore, VkFence aFence) {
@@ -234,7 +255,9 @@ namespace geodesy::bltn::obj {
 	}
 
 	core::gcl::command_batch system_window::next_frame(std::shared_ptr<core::gcl::semaphore_pool> aSemaphorePool) {
-		VkSemaphore Semaphore = aSemaphorePool->acquire();
+		VkSemaphore Semaphore = this->NextImageSemaphore.front();
+		this->NextImageSemaphore.pop();
+		this->NextImageSemaphore.push(Semaphore);
 		// Acquire next image.
 		this->next_frame(Semaphore);
 		core::gcl::command_batch PredrawTransition = this->PredrawFrameTransition[this->Framechain->DrawIndex];
