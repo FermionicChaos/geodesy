@@ -23,7 +23,7 @@ namespace geodesy::bltn {
 			device::operation::GRAPHICS_AND_COMPUTE,
 			device::operation::PRESENT
 		};
-		TimeStep = 1.0 / 60.0;
+		TimeStep = 1.0 / 1000.0;
 		DeviceContext = Engine->create_device_context(Engine->PrimaryDevice, OperationList);
 		Window = nullptr;
 	}
