@@ -13,8 +13,9 @@ namespace geodesy::core::gcl {
 	public:
 
 		std::shared_ptr<context> 			Context;
-		std::vector<VkSemaphore> 			SemaphoreList;
-		std::unordered_set<VkSemaphore> 	SemaphoreInUse;
+		std::vector<VkSemaphore> 			Total;
+		std::queue<VkSemaphore> 			Available;
+		std::unordered_set<VkSemaphore> 	InUse;
 
 		semaphore_pool(std::shared_ptr<context> aContext, size_t aSemaphoreCount);
 		~semaphore_pool();
