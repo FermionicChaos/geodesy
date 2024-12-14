@@ -117,7 +117,7 @@ namespace geodesy::bltn::obj {
 		// Rasterizer Info
 		Rasterizer->Rasterizer.rasterizerDiscardEnable		= VK_FALSE;
 		Rasterizer->Rasterizer.polygonMode					= VK_POLYGON_MODE_FILL;
-		Rasterizer->Rasterizer.cullMode						= VK_CULL_MODE_NONE;
+		Rasterizer->Rasterizer.cullMode						= VK_CULL_MODE_BACK_BIT;
 		Rasterizer->Rasterizer.frontFace					= VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
 		// Copy Paste
@@ -147,7 +147,7 @@ namespace geodesy::bltn::obj {
 			DirectionFront[0], 		DirectionFront[1], 		DirectionFront[2], 		0.0f,
 			0.0f, 					0.0f, 					0.0f, 					1.0f
 		};
-		UniformData.Projection 		= math::perspective(math::radians(90.0f), AspectRatio, 0.1f, 100.0f);
+		UniformData.Projection 		= math::perspective(math::radians(70.0f), AspectRatio, 0.1f, 100.0f);
 
 		this->CameraUniformBuffer = Context->create_buffer(UBCI, sizeof(UniformData), &UniformData);
 		this->CameraUniformBuffer->map_memory(0, sizeof(UniformData));
@@ -193,7 +193,7 @@ namespace geodesy::bltn::obj {
 			DirectionFront[0], 		DirectionFront[1], 		DirectionFront[2], 		0.0f,
 			0.0f, 					0.0f, 					0.0f, 					1.0f
 		};
-		UniformData.Projection 		= math::perspective(math::radians(90.0f), AspectRatio, 0.1f, 100.0f);
+		UniformData.Projection 		= math::perspective(math::radians(70.0f), AspectRatio, 0.1f, 100.0f);
 		// Copy over to GPU Uniform Buffer.
 		memcpy(this->CameraUniformBuffer->Ptr, &UniformData, sizeof(camera_uniform_data));
 	}
