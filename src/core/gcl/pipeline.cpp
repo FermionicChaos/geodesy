@@ -147,6 +147,28 @@ namespace geodesy::core::gcl {
 
 			// -------------------- START -------------------- //
 
+			// Get Vertex Attribute Inputs
+			this->VertexAttribute = std::vector<attribute>(this->Program->getNumPipeInputs());
+			for (size_t i = 0; i < this->VertexAttribute.size(); i++) {
+				const glslang::TObjectReflection& Variable 				= this->Program->getPipeInput(i);
+				const glslang::TType* Type 								= Variable.getType();
+
+				int Location 											= Type->getQualifier().layoutLocation;
+
+				if (Location >= this->VertexAttribute.size()) {
+					// Throw runtime error, locations must be continguous.
+					throw std::runtime_error("Vertex Attribute Locations must be contiguous.");
+				}
+
+				this->VertexAttribute[Location].Variable 				= convert_to_variable(Type, Variable.name.c_str());
+
+				// Load Attribute Descriptions
+				this->VertexAttribute[Location].Description.location 	= Location;
+				this->VertexAttribute[Location].Description.binding 	= 0;
+				this->VertexAttribute[Location].Description.format 		= (VkFormat)image::t2f(this->VertexAttribute[Location].Variable.Type.ID);
+				this->VertexAttribute[Location].Description.offset 		= 0;
+			}
+
 			// Get Uniform Blocks, Samplers, and Storage Buffers.
 			for (size_t i = 0; i < this->Program->getNumUniformBlocks(); i++) {
 				VkDescriptorSetLayoutBinding DSLB{};
@@ -183,7 +205,7 @@ namespace geodesy::core::gcl {
 				this->DescriptorSetVariable[SetBinding] = convert_to_variable(Type, Variable.name.c_str());
 			}
 
-			// Get samplers from shader.
+			// Get Samplers from shader.
 			for (int i = 0; i < this->Program->getNumUniformVariables(); i++) {
 				const glslang::TObjectReflection& Variable 		= this->Program->getUniform(i);
 				const glslang::TType* Type 						= Variable.getType();
@@ -222,37 +244,18 @@ namespace geodesy::core::gcl {
 				}
 			}
 
-			// Get Inputs
-			this->VertexAttribute = std::vector<attribute>(this->Program->getNumPipeInputs());
-			for (size_t i = 0; i < this->VertexAttribute.size(); i++) {
-				const glslang::TObjectReflection& Variable 				= this->Program->getPipeInput(i);
-				const glslang::TType* Type 								= Variable.getType();
-
-				int Location 											= Type->getQualifier().layoutLocation;
-
-				if (Location >= this->VertexAttribute.size()) {
-					// TODO: Fix this shit later, idk what to do.
-					// This is to prevent the infamous gl_VertexIndex.
-					this->VertexAttribute.clear();
-					break;
-				}
-
-				this->VertexAttribute[Location].Variable 				= convert_to_variable(Type, Variable.name.c_str());
-
-				// Load Attribute Descriptions
-				this->VertexAttribute[Location].Description.location 	= Location;
-				this->VertexAttribute[Location].Description.binding 	= 0;
-				this->VertexAttribute[Location].Description.format 		= (VkFormat)image::t2f(this->VertexAttribute[Location].Variable.Type.ID);
-				this->VertexAttribute[Location].Description.offset 		= 0;
-			}
-
-			// Get Outputs
+			// Get Framebuffer Attachment Outputs
 			this->ColorAttachment = std::vector<struct attachment>(this->Program->getNumPipeOutputs());
 			for (size_t i = 0; i < this->ColorAttachment.size(); i++) {
 				const glslang::TObjectReflection& Variable 						= this->Program->getPipeOutput(i);
 				const glslang::TType* Type 										= Variable.getType();
 
 				int Location 													= Type->getQualifier().layoutLocation;
+
+				if (Location >= this->ColorAttachment.size()) {
+					// Throw runtime error, locations must be continguous.
+					throw std::runtime_error("Color Attachment Locations must be contiguous.");
+				}
 
 				this->ColorAttachment[Location].Variable 						= convert_to_variable(Type, Variable.name.c_str());
 				this->ColorAttachment[Location].Description.flags				= 0;
@@ -266,15 +269,15 @@ namespace geodesy::core::gcl {
 				this->ColorAttachment[Location].Description.finalLayout			= VK_IMAGE_LAYOUT_UNDEFINED;
 			}
 
-			// Print Uniforms
-			for (std::pair<std::pair<int, int>, util::variable> Variable : this->DescriptorSetVariable) {
-				std::cout << "layout (set = " << Variable.first.first << ", binding = " << Variable.first.second << ") uniform " << Variable.second;
-			}
-			std::cout << std::endl;
-
 			// Print Inputs
 			for (size_t i = 0; i < this->VertexAttribute.size(); i++) {
 				std::cout << "layout (location = " << i << ") in " << this->VertexAttribute[i].Variable;
+			}
+			std::cout << std::endl;
+
+			// Print Uniforms
+			for (std::pair<std::pair<int, int>, util::variable> Variable : this->DescriptorSetVariable) {
+				std::cout << "layout (set = " << Variable.first.first << ", binding = " << Variable.first.second << ") uniform " << Variable.second;
 			}
 			std::cout << std::endl;
 
