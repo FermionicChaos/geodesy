@@ -6,15 +6,12 @@ namespace geodesy::bltn::stg {
 
 	scene3d::scene3d(std::shared_ptr<core::gcl::context> aContext, std::string aName) : ecs::stage(aContext, aName) {
 		obj::camera3d::create_info CameraCreateInfo;
-		CameraCreateInfo.Resolution = { 1280, 720, 1 };
-		CameraCreateInfo.FrameRate = 60.0f;
-		CameraCreateInfo.FrameCount = 4;
-		CameraCreateInfo.FOV = 70.0f;
-		CameraCreateInfo.Near = 0.1f;
-		CameraCreateInfo.Far = 1000.0f;
-		math::vec<uint, 3> Resolution = { 1280, 720, 1 };
-		double FrameRate = 60.0f;
-		uint32_t FrameCount = 4;
+		CameraCreateInfo.Resolution 	= { 1280, 720, 1 };
+		CameraCreateInfo.FrameRate 		= 60.0f;
+		CameraCreateInfo.FrameCount 	= 4;
+		CameraCreateInfo.FOV 			= 70.0f;
+		CameraCreateInfo.Near 			= 0.1f;
+		CameraCreateInfo.Far 			= 1000.0f;
 		this->create_object<obj::camera3d>("Camera3D", CameraCreateInfo, math::vec<float, 3>(0.0f, -50.0f, 10.0f));
 
 		std::vector<std::string> SpawnObjects = {
