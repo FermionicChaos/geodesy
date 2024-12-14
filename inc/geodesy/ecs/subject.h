@@ -28,16 +28,12 @@ namespace geodesy::ecs {
 		std::vector<core::gcl::command_batch>						RenderingOperations;
 
 		subject(
-			std::shared_ptr<core::gcl::context> aContext, 
-			stage* aStage, 
-			std::string aName, 
-			core::math::vec<uint, 3> 
-			aFrameResolution, 
-			double aFrameRate, 
-			uint32_t aFrameCount, 
-			uint32_t aAttachmentCount, 
-			core::math::vec<float, 3> aPosition = { 0.0f, 0.0f, 0.0f }, 
-			core::math::vec<float, 2> aDirection = { 90.0f, 90.0f }
+			std::shared_ptr<core::gcl::context> 	aContext, 
+			stage* 									aStage, 
+			std::string 							aName, 
+			std::string 							aModelPath = "",
+			core::math::vec<float, 3> 				aPosition = { 0.0f, 0.0f, 0.0f }, 
+			core::math::vec<float, 2> 				aDirection = { 90.0f, 90.0f }
 		);
 		~subject();
 

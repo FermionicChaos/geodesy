@@ -79,7 +79,11 @@ namespace geodesy::bltn {
 		// TODO: Swap stage/object from vector into std::map<std::string, T>.
 		//^ Implement API Later
 		//^ this->Stage["Window Testing"]->share_subject_from(this->Stage["3D Rendering Testing"], "Camera3D", math::vec<float, 2>(1.0f, 1.0f));
-		this->Stage[1]->create_object<obj::subject_window>("Camera3D Reflection", std::dynamic_pointer_cast<ecs::subject>(this->Stage[0]->Object[0]), math::vec<float, 2>(1.0f, 1.0f));
+		this->Stage[1]->create_object<obj::subject_window>(
+			"Camera3D Reflection", 
+			std::dynamic_pointer_cast<ecs::subject>(this->Stage[0]->Object[0]), 
+			math::vec<float, 2>(1.0f, 1.0f)
+		);
 
 		// Set Camera3D as Input Target for user input.
 		Window->InputTarget = this->Stage[0]->Object[0];

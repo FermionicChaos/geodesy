@@ -41,8 +41,22 @@ namespace geodesy::bltn::obj {
 		GLFWwindow* 							WindowHandle;
 		VkSurfaceKHR 							SurfaceHandle;
 
-		system_window(std::shared_ptr<core::gcl::context> aContext, std::shared_ptr<system_display> aDisplay, std::string aName, const create_info& aCreateInfo, core::math::vec<int, 2> aPosition, core::math::vec<int, 2> aSize);
-		system_window(std::shared_ptr<core::gcl::context> aContext, std::shared_ptr<system_display> aDisplay, std::string aName, const create_info& aCreateInfo, core::math::vec<float, 3> aPosition, core::math::vec<float, 2> aSize);
+		system_window(
+			std::shared_ptr<core::gcl::context> 	aContext, 
+			std::shared_ptr<system_display> 		aDisplay, 
+			std::string 							aName, 
+			const create_info& 						aCreateInfo, 
+			core::math::vec<int, 2> 				aPosition, 
+			core::math::vec<int, 2> 				aSize
+		);
+		system_window(
+			std::shared_ptr<core::gcl::context> 	aContext, 
+			std::shared_ptr<system_display> 		aDisplay, 
+			std::string 							aName, 
+			const create_info& 						aCreateInfo, 
+			core::math::vec<float, 3> 				aPosition, 
+			core::math::vec<float, 2> 				aSize
+		);
 		~system_window();
 
 		void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f }) override;

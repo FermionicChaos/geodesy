@@ -31,19 +31,16 @@ namespace geodesy::bltn::obj {
 		std::shared_ptr<core::gcl::buffer> WindowUniformBuffer;
 
 		window(
-			std::shared_ptr<core::gcl::context> aContext, 
-			ecs::stage* aStage, 
-			std::string aName, 
-			core::gcl::image::format aFormat,
-			core::math::vec<uint, 3> aFrameResolution, 
-			double aFrameRate, 
-			uint32_t aFrameCount, 
-			uint32_t aAttachmentCount
+			std::shared_ptr<core::gcl::context> 	aContext, 
+			ecs::stage* 							aStage, 
+			std::string 							aName, 
+			core::gcl::image::format 				aFormat,
+			core::math::vec<uint, 3> 				aResolution,
+			core::math::vec<float, 3> 				aPosition = { 0.0f, 0.0f, 0.0f },
+			core::math::vec<float, 2> 				aDirection = { 0.0f, 0.0f }
 		);
 
 		std::vector<std::vector<core::gfx::draw_call>> default_renderer(ecs::object* aObject) override;
-
-		void initialize_pipeline();
 		
 	};
 

@@ -74,11 +74,12 @@ namespace geodesy::ecs {
 		std::map<subject*, std::vector<std::vector<core::gfx::draw_call>>>			Renderer;
 
 		object(
-			std::shared_ptr<core::gcl::context> aContext, 
-			stage* aStage, 
-			std::string aName, 
-			core::math::vec<float, 3> aPosition = { 0.0f, 0.0f, 0.0f }, 
-			core::math::vec<float, 2> aDirection = { 0.0f, 0.0f }
+			std::shared_ptr<core::gcl::context> 	aContext, 
+			stage* 									aStage, 
+			std::string 							aName,
+			std::string 							aModelPath = "",
+			core::math::vec<float, 3> 				aPosition = { 0.0f, 0.0f, 0.0f }, 
+			core::math::vec<float, 2> 				aDirection = { 0.0f, 0.0f }
 		);
 		~object();
 

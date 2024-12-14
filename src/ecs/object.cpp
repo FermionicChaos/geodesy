@@ -21,7 +21,14 @@ namespace geodesy::ecs {
 		};
 	}
 
-	object::object(std::shared_ptr<core::gcl::context> aContext, stage* aStage, std::string aName, math::vec<float, 3> aPosition, math::vec<float, 2> aDirection) {
+	object::object(
+		std::shared_ptr<core::gcl::context> 	aContext, 
+		stage* 									aStage, 
+		std::string 							aName, 
+		std::string 							aModelPath,
+		math::vec<float, 3> 					aPosition, 
+		math::vec<float, 2> 					aDirection
+	) {
 		this->Name 						= aName;
 		this->Stage 					= aStage;
 		this->Engine 					= aContext->Device->Engine;
@@ -42,12 +49,33 @@ namespace geodesy::ecs {
 		this->Collision 				= false;
 
 		// TODO: Load main object assets.
+		if (aModelPath != "") {
+			// Cast into vector.
+			std::vector<std::string> AssetPath = { aModelPath };
+			// Load Model into Host Memory.
+			std::vector<std::shared_ptr<core::io::file>> NewAsset = this->Engine->FileManager.open(AssetPath);
+			// Append to already loaded assets (none).
+			this->Asset.insert(this->Asset.end(), NewAsset.begin(), NewAsset.end());
+		}
 
 		// Initialize GPU stuff.
 		this->Context 					= aContext;
+		// Create Object Model from GPU Device Context.
+		if (aModelPath != "") {
+			// Get Host Model
+			std::shared_ptr<gfx::model> HostModel = std::dynamic_pointer_cast<gfx::model>(this->Asset[0]);
 
+			// Create Material Texture Info
+			image::create_info MaterialTextureInfo;
+			MaterialTextureInfo.Layout 		= image::layout::SHADER_READ_ONLY_OPTIMAL;
+			MaterialTextureInfo.Memory 		= device::memory::DEVICE_LOCAL;
+			MaterialTextureInfo.Usage	 	= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
 
+			// Convert Host model into device model, and bind to object.
+			this->Model = std::make_shared<gfx::model>(aContext, HostModel, MaterialTextureInfo);
+		}
 
+		// Object Uniform Buffer Creation from GPU Device Context.
 		buffer::create_info UBCI;
 		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
 		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;

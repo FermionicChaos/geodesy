@@ -135,21 +135,20 @@ namespace geodesy::bltn::obj {
 	}
 
 	system_window::system_window(
-		std::shared_ptr<gcl::context> aContext, 
-		std::shared_ptr<system_display> aDisplay, 
-		std::string aName, 
-		const create_info& aCreateInfo, 
-		math::vec<int, 2> aPosition, 
-		math::vec<int, 2> aSize
+		std::shared_ptr<gcl::context> 		aContext, 
+		std::shared_ptr<system_display> 	aDisplay, 
+		std::string 						aName, 
+		const create_info& 					aCreateInfo, 
+		math::vec<int, 2> 					aPosition, 
+		math::vec<int, 2> 					aSize
 	) : window(
 		aContext, 
 		nullptr, 
 		aName, 
 		aCreateInfo.Swapchain.PixelFormat,
 		math::vec<uint, 3>(aSize[0], aSize[1], 1u), 
-		aCreateInfo.FrameRate, 
-		aCreateInfo.Swapchain.FrameCount, 
-		1u
+		{ 0.0f, 0.0f, 0.0f },							// TODO: Convert to virtual coordinates to physical coordinates.
+		{ 0.0f, 0.0f }
 	) {
 		VkResult Result = VK_SUCCESS;
 		core::math::vec<uint, 3> FramebufferResolution;

@@ -8,7 +8,11 @@ namespace geodesy::bltn::obj {
 	class triangle : public ecs::object {
 	public:
 
-		triangle(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, std::string aName);
+		triangle(
+			std::shared_ptr<core::gcl::context> 	aContext, 
+			ecs::stage* 							aStage, 
+			std::string 							aName
+		);
 
 	};	
 
