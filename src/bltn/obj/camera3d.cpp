@@ -10,6 +10,43 @@ namespace geodesy::bltn::obj {
 
 	namespace {
 
+		struct camera_uniform_data {
+			alignas(16) math::vec<float, 3> Position;
+			alignas(16) math::mat<float, 4, 4> Rotation;
+			alignas(16) math::mat<float, 4, 4> Projection;
+			camera_uniform_data(
+				math::vec<float, 3> aPosition, 
+				math::vec<float, 3> aDirRight,
+				math::vec<float, 3> aDirUp,
+				math::vec<float, 3> aDirForward,
+				float aFOV,
+				math::vec<uint, 3> aResolution,
+				float aNear,
+				float aFar
+			);
+		};
+
+		camera_uniform_data::camera_uniform_data(
+			math::vec<float, 3> aPosition, 
+			math::vec<float, 3> aDirRight,
+			math::vec<float, 3> aDirUp,
+			math::vec<float, 3> aDirForward,
+			float aFOV,
+			math::vec<uint, 3> aResolution,
+			float aNear,
+			float aFar
+		) {
+			float AspectRatio = static_cast<float>(aResolution[0]) / static_cast<float>(aResolution[1]);
+			this->Position = aPosition;
+			this->Rotation = math::mat<float, 4, 4>(
+				 aDirRight[0], 		 aDirRight[1], 		 aDirRight[2], 			0.0f,
+				-aDirUp[0], 		-aDirUp[1], 		-aDirUp[2], 			0.0f,
+				 aDirForward[0], 	 aDirForward[1], 	 aDirForward[2], 		0.0f,
+				 0.0f, 				 0.0f, 				 0.0f, 					1.0f
+			);
+			this->Projection = math::perspective(math::radians(aFOV), AspectRatio, aNear, aFar);
+		}
+
 		class geometry_buffer : public framechain {
 		public:
 			geometry_buffer(std::shared_ptr<context> aContext, math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount);
@@ -75,6 +112,9 @@ namespace geodesy::bltn::obj {
 	{
 		VkResult Result = VK_SUCCESS;
 		engine* Engine = aContext->Device->Engine;
+		this->FOV = 70.0f;
+		this->Near = 0.1f;
+		this->Far = 1000.0f;
 
 		// List of assets Camera3D will load into memory.
 		std::vector<std::string> AssetList = {
@@ -138,21 +178,18 @@ namespace geodesy::bltn::obj {
 		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
 		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 
-		camera_uniform_data UniformData;
-		float AspectRatio = (float)aFrameResolution[1] / (float)aFrameResolution[0];
-		UniformData.Position 		= this->Position;
-		UniformData.Rotation 		= {
-			DirectionRight[0], 		DirectionRight[1], 		DirectionRight[2], 		0.0f,
-			-DirectionUp[0], 		-DirectionUp[1], 		-DirectionUp[2], 		0.0f,
-			DirectionFront[0], 		DirectionFront[1], 		DirectionFront[2], 		0.0f,
-			0.0f, 					0.0f, 					0.0f, 					1.0f
-		};
-		UniformData.Projection 		= math::perspective(math::radians(70.0f), AspectRatio, 0.1f, 100.0f);
-
+		camera_uniform_data UniformData = camera_uniform_data(
+			this->Position, 
+			this->DirectionRight, 
+			this->DirectionUp, 
+			this->DirectionFront, 
+			this->FOV, 
+			this->Framechain->Resolution, 
+			this->Near,
+			this->Far
+		);
 		this->CameraUniformBuffer = Context->create_buffer(UBCI, sizeof(UniformData), &UniformData);
 		this->CameraUniformBuffer->map_memory(0, sizeof(UniformData));
-
-		// Clear camera input.
 	}
 
 	camera3d::~camera3d() {
@@ -161,7 +198,7 @@ namespace geodesy::bltn::obj {
 
 	void camera3d::input(const core::hid::input& aInputState) {
 		float LinearSpeed = 250.0f;
-		float RotationSpeed = 0.025f;
+		float RotationSpeed = 1.0f;
 		float ForwardSpeed = 0.0f, RightSpeed = 0.0f;		
 		float DeltaTheta = 0.0f, DeltaPhi = 0.0f;
 
@@ -171,8 +208,10 @@ namespace geodesy::bltn::obj {
 		if (aInputState.Keyboard[hid::keyboard::KEY_D]) RightSpeed 		+= LinearSpeed;
 
 		// TODO: Lock look angles to prevent gimbal lock.
-		this->Theta 	+= aInputState.Mouse.Velocity[1] * RotationSpeed;
-		this->Phi 		-= aInputState.Mouse.Velocity[0] * RotationSpeed;
+		this->Theta 	+= math::radians(aInputState.Mouse.Velocity[1]) * RotationSpeed;
+		this->Phi 		-= math::radians(aInputState.Mouse.Velocity[0]) * RotationSpeed;
+		if (this->Theta > math::constant::pi) this->Theta = math::constant::pi;
+		if (this->Theta < 0) this->Theta = 0;
 		this->InputVelocity = this->DirectionFront * ForwardSpeed + this->DirectionRight * RightSpeed;
 
 	}
@@ -186,17 +225,16 @@ namespace geodesy::bltn::obj {
 		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
 		this->DirectionFront			= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
 
-		camera_uniform_data UniformData;
-		float AspectRatio = (float)this->Framechain->Resolution[1] / (float)this->Framechain->Resolution[0];
-		UniformData.Position 		= this->Position;
-		UniformData.Rotation 		= {
-			DirectionRight[0], 		DirectionRight[1], 		DirectionRight[2], 		0.0f,
-			-DirectionUp[0], 		-DirectionUp[1], 		-DirectionUp[2], 		0.0f,
-			DirectionFront[0], 		DirectionFront[1], 		DirectionFront[2], 		0.0f,
-			0.0f, 					0.0f, 					0.0f, 					1.0f
-		};
-		UniformData.Projection 		= math::perspective(math::radians(70.0f), AspectRatio, 0.1f, 100.0f);
-		// Copy over to GPU Uniform Buffer.
+		camera_uniform_data UniformData = camera_uniform_data(
+			this->Position, 
+			this->DirectionRight, 
+			this->DirectionUp, 
+			this->DirectionFront, 
+			this->FOV, 
+			this->Framechain->Resolution, 
+			this->Near,
+			this->Far
+		);
 		memcpy(this->CameraUniformBuffer->Ptr, &UniformData, sizeof(camera_uniform_data));
 	}
 

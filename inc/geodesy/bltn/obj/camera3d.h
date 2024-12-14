@@ -9,12 +9,7 @@ namespace geodesy::bltn::obj {
 	class camera3d : public ecs::subject {
 	public:
 
-		struct camera_uniform_data {
-			alignas(16) core::math::vec<float, 3> Position;
-			alignas(16) core::math::mat<float, 4, 4> Rotation;
-			alignas(16) core::math::mat<float, 4, 4> Projection;
-		};
-
+		float FOV, Near, Far;
 		std::shared_ptr<core::gcl::buffer> 	CameraUniformBuffer;
 
 		camera3d(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, std::string aName, core::math::vec<uint, 3> aFrameResolution, double aFrameRate, uint32_t aFrameCount);
