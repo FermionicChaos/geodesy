@@ -12,7 +12,9 @@
 #include "gcl/image.h"
 #include "gcl/shader.h"
 #include "gcl/descriptor.h"
+#include "gcl/framebuffer.h"
 #include "gcl/pipeline.h"
+#include "gcl/framechain.h"
 #include "gcl/swapchain.h"
 #include "gcl/context.h"
 

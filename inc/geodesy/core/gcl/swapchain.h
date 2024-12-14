@@ -5,6 +5,7 @@
 #include "config.h"
 #include "image.h"
 #include "pipeline.h"
+#include "framechain.h"
 
 namespace geodesy::core::gcl {
 
