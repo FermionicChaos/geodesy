@@ -18,10 +18,11 @@ namespace geodesy::bltn::stg {
 		this->create_object<obj::camera3d>("Camera3D", CameraCreateInfo, math::vec<float, 3>(0.0f, -50.0f, 10.0f));
 
 		std::vector<std::string> SpawnObjects = {
-			// "../glTF-Sample-Models/2.0/Box/glTF/Box.gltf",
-			// "../glTF-Sample-Models/2.0/BoxTextured/glTF/BoxTextured.gltf",
-			// "../glTF-Sample-Models/2.0/Lantern/glTF/Lantern.gltf",
+			"../glTF-Sample-Models/2.0/Box/glTF/Box.gltf",
+			"../glTF-Sample-Models/2.0/BoxTextured/glTF/BoxTextured.gltf",
+			"../glTF-Sample-Models/2.0/Lantern/glTF/Lantern.gltf",
 			"../glTF-Sample-Models/2.0/CesiumMilkTruck/glTF/CesiumMilkTruck.gltf",
+			"assets/models/Pigwithanimation.gltf",
 		};
 
 		for (size_t i = 0; i < SpawnObjects.size(); i++) {

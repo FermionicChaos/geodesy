@@ -62,12 +62,12 @@ namespace geodesy::ecs {
 
 		template<typename T, typename... Args>
 		std::shared_ptr<T> create_object(std::string aName, Args&&... aArgs) {
-			std::shared_ptr<T> NewObject = std::make_shared<T>(
+			std::shared_ptr<T> NewObject(new T(
 				this->Context,
 				this,
 				std::move(aName),
 				std::forward<Args>(aArgs)...
-			);
+			));
 			this->Object.push_back(NewObject);
 			return NewObject;
 		}

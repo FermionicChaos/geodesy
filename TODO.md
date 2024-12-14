@@ -1,0 +1,4 @@
+- Clean up asset loader to handle non existent files
+- Clean up pipeline class to handle out of our locations, and bindings. Rule doesn't apply to sets.
+- Implement animation system for model class.
+- Implement method for handling in built textures to model class.
