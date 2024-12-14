@@ -170,7 +170,7 @@ namespace geodesy::bltn::obj {
 		if (aInputState.Keyboard[hid::keyboard::KEY_A]) RightSpeed 		-= LinearSpeed;
 		if (aInputState.Keyboard[hid::keyboard::KEY_D]) RightSpeed 		+= LinearSpeed;
 
-
+		// TODO: Lock look angles to prevent gimbal lock.
 		this->Theta 	+= aInputState.Mouse.Velocity[1] * RotationSpeed;
 		this->Phi 		-= aInputState.Mouse.Velocity[0] * RotationSpeed;
 		this->InputVelocity = this->DirectionFront * ForwardSpeed + this->DirectionRight * RightSpeed;
