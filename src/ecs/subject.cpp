@@ -32,58 +32,14 @@ namespace geodesy::ecs {
 		return true;
 	}
 
-	bool subject::ready_to_render() {
-		return this->Framechain->Timer.check();
-	}
-
-	VkResult subject::next_frame_now() {
-		VkResult Result = VK_SUCCESS;
-		
-		VkFence Fence = this->Context->create_fence();
-		// Acquire next image from swapchain.
-		// Result = this->next_frame(VK_NULL_HANDLE, Fence);
-
-		// Context->wait_and_reset(Fence);
-
-		// Context->destroy_fence(Fence);
-
-		return Result;
-	}
-
-	VkResult subject::present_frame_now() {
-		VkResult Result = VK_SUCCESS;
-
-		// VkPresentInfoKHR PresentInfo = this->present_frame();
-
-		// Result = Context->present({ PresentInfo });
-
-		return Result;
-	}
-
-	std::map<std::string, std::shared_ptr<core::gcl::image>> subject::read_frame() {
-		return this->Framechain->Image[this->Framechain->ReadIndex];
-	}
-
-	std::map<std::string, std::shared_ptr<core::gcl::image>> subject::draw_frame() {
-		return this->Framechain->Image[this->Framechain->DrawIndex];
-	}
-
 	std::vector<std::vector<core::gfx::draw_call>> subject::default_renderer(object* aObject) {
 		std::vector<std::vector<core::gfx::draw_call>> DefaultRenderer;
 		return DefaultRenderer;
 	}
 
-	command_batch subject::next_frame(std::shared_ptr<semaphore_pool> aSemaphorePool) {
-		// !This method only exists to abstract over system window swapchains.
-		command_batch CommandBatch;
-		this->Framechain->ReadIndex = this->Framechain->DrawIndex;
-		this->Framechain->DrawIndex = ((this->Framechain->DrawIndex == (Framechain->Image.size() - 1)) ? 0 : (this->Framechain->DrawIndex + 1));
-		return CommandBatch;
-	}
-
 	submission_batch subject::render(stage* aStage) {
 		// Acquire next image from swapchain.
-		this->RenderingOperations += this->next_frame(this->SemaphorePool);
+		this->RenderingOperations += this->Framechain->next_frame();
 
 		// Iterate through all objects in the stage.
 		gcl::command_batch StageCommandBatch;
@@ -102,7 +58,7 @@ namespace geodesy::ecs {
 		this->RenderingOperations += StageCommandBatch;
 
 		// Acquire image transition and present frame if exists.
-		this->RenderingOperations += this->present_frame(this->SemaphorePool);
+		this->RenderingOperations += this->Framechain->present_frame();
 
 		// Setup safety dependencies for default rendering system.
 		for (size_t i = 0; i < this->RenderingOperations.size() - 1; i++) {
@@ -112,12 +68,6 @@ namespace geodesy::ecs {
 
 		// Build submission reference object and return.
 		return build(this->RenderingOperations);
-	}
-
-	std::vector<command_batch> subject::present_frame(std::shared_ptr<semaphore_pool> aSemaphorePool) {
-		// !This method only exists to abstract over system window swapchains.
-		std::vector<command_batch> CommandBatch(2);
-		return CommandBatch;
 	}
 
 }

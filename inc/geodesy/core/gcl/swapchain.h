@@ -60,13 +60,23 @@ namespace geodesy::core::gcl {
 			property(VkSwapchainCreateInfoKHR aCreateInfo, float aFrameRate);
 		};
 
+		VkSurfaceKHR 							Surface;
 		VkSwapchainCreateInfoKHR				CreateInfo;
 		VkSwapchainKHR							Handle;
 
-        swapchain(std::shared_ptr<context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain = VK_NULL_HANDLE);
+        swapchain(std::shared_ptr<context> aContext, VkSurfaceKHR aSurface, const property& aProperty);
         ~swapchain();
 
 		VkImageCreateInfo image_create_info() const;
+
+		VkResult next_frame(VkSemaphore aSemaphore = VK_NULL_HANDLE, VkFence aFence = VK_NULL_HANDLE);
+		command_batch next_frame() override;
+		std::vector<command_batch> present_frame() override;
+
+	private:
+
+		VkResult create_swapchain(std::shared_ptr<context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain = VK_NULL_HANDLE);
+		void clear();
 
     };
 

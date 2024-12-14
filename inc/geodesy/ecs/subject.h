@@ -42,17 +42,8 @@ namespace geodesy::ecs {
 		~subject();
 
 		virtual bool is_subject() override;
-
-		bool ready_to_render();
-		VkResult next_frame_now();
-		VkResult present_frame_now();
-
-		std::map<std::string, std::shared_ptr<core::gcl::image>> read_frame();
-		std::map<std::string, std::shared_ptr<core::gcl::image>> draw_frame();
 		virtual std::vector<std::vector<core::gfx::draw_call>> default_renderer(object* aObject);
-		virtual core::gcl::command_batch next_frame(std::shared_ptr<core::gcl::semaphore_pool> aSemaphorePool);
 		virtual core::gcl::submission_batch render(stage* aStage);
-		virtual std::vector<core::gcl::command_batch> present_frame(std::shared_ptr<core::gcl::semaphore_pool> aSemaphorePool);
 
 	};
 

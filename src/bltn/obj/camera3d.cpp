@@ -8,33 +8,61 @@ namespace geodesy::bltn::obj {
 	using namespace geodesy::core::gfx;
 	using namespace geodesy::core::gcl;
 
-	camera3d::geometry_buffer::geometry_buffer(std::shared_ptr<core::gcl::context> aContext, core::math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount) : framechain(aContext, aFrameRate, aFrameCount) {
-		// New API design?
-		image::create_info DepthCreateInfo;
-		DepthCreateInfo.Layout		= image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		DepthCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
-		DepthCreateInfo.Usage		= image::usage::SAMPLED | image::usage::DEPTH_STENCIL_ATTACHMENT  | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
+	namespace {
 
-		image::create_info ColorCreateInfo;
-		ColorCreateInfo.Layout		= image::layout::SHADER_READ_ONLY_OPTIMAL;
-		ColorCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
-		ColorCreateInfo.Usage		= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
+		class geometry_buffer : public framechain {
+		public:
+			geometry_buffer(std::shared_ptr<context> aContext, math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount);
+		};
 
-		image::format ColorFormat = image::format::B8G8R8A8_UNORM; //image::format::R32G32B32A32_SFLOAT;
-		image::format DepthFormat = image::format::D32_SFLOAT;
+		geometry_buffer::geometry_buffer(std::shared_ptr<context> aContext, math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount) : framechain(aContext, aFrameRate, aFrameCount) {
+			// New API design?
+			image::create_info DepthCreateInfo;
+			DepthCreateInfo.Layout		= image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			DepthCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
+			DepthCreateInfo.Usage		= image::usage::SAMPLED | image::usage::DEPTH_STENCIL_ATTACHMENT  | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
 
-		this->Resolution = aResolution;
-		for (std::size_t i = 0; i < this->Image.size(); i++) {
-			// This is the finalized color output.
-			this->Image[i]["Color"] 		= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			// Opaque Geometry Buffer, used for Opaque and Transparent mesh instances.
-			this->Image[i]["OGB.Color"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Position"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Normal"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Depth"] 	= aContext->create_image(DepthCreateInfo, DepthFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["FinalColor"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			image::create_info ColorCreateInfo;
+			ColorCreateInfo.Layout		= image::layout::SHADER_READ_ONLY_OPTIMAL;
+			ColorCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
+			ColorCreateInfo.Usage		= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
+
+			image::format ColorFormat = image::format::B8G8R8A8_UNORM; //image::format::R32G32B32A32_SFLOAT;
+			image::format DepthFormat = image::format::D32_SFLOAT;
+
+			this->Resolution = aResolution;
+			for (std::size_t i = 0; i < this->Image.size(); i++) {
+				// This is the finalized color output.
+				this->Image[i]["Color"] 		= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+				// Opaque Geometry Buffer, used for Opaque and Transparent mesh instances.
+				this->Image[i]["OGB.Color"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+				this->Image[i]["OGB.Position"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+				this->Image[i]["OGB.Normal"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+				this->Image[i]["OGB.Depth"] 	= aContext->create_image(DepthCreateInfo, DepthFormat, aResolution[0], aResolution[1]);
+				this->Image[i]["FinalColor"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			}
+
+			// Setup frame clearing commands.
+			this->PredrawFrameOperation = std::vector<command_batch>(this->Image.size());
+			this->PostdrawFrameOperation = std::vector<command_batch>(this->Image.size());
+			for (size_t i = 0; i < this->Image.size(); i++) {
+				// Creates Clearing command for images in frame chain.
+				VkCommandBuffer	ClearCommand = aContext->allocate_command_buffer(device::operation::GRAPHICS_AND_COMPUTE);
+				aContext->begin(ClearCommand);
+				// this->Image[i]["Color"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+				this->Image[i]["OGB.Color"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+				this->Image[i]["OGB.Position"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+				this->Image[i]["OGB.Normal"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+				this->Image[i]["OGB.Depth"]->clear_depth(ClearCommand, { 1.0f, 0 }, image::layout::DEPTH_ATTACHMENT_OPTIMAL);
+				// this->Image[i]["FinalColor"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+				aContext->end(ClearCommand);
+				this->PredrawFrameOperation[i] += ClearCommand;
+			}
+
 		}
+
 	}
+
 
 	camera3d::camera3d(
 		std::shared_ptr<core::gcl::context> 	aContext, 
@@ -77,10 +105,10 @@ namespace geodesy::bltn::obj {
 		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 1, sizeof(gfx::mesh::vertex::weight), 7, offsetof(gfx::mesh::vertex::weight, BoneWeight));
 		
 		// Select output attachments for pipeline.
-		Rasterizer->attach(0, this->draw_frame()["OGB.Color"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
-		Rasterizer->attach(1, this->draw_frame()["OGB.Position"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
-		Rasterizer->attach(2, this->draw_frame()["OGB.Normal"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
-		Rasterizer->attach(3, this->draw_frame()["OGB.Depth"], 		image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+		Rasterizer->attach(0, this->Framechain->draw_frame()["OGB.Color"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
+		Rasterizer->attach(1, this->Framechain->draw_frame()["OGB.Position"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
+		Rasterizer->attach(2, this->Framechain->draw_frame()["OGB.Normal"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
+		Rasterizer->attach(3, this->Framechain->draw_frame()["OGB.Depth"], 		image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 		// How to intepret vertex data in rasterization.
 		Rasterizer->InputAssembly.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;

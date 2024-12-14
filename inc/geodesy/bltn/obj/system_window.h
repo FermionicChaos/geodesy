@@ -40,19 +40,12 @@ namespace geodesy::bltn::obj {
 		core::hid::input 						InputState;
 		GLFWwindow* 							WindowHandle;
 		VkSurfaceKHR 							SurfaceHandle;
-		std::queue<VkSemaphore> 				NextImageSemaphore;
-		std::vector<core::gcl::command_batch> 	PredrawFrameTransition;
-		std::vector<core::gcl::command_batch> 	PostdrawFrameTransition;
 
 		system_window(std::shared_ptr<core::gcl::context> aContext, std::shared_ptr<system_display> aDisplay, std::string aName, const create_info& aCreateInfo, core::math::vec<int, 2> aPosition, core::math::vec<int, 2> aSize);
 		system_window(std::shared_ptr<core::gcl::context> aContext, std::shared_ptr<system_display> aDisplay, std::string aName, const create_info& aCreateInfo, core::math::vec<float, 3> aPosition, core::math::vec<float, 2> aSize);
 		~system_window();
 
-		VkResult next_frame(VkSemaphore aSemaphore = VK_NULL_HANDLE, VkFence aFence = VK_NULL_HANDLE);
-
 		void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f }) override;
-		virtual core::gcl::command_batch next_frame(std::shared_ptr<core::gcl::semaphore_pool> aSemaphorePool) override;
-		virtual std::vector<core::gcl::command_batch> present_frame(std::shared_ptr<core::gcl::semaphore_pool> aSemaphorePool) override;
 
 	private:
 

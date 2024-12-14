@@ -404,6 +404,7 @@ namespace geodesy::core::gcl {
 			uint32_t aArrayLayerStart = 0, uint32_t aArrayLayerCount = UINT32_MAX
 		);
 		void clear(VkCommandBuffer aCommandBuffer, VkClearColorValue aClearColor, image::layout aCurrentImageLayout = SHADER_READ_ONLY_OPTIMAL, uint32_t aStartingArrayLayer = 0, uint32_t aArrayLayerCount = UINT32_MAX);
+		void clear_depth(VkCommandBuffer aCommandBuffer, VkClearDepthStencilValue aClearDepthStencil, image::layout aCurrentImageLayout = SHADER_READ_ONLY_OPTIMAL, uint32_t aStartingArrayLayer = 0, uint32_t aArrayLayerCount = UINT32_MAX);
 
 		// Immediate Operations
 		VkResult copy(VkOffset3D aDestinationOffset, uint32_t aDestinationArrayLayer, std::shared_ptr<buffer> aSourceData, size_t aSourceOffset, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount = UINT32_MAX);
@@ -416,6 +417,7 @@ namespace geodesy::core::gcl {
 			uint32_t aArrayLayerStart = 0, uint32_t aArrayLayerCount = UINT32_MAX
 		);
 		VkResult clear(VkClearColorValue aClearColor, image::layout aCurrentImageLayout = SHADER_READ_ONLY_OPTIMAL, uint32_t aStartingArrayLayer = 0, uint32_t aArrayLayerCount = UINT32_MAX);
+		VkResult clear_depth(VkClearDepthStencilValue aClearDepthStencil, image::layout aCurrentImageLayout = SHADER_READ_ONLY_OPTIMAL, uint32_t aStartingArrayLayer = 0, uint32_t aArrayLayerCount = UINT32_MAX);
 		VkResult generate_mipmaps(layout aCurrentLayout, layout aFinalLayout, VkFilter aFilter);
 
 		// Write to image data memory from host memory.

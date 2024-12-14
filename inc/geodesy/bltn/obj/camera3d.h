@@ -15,11 +15,6 @@ namespace geodesy::bltn::obj {
 			alignas(16) core::math::mat<float, 4, 4> Projection;
 		};
 
-		class geometry_buffer : public core::gcl::framechain {
-		public:
-			geometry_buffer(std::shared_ptr<core::gcl::context> aContext, core::math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount);
-		};
-
 		std::shared_ptr<core::gcl::buffer> 	CameraUniformBuffer;
 
 		camera3d(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, std::string aName, core::math::vec<uint, 3> aFrameResolution, double aFrameRate, uint32_t aFrameCount);

@@ -77,7 +77,7 @@ namespace geodesy::ecs {
 		for (subject* RenderTarget : RenderTargetList) {
 
 			// Check if Render Target is ready to render.
-			if (!RenderTarget->ready_to_render()) continue;
+			if (!RenderTarget->Framechain->ready_to_render()) continue;
 
 			// Clear out previous rendering operations.
 			RenderTarget->RenderingOperations = std::vector<gcl::command_batch>();

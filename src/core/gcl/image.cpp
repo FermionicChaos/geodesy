@@ -810,6 +810,18 @@ namespace geodesy::core::gcl {
 		this->transition(aCommandBuffer, TRANSFER_DST_OPTIMAL, aCurrentImageLayout, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, this->CreateInfo.mipLevels, aStartingArrayLayer, aArrayLayerCount);
 	}
 
+	void image::clear_depth(VkCommandBuffer aCommandBuffer, VkClearDepthStencilValue aClearDepthStencil, image::layout aCurrentImageLayout, uint32_t aStartingArrayLayer, uint32_t aArrayLayerCount) {
+		VkImageSubresourceRange SubresourceRange{};
+		SubresourceRange.aspectMask 	= VK_IMAGE_ASPECT_DEPTH_BIT;
+		SubresourceRange.baseMipLevel 	= 0;
+		SubresourceRange.levelCount 	= this->CreateInfo.mipLevels;
+		SubresourceRange.baseArrayLayer = std::min(aStartingArrayLayer, this->CreateInfo.arrayLayers - 1);
+		SubresourceRange.layerCount 	= std::min(aArrayLayerCount, this->CreateInfo.arrayLayers - SubresourceRange.baseArrayLayer);
+		this->transition(aCommandBuffer, aCurrentImageLayout, TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, this->CreateInfo.mipLevels, aStartingArrayLayer, aArrayLayerCount);
+		vkCmdClearDepthStencilImage(aCommandBuffer, this->Handle, (VkImageLayout)TRANSFER_DST_OPTIMAL, &aClearDepthStencil, 1, &SubresourceRange);
+		this->transition(aCommandBuffer, TRANSFER_DST_OPTIMAL, aCurrentImageLayout, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, this->CreateInfo.mipLevels, aStartingArrayLayer, aArrayLayerCount);
+	}
+
 	VkResult image::copy(VkOffset3D aDestinationOffset, uint32_t aDestinationArrayLayer, std::shared_ptr<buffer> aSourceData, size_t aSourceOffset, VkExtent3D aRegionExtent, uint32_t aArrayLayerCount) {
 		VkBufferImageCopy Region{};
 		Region.bufferOffset 						= aSourceOffset;
@@ -892,6 +904,17 @@ namespace geodesy::core::gcl {
 		VkCommandBuffer CommandBuffer = Context->allocate_command_buffer(device::operation::GRAPHICS_AND_COMPUTE);
 		Result = Context->begin(CommandBuffer);
 		this->clear(CommandBuffer, aClearColor, aCurrentImageLayout, aStartingArrayLayer, aArrayLayerCount);
+		Result = Context->end(CommandBuffer);
+		Result = Context->execute_and_wait(device::operation::GRAPHICS_AND_COMPUTE, CommandBuffer);
+		Context->release_command_buffer(device::operation::GRAPHICS_AND_COMPUTE, CommandBuffer);
+		return Result;
+	}
+
+	VkResult image::clear_depth(VkClearDepthStencilValue aClearDepthStencil, image::layout aCurrentImageLayout, uint32_t aStartingArrayLayer, uint32_t aArrayLayerCount) {
+		VkResult Result = VK_SUCCESS;
+		VkCommandBuffer CommandBuffer = Context->allocate_command_buffer(device::operation::GRAPHICS_AND_COMPUTE);
+		Result = Context->begin(CommandBuffer);
+		this->clear_depth(CommandBuffer, aClearDepthStencil, aCurrentImageLayout, aStartingArrayLayer, aArrayLayerCount);
 		Result = Context->end(CommandBuffer);
 		Result = Context->execute_and_wait(device::operation::GRAPHICS_AND_COMPUTE, CommandBuffer);
 		Context->release_command_buffer(device::operation::GRAPHICS_AND_COMPUTE, CommandBuffer);

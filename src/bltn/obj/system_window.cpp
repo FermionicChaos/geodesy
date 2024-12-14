@@ -175,35 +175,6 @@ namespace geodesy::bltn::obj {
 			this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(Swapchain);
 		}
 
-		// Setup next image semaphore.
-		std::vector<VkSemaphore> NextImageSemaphoreList = aContext->create_semaphore(this->Framechain->Image.size(), 0);
-		for (size_t i = 0; i < NextImageSemaphoreList.size(); i++) {
-			this->NextImageSemaphore.push(NextImageSemaphoreList[i]);
-		}
-
-		// Setup transition commands.
-		// TODO: Free command buffers later.
-		this->PredrawFrameTransition = std::vector<core::gcl::command_batch>(this->Framechain->Image.size());
-		this->PostdrawFrameTransition = std::vector<core::gcl::command_batch>(this->Framechain->Image.size());
-		for (size_t i = 0; i < this->Framechain->Image.size(); i++) {
-			// Prepare Predraw transition commands.
-			VkCommandBuffer PredrawFrameTransitionCmd = aContext->allocate_command_buffer(device::operation::GRAPHICS_AND_COMPUTE);
-			aContext->begin(PredrawFrameTransitionCmd);
-			// Transition image from present to shader read only optimal.
-			this->Framechain->Image[i]["Color"]->transition(PredrawFrameTransitionCmd, image::layout::PRESENT_SRC_KHR, image::layout::SHADER_READ_ONLY_OPTIMAL);
-			// Clear swapchain image.
-			this->Framechain->Image[i]["Color"]->clear(PredrawFrameTransitionCmd, { 0.0f, 0.0f, 0.0f, 1.0f });
-			aContext->end(PredrawFrameTransitionCmd);
-			this->PredrawFrameTransition[i] += PredrawFrameTransitionCmd;
-
-			// Prepare Postdraw transition commands.
-			VkCommandBuffer PostdrawFrameTransitionCmd = aContext->allocate_command_buffer(device::operation::GRAPHICS_AND_COMPUTE);
-			aContext->begin(PostdrawFrameTransitionCmd);
-			this->Framechain->Image[i]["Color"]->transition(PostdrawFrameTransitionCmd, image::layout::SHADER_READ_ONLY_OPTIMAL, image::layout::PRESENT_SRC_KHR);
-			aContext->end(PostdrawFrameTransitionCmd);
-			this->PostdrawFrameTransition[i] += PostdrawFrameTransitionCmd;
-		}
-
 	}
 
 	system_window::system_window(std::shared_ptr<core::gcl::context> aContext, std::shared_ptr<system_display> aDisplay, std::string aName, const create_info& aCreateInfo, core::math::vec<float, 3> aPosition, core::math::vec<float, 2> aSize) :
@@ -212,12 +183,6 @@ namespace geodesy::bltn::obj {
 	}
 
 	system_window::~system_window() {
-		// Destroy Semaphores.
-		while (!this->NextImageSemaphore.empty()) {
-			VkSemaphore Semaphore = this->NextImageSemaphore.front();
-			this->NextImageSemaphore.pop();
-			this->Context->destroy_semaphore(Semaphore);
-		}
 		// Destroy Swapchain.
 		this->Framechain = nullptr;
 		// Destroy Vulkan Surface.
@@ -226,63 +191,9 @@ namespace geodesy::bltn::obj {
 		this->destroy_window_handle(this->WindowHandle);
 	}
 
-	VkResult system_window::next_frame(VkSemaphore aSemaphore, VkFence aFence) {
-		VkResult ReturnValue = VK_SUCCESS;
-		std::shared_ptr<core::gcl::swapchain> Swapchain = std::dynamic_pointer_cast<core::gcl::swapchain>(this->Framechain);
-		this->Framechain = nullptr;
-		Swapchain->ReadIndex = Swapchain->DrawIndex;
-		while (true) {
-			VkResult Result = VK_SUCCESS;
-
-			// Acquire next image from swapchain.
-			Result = vkAcquireNextImageKHR(this->Context->Handle, Swapchain->Handle, UINT64_MAX, aSemaphore, aFence, &Swapchain->DrawIndex);
-
-			// If image succussfully acquired, break loop.
-			if (Result == VK_SUCCESS) break;
-
-			// Check if window has resized.
-			if ((Result == VK_ERROR_OUT_OF_DATE_KHR) || (Result == VK_SUBOPTIMAL_KHR)) {
-				ReturnValue = Result;
-				// Create new swap chain.
-				gcl::swapchain::property NewProperty = gcl::swapchain::property(Swapchain->CreateInfo, Swapchain->FrameRate);
-				Swapchain = std::make_shared<core::gcl::swapchain>(this->Context, this->SurfaceHandle, NewProperty, Swapchain->Handle);
-				// Also reset fence.
-				if (aFence != VK_NULL_HANDLE) {
-					Result = this->Context->wait_and_reset(aFence);
-				}
-			}
-			else {
-				ReturnValue = Result;
-			}
-		}
-		this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(Swapchain);
-		return ReturnValue;
-	}
-
 	void system_window::update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce, core::math::vec<float, 3> aAppliedTorque) {
 		this->InputState.Mouse.update(aDeltaTime);
 		this->Time += aDeltaTime;
-	}
-
-	core::gcl::command_batch system_window::next_frame(std::shared_ptr<core::gcl::semaphore_pool> aSemaphorePool) {
-		VkSemaphore Semaphore = this->NextImageSemaphore.front();
-		this->NextImageSemaphore.pop();
-		this->NextImageSemaphore.push(Semaphore);
-		// Acquire next image.
-		this->next_frame(Semaphore);
-		core::gcl::command_batch PredrawTransition = this->PredrawFrameTransition[this->Framechain->DrawIndex];
-		PredrawTransition.WaitSemaphoreList = { Semaphore };
-		PredrawTransition.WaitStageList = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		return PredrawTransition;
-	}
-
-	std::vector<core::gcl::command_batch> system_window::present_frame(std::shared_ptr<core::gcl::semaphore_pool> aSemaphorePool) {
-		std::shared_ptr<core::gcl::swapchain> Swapchain = std::dynamic_pointer_cast<core::gcl::swapchain>(this->Framechain);
-		core::gcl::command_batch PostdrawTransition = this->PostdrawFrameTransition[Swapchain->DrawIndex];
-		core::gcl::command_batch PresentInfo;
-		PresentInfo.Swapchain = { Swapchain->Handle };
-		PresentInfo.ImageIndex = { Swapchain->DrawIndex };
-		return { PostdrawTransition, PresentInfo };
 	}
 
 	GLFWwindow* system_window::create_window_handle(window::property aSetting, int aWidth, int aHeight, const char* aTitle, GLFWmonitor* aMonitor, GLFWwindow* aWindow) {
