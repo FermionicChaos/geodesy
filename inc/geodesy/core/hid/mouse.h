@@ -36,17 +36,21 @@ namespace geodesy::core::hid {
 			int Modifier;
 		};
 
-		state State[8];
-		math::vec<float, 2> Scroll;
-		math::vec<float, 2> Position;
-		math::vec<float, 2> Velocity;
-		math::vec<float, 2> Acceleration;
+		state 					State[8];
+		math::vec<float, 2> 	Scroll;
+		float 					Time;
+		math::vec<float, 2> 	Position;
+		bool 					NewPosition;
+		math::vec<float, 2> 	Velocity;
+		math::vec<float, 2> 	Acceleration;
 
 		mouse();
 		~mouse();
 
 		state& operator[](int aButtonID);
 		state operator[](int aButtonID) const;
+
+		void update(double aDeltaTime);
 
 	};
 

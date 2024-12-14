@@ -152,8 +152,9 @@ namespace geodesy::core::hid {
 		keyboard();
 		~keyboard();
 
-		key& operator[](int aKeyID);
-		key operator[](int aKeyID) const;
+		bool operator[](int aKeyID) const;
+		key& operator()(int aKeyID);
+		key operator()(int aKeyID) const;
 
 	};
 

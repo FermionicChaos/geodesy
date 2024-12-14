@@ -33,14 +33,15 @@ namespace geodesy::ecs {
 		// ^ This data exists in Host memory.
 
 		// * Object Metadata
-		std::mutex																	Mutex;
-		engine*																		Engine;
-		stage*																		Stage;
 		std::string																	Name;
+		stage*																		Stage;
+		engine*																		Engine;
+		std::mutex																	Mutex;
 
 		// * Object Input and Physics
-		float																		Mass;				// Kilogram			[kg]
 		float																		Time;				// Second 			[s]
+		float 																		DeltaTime; 			// Second 			[s]
+		float																		Mass;				// Kilogram			[kg]
 		core::math::vec<float, 3>													Position;			// Meter			[m]
 		float 																		Theta, Phi;			// Radians			[rad]
 		core::math::vec<float, 3>													DirectionRight;		// Right			[Normalized]

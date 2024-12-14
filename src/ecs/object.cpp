@@ -1,16 +1,14 @@
 #include <geodesy/engine.h>
 #include <geodesy/ecs/object.h>
 
-#include <iostream>
-
 namespace geodesy::ecs {
 
 	using namespace core;
 	using namespace gcl;
 
 	object::object(std::shared_ptr<core::gcl::context> aContext, stage* aStage, std::string aName, math::vec<float, 3> aPosition, math::vec<float, 2> aDirection) {
-		float Theta 					= math::radians(aDirection[0] + 90.0f);
-		float Phi 						= math::radians(aDirection[1] + 90.0f);
+		this->Theta 					= math::radians(aDirection[0] + 90.0f);
+		this->Phi 						= math::radians(aDirection[1] + 90.0f);
 		this->Engine 					= aContext->Device->Engine;
 		this->Stage 					= aStage;
 		this->Name 						= aName;
@@ -44,7 +42,6 @@ namespace geodesy::ecs {
 			DirectionRight[2], 		DirectionFront[2], 		DirectionUp[2], 	0.0f,
 			0.0f, 					0.0f, 					0.0f, 				1.0f
 		};
-
 		this->UniformBuffer = aContext->create_buffer(UBCI, sizeof(uniform_data), &UniformData);
 		this->UniformBuffer->map_memory(0, sizeof(uniform_data));
 	}
@@ -57,17 +54,10 @@ namespace geodesy::ecs {
 
 	void object::input(const core::hid::input& aInput) {
 
-		switch(aInput.Keyboard[hid::keyboard::KEY_W].Action) {
-		default:
-			break;
-		case hid::keyboard::action::KEY_PRESS:
-			std::cout << "hellow" << std::endl;
-			break;
-		}
-
 	}
 
 	void object::update(double aDeltaTime, math::vec<float, 3> aAppliedForce, math::vec<float, 3> aAppliedTorque) {
+		this->DeltaTime = aDeltaTime;
 		//update_info UpdateInfo;
 		// Newtons First Law: An object in motion tends to stay in motion.
 		// Newtons Second Law: The change in momentum of an object is equal to the forces applied to it.
@@ -75,21 +65,42 @@ namespace geodesy::ecs {
 		math::mat<float, 3, 3> InvertedInertiaTensor;// = math::inverse(PhysicsMesh->InertiaTensor);
 
 		// How the momentum of the object will change when a force is applied to it.
-		this->LinearMomentum += aAppliedForce * aDeltaTime;
 		this->AngularMomentum += aAppliedTorque * aDeltaTime;
 
 		// How the object will move according to its current momentum.
+		this->LinearMomentum += (aAppliedForce + this->InputForce) * aDeltaTime;
 		this->Position += (this->LinearMomentum / this->Mass + this->InputVelocity) * aDeltaTime;
 
 		// TODO: Add update using angular momentum to change orientation of object over time.
 
-		this->Time += aDeltaTime;
 
 		if (this->Model.get() != nullptr) {
 			// TODO: Update Model animation later.
 			// this->Model->update(aDeltaTime);
 		}
 
+		this->DirectionRight			= {  std::sin(Phi), 					-std::cos(Phi), 					0.0f 			};
+		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
+		this->DirectionFront			= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
+
+		uniform_data UniformData;
+		UniformData.Position = this->Position;
+		UniformData.Orientation = {
+			DirectionRight[0], 		DirectionFront[0], 		DirectionUp[0], 	0.0f,
+			DirectionRight[1], 		DirectionFront[1], 		DirectionUp[1], 	0.0f,
+			DirectionRight[2], 		DirectionFront[2], 		DirectionUp[2], 	0.0f,
+			0.0f, 					0.0f, 					0.0f, 				1.0f
+		};
+		memcpy(this->UniformBuffer->Ptr, &UniformData, sizeof(uniform_data));
+
+		VkMappedMemoryRange range{};
+    	range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+    	range.memory = this->UniformBuffer->MemoryHandle;
+    	range.offset = 0;
+    	range.size = sizeof(uniform_data);
+    	vkFlushMappedMemoryRanges(Context->Handle, 1, &range);
+
+		this->Time += aDeltaTime;
 		//return UpdateInfo;
 	}
 

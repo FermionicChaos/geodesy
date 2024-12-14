@@ -120,14 +120,54 @@ namespace geodesy::bltn::obj {
 			0.0f, 					0.0f, 					0.0f, 					1.0f
 		};
 		UniformData.Projection 		= math::perspective(math::radians(90.0f), AspectRatio, 0.1f, 100.0f);
-		std::cout << UniformData.Projection << std::endl;
 
 		this->CameraUniformBuffer = Context->create_buffer(UBCI, sizeof(UniformData), &UniformData);
 		this->CameraUniformBuffer->map_memory(0, sizeof(UniformData));
+
+		// Clear camera input.
 	}
 
 	camera3d::~camera3d() {
 
+	}
+
+	void camera3d::input(const core::hid::input& aInputState) {
+		float LinearSpeed = 100.0f;
+		float RotationSpeed = 0.001f;
+		float ForwardSpeed = 0.0f, RightSpeed = 0.0f;		
+
+		if (aInputState.Keyboard[hid::keyboard::KEY_W]) ForwardSpeed 	+= LinearSpeed;
+		if (aInputState.Keyboard[hid::keyboard::KEY_S]) ForwardSpeed 	-= LinearSpeed;
+		if (aInputState.Keyboard[hid::keyboard::KEY_A]) RightSpeed 		-= LinearSpeed;
+		if (aInputState.Keyboard[hid::keyboard::KEY_D]) RightSpeed 		+= LinearSpeed;
+
+		this->Theta 	+= aInputState.Mouse.Velocity[1] * RotationSpeed;
+		this->Phi 		-= aInputState.Mouse.Velocity[0] * RotationSpeed;
+		this->InputVelocity = this->DirectionFront * ForwardSpeed + this->DirectionRight * RightSpeed;
+
+	}
+
+	void camera3d::update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce, core::math::vec<float, 3> aAppliedTorque) {
+		// How the object will move according to its current momentum.
+		this->LinearMomentum += (aAppliedForce + this->InputForce) * aDeltaTime;
+		this->Position += (this->LinearMomentum / this->Mass + this->InputVelocity) * aDeltaTime;
+
+		this->DirectionRight			= {  std::sin(Phi), 					-std::cos(Phi), 					0.0f 			};
+		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
+		this->DirectionFront			= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
+
+		camera_uniform_data UniformData;
+		float AspectRatio = (float)this->Framechain->Resolution[1] / (float)this->Framechain->Resolution[0];
+		UniformData.Position 		= this->Position;
+		UniformData.Rotation 		= {
+			DirectionRight[0], 		DirectionRight[1], 		DirectionRight[2], 		0.0f,
+			-DirectionUp[0], 		-DirectionUp[1], 		-DirectionUp[2], 		0.0f,
+			DirectionFront[0], 		DirectionFront[1], 		DirectionFront[2], 		0.0f,
+			0.0f, 					0.0f, 					0.0f, 					1.0f
+		};
+		UniformData.Projection 		= math::perspective(math::radians(90.0f), AspectRatio, 0.1f, 100.0f);
+		// Copy over to GPU Uniform Buffer.
+		memcpy(this->CameraUniformBuffer->Ptr, &UniformData, sizeof(camera_uniform_data));
 	}
 
 	std::vector<std::vector<core::gfx::draw_call>> camera3d::default_renderer(object* aObject) {

@@ -2,6 +2,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include <iostream>
+
 /* --------------- Platform Dependent Libraries --------------- */
 //#if defined(_WIN32) || defined(_WIN64)
 //#include <Windows.h>
@@ -187,7 +189,10 @@ namespace geodesy::bltn::obj {
 			// Prepare Predraw transition commands.
 			VkCommandBuffer PredrawFrameTransitionCmd = aContext->allocate_command_buffer(device::operation::GRAPHICS_AND_COMPUTE);
 			aContext->begin(PredrawFrameTransitionCmd);
+			// Transition image from present to shader read only optimal.
 			this->Framechain->Image[i]["Color"]->transition(PredrawFrameTransitionCmd, image::layout::PRESENT_SRC_KHR, image::layout::SHADER_READ_ONLY_OPTIMAL);
+			// Clear swapchain image.
+			this->Framechain->Image[i]["Color"]->clear(PredrawFrameTransitionCmd, { 0.0f, 0.0f, 0.0f, 1.0f });
 			aContext->end(PredrawFrameTransitionCmd);
 			this->PredrawFrameTransition[i] += PredrawFrameTransitionCmd;
 
@@ -252,6 +257,11 @@ namespace geodesy::bltn::obj {
 		}
 		this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(Swapchain);
 		return ReturnValue;
+	}
+
+	void system_window::update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce, core::math::vec<float, 3> aAppliedTorque) {
+		this->InputState.Mouse.update(aDeltaTime);
+		this->Time += aDeltaTime;
 	}
 
 	core::gcl::command_batch system_window::next_frame(std::shared_ptr<core::gcl::semaphore_pool> aSemaphorePool) {
@@ -389,11 +399,23 @@ namespace geodesy::bltn::obj {
 	}
 
 	void system_window::cursor_position_callback(GLFWwindow* aWindowHandle, double aPosX, double aPosY) {
-		static float CurrentTime = 0.0f;
+		static double Time = 0.0f;
+		double DeltaTime = lgc::timer::get_time() - Time;
+		Time = lgc::timer::get_time();
 		system_window* Window = (system_window*)glfwGetWindowUserPointer(aWindowHandle);
-		float DeltaTime = CurrentTime - core::lgc::timer::get_time();
-		CurrentTime = core::lgc::timer::get_time();
-		Window->InputState.Mouse.Position = math::vec<float, 2>((float)aPosX, (float)aPosY);
+		math::vec<double, 2> OldPosition = math::vec<double, 2>(Window->InputState.Mouse.Position[0], Window->InputState.Mouse.Position[1]);
+		math::vec<double, 2> OldVelocity = math::vec<double, 2>(Window->InputState.Mouse.Velocity[0], Window->InputState.Mouse.Velocity[1]);
+		math::vec<double, 2> NewPosition = { aPosX / ((double)Window->Framechain->Resolution[0]), aPosY / ((double)Window->Framechain->Resolution[1]) };
+		math::vec<double, 2> NewVelocity = (NewPosition - OldPosition) / DeltaTime;
+		math::vec<double, 2> NewAcceleration = (NewVelocity - OldVelocity) / DeltaTime;
+		Window->InputState.Mouse.Position = math::vec<float, 2>(NewPosition[0], NewPosition[1]);
+		Window->InputState.Mouse.Velocity = math::vec<float, 2>(NewVelocity[0], NewVelocity[1]);
+		Window->InputState.Mouse.Acceleration = math::vec<float, 2>(NewAcceleration[0], NewAcceleration[1]);
+		Window->InputState.Mouse.NewPosition = true;
+		if (!Window->InputTarget.expired()) {
+			// If object still exists, pass through input.
+			Window->InputTarget.lock()->input(Window->InputState);
+		}
 	}
 
 	void system_window::cursor_enter_callback(GLFWwindow* aWindowHandle, int aEntered) {
@@ -408,7 +430,7 @@ namespace geodesy::bltn::obj {
 
 	void system_window::key_callback(GLFWwindow* aWindowHandle, int aKey, int aScancode, int aAction, int aMods) {
 		system_window* Window = (system_window*)glfwGetWindowUserPointer(aWindowHandle);
-		Window->InputState.Keyboard[aKey] = { aAction, aMods, aScancode };
+		Window->InputState.Keyboard(aKey) = { aAction, aMods, aScancode };
 		if (!Window->InputTarget.expired()) {
 			// If object still exists, pass through input.
 			Window->InputTarget.lock()->input(Window->InputState);

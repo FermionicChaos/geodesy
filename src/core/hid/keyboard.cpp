@@ -10,11 +10,15 @@ namespace geodesy::core::hid {
 
 	keyboard::~keyboard() {}
 
-	keyboard::key& keyboard::operator[](int aKeyID) {
+	bool keyboard::operator[](int aKeyID) const {
+		return (this->Key[aKeyID].Action == action::KEY_PRESS || this->Key[aKeyID].Action == action::KEY_REPEAT);
+	}
+
+	keyboard::key& keyboard::operator()(int aKeyID) {
 		return this->Key[aKeyID];
 	}
 
-	keyboard::key keyboard::operator[](int aKeyID) const {
+	keyboard::key keyboard::operator()(int aKeyID) const {
 		return this->Key[aKeyID];
 	}
 
