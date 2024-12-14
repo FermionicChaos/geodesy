@@ -6,42 +6,58 @@ namespace geodesy::ecs {
 	using namespace core;
 	using namespace gcl;
 
+	object::uniform_data::uniform_data(
+		core::math::vec<float, 3> aPosition, 
+		core::math::vec<float, 3> aDirRight, 
+		core::math::vec<float, 3> aDirUp, 
+		core::math::vec<float, 3> aDirForward
+	) {
+		this->Position = aPosition;
+		this->Orientation = {
+			aDirRight[0], 	aDirForward[0], 	aDirUp[0], 		0.0f,
+			aDirRight[1], 	aDirForward[1], 	aDirUp[1], 		0.0f,
+			aDirRight[2], 	aDirForward[2], 	aDirUp[2], 		0.0f,
+			0.0f, 			0.0f, 				0.0f, 			1.0f
+		};
+	}
+
 	object::object(std::shared_ptr<core::gcl::context> aContext, stage* aStage, std::string aName, math::vec<float, 3> aPosition, math::vec<float, 2> aDirection) {
+		this->Name 						= aName;
+		this->Stage 					= aStage;
+		this->Engine 					= aContext->Device->Engine;
+		this->Time						= 0.0f;
+		this->DeltaTime					= 0.0f;
+		this->Mass						= 1.0f;
+		this->Position					= aPosition;
 		this->Theta 					= math::radians(aDirection[0] + 90.0f);
 		this->Phi 						= math::radians(aDirection[1] + 90.0f);
-		this->Engine 					= aContext->Device->Engine;
-		this->Stage 					= aStage;
-		this->Name 						= aName;
-		this->Mass						= 1.0f;
-		this->Time						= 0.0f;
-		this->Position					= aPosition;
 		this->DirectionRight			= {  std::sin(Phi), 					-std::cos(Phi), 					0.0f 			};
 		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
 		this->DirectionFront			= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
-
-		// // Is not moving.
-		// this->LinearMomentum			= { 0.0f, 0.0f, 0.0f };
-		// // Is not rotating.
-		// this->AngularMomentum			= { 0.0f, 0.0f, 0.0f };
+		this->LinearMomentum			= { 0.0f, 0.0f, 0.0f };
+		this->AngularMomentum			= { 0.0f, 0.0f, 0.0f };
 
 		this->Motion 					= motion::STATIC;
 		this->Gravity 					= false;
 		this->Collision 				= false;
-		
+
+		// TODO: Load main object assets.
+
+		// Initialize GPU stuff.
 		this->Context 					= aContext;
+
+
 
 		buffer::create_info UBCI;
 		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
 		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 
-		uniform_data UniformData;
-		UniformData.Position = this->Position;
-		UniformData.Orientation = {
-			DirectionRight[0], 		DirectionFront[0], 		DirectionUp[0], 	0.0f,
-			DirectionRight[1], 		DirectionFront[1], 		DirectionUp[1], 	0.0f,
-			DirectionRight[2], 		DirectionFront[2], 		DirectionUp[2], 	0.0f,
-			0.0f, 					0.0f, 					0.0f, 				1.0f
-		};
+		uniform_data UniformData = uniform_data(
+			this->Position, 
+			this->DirectionRight, 
+			this->DirectionUp, 
+			this->DirectionFront
+		);
 		this->UniformBuffer = aContext->create_buffer(UBCI, sizeof(uniform_data), &UniformData);
 		this->UniformBuffer->map_memory(0, sizeof(uniform_data));
 	}
@@ -57,6 +73,7 @@ namespace geodesy::ecs {
 	}
 
 	void object::update(double aDeltaTime, math::vec<float, 3> aAppliedForce, math::vec<float, 3> aAppliedTorque) {
+		this->Time += aDeltaTime;
 		this->DeltaTime = aDeltaTime;
 		//update_info UpdateInfo;
 		// Newtons First Law: An object in motion tends to stay in motion.
@@ -83,25 +100,13 @@ namespace geodesy::ecs {
 		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
 		this->DirectionFront			= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
 
-		uniform_data UniformData;
-		UniformData.Position = this->Position;
-		UniformData.Orientation = {
-			DirectionRight[0], 		DirectionFront[0], 		DirectionUp[0], 	0.0f,
-			DirectionRight[1], 		DirectionFront[1], 		DirectionUp[1], 	0.0f,
-			DirectionRight[2], 		DirectionFront[2], 		DirectionUp[2], 	0.0f,
-			0.0f, 					0.0f, 					0.0f, 				1.0f
-		};
+		uniform_data UniformData = uniform_data(
+			this->Position, 
+			this->DirectionRight, 
+			this->DirectionUp, 
+			this->DirectionFront
+		);
 		memcpy(this->UniformBuffer->Ptr, &UniformData, sizeof(uniform_data));
-
-		VkMappedMemoryRange range{};
-    	range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
-    	range.memory = this->UniformBuffer->MemoryHandle;
-    	range.offset = 0;
-    	range.size = sizeof(uniform_data);
-    	vkFlushMappedMemoryRanges(Context->Handle, 1, &range);
-
-		this->Time += aDeltaTime;
-		//return UpdateInfo;
 	}
 
 	std::vector<gfx::draw_call> object::draw(subject* aSubject) {

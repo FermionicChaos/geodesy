@@ -21,6 +21,12 @@ namespace geodesy::ecs {
 		struct uniform_data {
 			alignas(16) core::math::vec<float, 3> Position;
 			alignas(16) core::math::mat<float, 4, 4> Orientation;
+			uniform_data(
+				core::math::vec<float, 3> aPosition, 
+				core::math::vec<float, 3> aDirRight, 
+				core::math::vec<float, 3> aDirUp, 
+				core::math::vec<float, 3> aDirForward
+			);
 		};
 
 		enum motion {
@@ -67,7 +73,13 @@ namespace geodesy::ecs {
 		std::shared_ptr<core::gcl::buffer> 											UniformBuffer;
 		std::map<subject*, std::vector<std::vector<core::gfx::draw_call>>>			Renderer;
 
-		object(std::shared_ptr<core::gcl::context> aContext, stage* aStage, std::string aName, core::math::vec<float, 3> aPosition = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 2> aDirection = { 0.0f, 0.0f });
+		object(
+			std::shared_ptr<core::gcl::context> aContext, 
+			stage* aStage, 
+			std::string aName, 
+			core::math::vec<float, 3> aPosition = { 0.0f, 0.0f, 0.0f }, 
+			core::math::vec<float, 2> aDirection = { 0.0f, 0.0f }
+		);
 		~object();
 
 		virtual bool is_subject();
