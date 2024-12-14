@@ -36,15 +36,16 @@ namespace geodesy::bltn::obj {
 			create_info();
 		};
 
-		GLFWwindow* 								WindowHandle;
-		VkSurfaceKHR 								SurfaceHandle;
-		// core::gcl::swapchain* 						Swapchain;
+		std::weak_ptr<object> 					InputTarget;
+		core::hid::input 						InputState;
+		GLFWwindow* 							WindowHandle;
+		VkSurfaceKHR 							SurfaceHandle;
 
 		system_window(std::shared_ptr<core::gcl::context> aContext, std::shared_ptr<system_display> aDisplay, std::string aName, const create_info& aCreateInfo, core::math::vec<int, 2> aPosition, core::math::vec<int, 2> aSize);
 		system_window(std::shared_ptr<core::gcl::context> aContext, std::shared_ptr<system_display> aDisplay, std::string aName, const create_info& aCreateInfo, core::math::vec<float, 3> aPosition, core::math::vec<float, 2> aSize);
+		~system_window();
 
-		virtual VkResult next_frame(VkSemaphore aSemaphore = VK_NULL_HANDLE, VkFence aFence = VK_NULL_HANDLE) override;
-		virtual VkPresentInfoKHR present_frame(const std::vector<VkSemaphore>& aWaitSemaphore = {}) override;
+		void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f }) override;
 
 	private:
 
@@ -73,30 +74,30 @@ namespace geodesy::bltn::obj {
 		// static std::atomic<GLFWwindow*> DestroyWindow;
 
 		// Window Callbacks
-		static void position_callback(GLFWwindow* ContextHandle, int PosX, int PosY);
-		static void size_callback(GLFWwindow* ContextHandle, int SizeX, int SizeY);
-		static void close_callback(GLFWwindow* ContextHandle);
-		static void refresh_callback(GLFWwindow* ContextHandle);
-		static void focus_callback(GLFWwindow* ContextHandle, int Focused);
-		static void iconify_callback(GLFWwindow* ContextHandle, int Iconified);
-		static void maximize_callback(GLFWwindow* ContextHandle, int Maximized);
-		static void content_scale_callback(GLFWwindow* ContextHandle, float XScale, float YScale);
+		static void position_callback(GLFWwindow* aWindowHandle, int aPosX, int aPosY);
+		static void size_callback(GLFWwindow* aWindowHandle, int aSizeX, int aSizeY);
+		static void close_callback(GLFWwindow* aWindowHandle);
+		static void refresh_callback(GLFWwindow* aWindowHandle);
+		static void focus_callback(GLFWwindow* aWindowHandle, int aFocused);
+		static void iconify_callback(GLFWwindow* aWindowHandle, int aIconified);
+		static void maximize_callback(GLFWwindow* aWindowHandle, int aMaximized);
+		static void content_scale_callback(GLFWwindow* aWindowHandle, float aXScale, float aYScale);
 
 		// Framebuffer Callbacks
-		static void framebuffer_size_callback(GLFWwindow* ContextHandle, int FrameSizeX, int FrameSizeY);
+		static void framebuffer_size_callback(GLFWwindow* aWindowHandle, int aFrameSizeX, int aFrameSizeY);
 
 		// Cursor Callback
-		static void mouse_button_callback(GLFWwindow* ContextHandle, int Button, int Action, int Mods);
-		static void cursor_position_callback(GLFWwindow* ContextHandle, double PosX, double PosY);
-		static void cursor_enter_callback(GLFWwindow* ContextHandle, int Entered);
-		static void scroll_callback(GLFWwindow* ContextHandle, double OffsetX, double OffsetY);
+		static void mouse_button_callback(GLFWwindow* aWindowHandle, int aButton, int aAction, int aMods);
+		static void cursor_position_callback(GLFWwindow* aWindowHandle, double aPosX, double aPosY);
+		static void cursor_enter_callback(GLFWwindow* aWindowHandle, int aEntered);
+		static void scroll_callback(GLFWwindow* aWindowHandle, double aOffsetX, double aOffsetY);
 
 		// Keyboard Callback
-		static void key_callback(GLFWwindow* ContextHandle, int Key, int Scancode, int Action, int Mods);
-		static void character_callback(GLFWwindow* ContextHandle, uint Codepoint);
+		static void key_callback(GLFWwindow* aWindowHandle, int aKey, int aScancode, int aAction, int aMods);
+		static void character_callback(GLFWwindow* aWindowHandle, uint aCodepoint);
 
 		// File drop
-		static void file_drop_callback(GLFWwindow* ContextHandle, int PathCount, const char** Path);
+		static void file_drop_callback(GLFWwindow* aWindowHandle, int aPathCount, const char** aPath);
 
 	};
 

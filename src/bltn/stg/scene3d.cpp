@@ -2,9 +2,14 @@
 
 namespace geodesy::bltn::stg {
 
+	using namespace core;
+
 	scene3d::scene3d(std::shared_ptr<core::gcl::context> aContext, std::string aName) : ecs::stage(aContext, aName) {
-		this->Object.push_back(std::make_shared<obj::camera3d>(aContext, (ecs::stage*)this, std::string("Camera 3D"), core::math::vec<uint, 3>(1920, 1080, 1), 60.0, 3));
-		this->Object.push_back(std::make_shared<obj::triangle>(aContext, (ecs::stage*)this, std::string("Triangle")));
+		math::vec<uint, 3> Resolution = { 1280, 720, 1 };
+		double FrameRate = 60.0f;
+		uint32_t FrameCount = 4;
+		this->create_object<obj::camera3d>("Camera3D", Resolution, FrameRate, FrameCount);
+		this->create_object<obj::triangle>("Triangle");
 	}
 
 }

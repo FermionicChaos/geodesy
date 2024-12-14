@@ -64,10 +64,16 @@ void main() {
 	b = Object.Orientation * b;
 
     // Convert to world space.
-    WorldPosition   = v.xyz + Object.Position;
-    WorldNormal     = n.xyz + Object.Position;
-	WorldTangent	= t.xyz + Object.Position;
-	WorldBitangent	= b.xyz + Object.Position;
+    v = vec4(v.xyz + Object.Position, 1.0f);
+    n = vec4(n.xyz + Object.Position, 1.0f);
+    t = vec4(t.xyz + Object.Position, 1.0f);
+    b = vec4(b.xyz + Object.Position, 1.0f);
+
+    // Pass to fragment shader.
+    WorldPosition   = v.xyz;
+    WorldNormal     = n.xyz;
+    WorldTangent	= t.xyz;
+    WorldBitangent	= b.xyz;
 
     // Pass over texture coordinates & vertex color for interpolation.
     TextureCoordinate = VertexTextureCoordinate;

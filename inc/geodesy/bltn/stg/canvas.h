@@ -11,11 +11,7 @@ namespace geodesy::bltn::stg {
 	class canvas : public ecs::stage {
 	public:
 
-		std::vector<std::shared_ptr<bltn::obj::window>> Window;
-
-		canvas(std::shared_ptr<core::gcl::context> aContext, std::string aName);
-
-		virtual ecs::subject::render_info render() override;
+		canvas(std::shared_ptr<core::gcl::context> aContext, std::string aName, std::shared_ptr<obj::window> aWindow);
 
 	};	
 

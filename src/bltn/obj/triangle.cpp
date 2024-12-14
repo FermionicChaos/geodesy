@@ -6,14 +6,14 @@ namespace geodesy::bltn::obj {
 	using namespace gcl;
 	using namespace gfx;
 
-	triangle::triangle(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, std::string aName) : ecs::object(aContext, aStage, aName, { 0.0f, 0.0f, 0.0f }) {
+	triangle::triangle(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, std::string aName) : ecs::object(aContext, aStage, aName, { 0.0f, 10.0f, -10.0f }, { -90.0f, 0.0f }) {
 		engine* Engine = aContext->Device->Engine;
 
 		std::vector<std::string> AssetList = {
-			"../glTF-Sample-Models/2.0/Box/glTF/Box.gltf",
+			// "../glTF-Sample-Models/2.0/Box/glTF/Box.gltf",
 			// "../glTF-Sample-Models/2.0/BoomBox/glTF/BoomBox.gltf",
 			// "../glTF-Sample-Models/2.0/WaterBottle/glTF/WaterBottle.gltf",
-			// "../glTF-Sample-Models/2.0/Lantern/glTF/Lantern.gltf",
+			"../glTF-Sample-Models/2.0/Lantern/glTF/Lantern.gltf",
 		};
 
 		this->Asset = Engine->FileManager.open(AssetList);

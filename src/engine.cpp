@@ -141,7 +141,7 @@ namespace geodesy {
 
 	VkResult engine::update_resources(ecs::app* aApp) {
 		VkResult Result = VK_SUCCESS;
-		std::map<std::shared_ptr<context>, ecs::object::update_info> UpdateOperations;
+		std::map<std::shared_ptr<context>, core::gcl::submission_batch> UpdateOperations;
 
 		aApp->Mutex.lock();
 
@@ -156,13 +156,10 @@ namespace geodesy {
 			Ctx->Mutex.lock();
 
 			// Wait for other inflight operations to finish.
-			Result = Ctx->engine_wait({ device::operation::TRANSFER, device::operation::COMPUTE, device::operation::GRAPHICS_AND_COMPUTE });
+			Result = Ctx->engine_wait({ device::operation::TRANSFER_AND_COMPUTE, device::operation::GRAPHICS_AND_COMPUTE });
 
 			// Execute all transfer device operations.
-			Result = Ctx->engine_execute(device::operation::TRANSFER, UpdateOperations[Ctx].TransferOperations);
-
-			// Execute all compute device operations.
-			Result = Ctx->engine_execute(device::operation::COMPUTE, UpdateOperations[Ctx].ComputeOperations);
+			Result = Ctx->engine_execute(device::operation::TRANSFER_AND_COMPUTE, UpdateOperations[Ctx].SubmitInfo);
 
 			// Unlock device context.
 			Ctx->Mutex.unlock();
@@ -173,7 +170,7 @@ namespace geodesy {
 
 	VkResult engine::execute_render_operations(ecs::app* aApp) {
 		VkResult Result = VK_SUCCESS;
-		std::map<std::shared_ptr<context>, ecs::subject::render_info> RenderInfo;
+		std::map<std::shared_ptr<context>, core::gcl::submission_batch> RenderInfo;
 
 		aApp->Mutex.lock();
 
@@ -188,7 +185,7 @@ namespace geodesy {
 			Ctx->Mutex.lock();
 
 			// Wait for other inflight operations to finish.
-			Result = Ctx->engine_wait({ device::operation::TRANSFER, device::operation::COMPUTE, device::operation::GRAPHICS_AND_COMPUTE });
+			Result = Ctx->engine_wait({ device::operation::TRANSFER_AND_COMPUTE, device::operation::GRAPHICS_AND_COMPUTE });
 
 			// Execute all transfer device operations.
 			Result = Ctx->engine_execute(device::operation::GRAPHICS_AND_COMPUTE, RenderInfo[Ctx].SubmitInfo);

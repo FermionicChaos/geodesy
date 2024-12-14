@@ -1,12 +1,13 @@
-#ifndef KEYBOARD_H
-#define KEYBOARD_H
+#pragma once
+#ifndef GEODESY_CORE_HID_KEYBOARD_H
+#define GEODESY_CORE_HID_KEYBOARD_H
 
 namespace geodesy::core::hid {
 
 	class keyboard {
 	public:
 
-		enum key {
+		enum event_key {
 			KEY_SPACE = 32,
 			KEY_APOSTROPHE = 39,
 			KEY_COMMA = 44,
@@ -129,31 +130,34 @@ namespace geodesy::core::hid {
 			KEY_MENU = 348
 		};
 		enum action {
-			KEY_RELEASE = 0,
-			KEY_PRESS = 1,
-			KEY_REPEAT = 2
+			KEY_RELEASE 	= 0,
+			KEY_PRESS 		= 1,
+			KEY_REPEAT 		= 2
 		};
 		enum modifier {
-			KEY_SHIFT = 0x0001,
-			KEY_CONTROL = 0x0002,
-			KEY_ALT = 0x0004,
-			KEY_SUPER = 0x0008
+			MOD_SHIFT 		= 0x0001,
+			MOD_CONTROL 	= 0x0002,
+			MOD_ALT 		= 0x0004,
+			MOD_SUPER 		= 0x0008
 		};
 
-		int Action[1024];
-		int Modifier[1024];
-		int ScanCode[1024];
+		struct key {
+			int Action;
+			int Modifier;
+			int ScanCode;
+		};
 
-		char Character;
-		int CharacterModifier;
+		key Key[1024];
 
 		keyboard();
 		~keyboard();
 
-		bool operator[](int keyID);
+		bool operator[](int aKeyID) const;
+		key& operator()(int aKeyID);
+		key operator()(int aKeyID) const;
 
 	};
 
 }
 
-#endif // !KEYBOARD_H
+#endif // !GEODESY_CORE_HID_KEYBOARD_H

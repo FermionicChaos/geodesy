@@ -3,17 +3,15 @@
 #define GEODESY_CORE_GCL_PIPELINE_H
 
 #include "../../config.h"
-
 #include "../util/variable.h"
-
-#include "../lgc/timer.h"
 
 #include "config.h"
 #include "device.h"
-#include "descriptor.h"
 #include "buffer.h"
 #include "image.h"
 #include "shader.h"
+#include "descriptor.h"
+#include "framebuffer.h"
 
 /*
 Flow Chart of Pipeline Creation.
@@ -128,17 +126,17 @@ namespace geodesy::core::gcl {
 
 			// Attachment metadata
 			std::vector<attachment> 									ColorAttachment;					// Vulkan Spec Minimum Req: 4 Attachments
-			attachment 													DepthAttachment;
-			attachment 													StencilAttachment;
+			attachment 													DepthStencilAttachment;
 
 			rasterizer();
-			rasterizer(std::vector<std::shared_ptr<shader>> aShaderList, math::vec<uint, 3> aResolution, VkFormat aDepthFormat = VK_FORMAT_UNDEFINED, VkFormat aStencilFormat = VK_FORMAT_UNDEFINED);
+			rasterizer(std::vector<std::shared_ptr<shader>> aShaderList, math::vec<uint, 3> aResolution);
 
 			// bind maps the vertex attributes in the shader to where the vertex buffer is intended to be bound.
 			void bind(VkVertexInputRate aInputRate, uint32_t aBindingIndex, size_t aVertexStride, uint32_t aLocationIndex, size_t aVertexOffset);
 
 			// attach attaches an image to a pipeline's output, conveying the format and layout of the image during rendering.
 			void attach(uint32_t aAttachmentIndex, std::shared_ptr<image> aAttachmentImage, image::layout aImageLayout);
+			void attach(uint32_t aAttachmentIndex, image::format aFormat, image::sample aSampleCount, image::layout aImageLayout);
 
 			void resize(math::vec<uint, 3> aResolution);
 
@@ -237,37 +235,6 @@ namespace geodesy::core::gcl {
 		std::vector<VkDescriptorPoolSize> descriptor_pool_sizes() const;
 		std::map<VkDescriptorType, uint32_t> descriptor_type_count() const;
 		std::vector<std::vector<VkDescriptorSetLayoutBinding>> descriptor_set_layout_binding() const;
-
-	};
-
-	class framechain {
-	public:
-
-		math::vec<uint, 3>												Resolution;
-		uint32_t														ReadIndex;
-		uint32_t														DrawIndex;
-		double															FrameRate;
-		core::lgc::timer 												Timer;
-		std::shared_ptr<context> 										Context;
-		std::vector<std::map<std::string, std::shared_ptr<image>>> 		Image;
-		std::vector<std::vector<VkCommandBuffer>> 						DrawCommand;
-
-		framechain(std::shared_ptr<context> aContext, double aFrameRate, uint32_t aFrameCount);
-		virtual ~framechain() = default;
-
-	}; 
-
-	// This class is used to interface actual resource attachements to a pipeline. Similar to descriptor sets.
-	class framebuffer {
-	public:
-
-		std::vector<VkClearValue> 	ClearValue;
-
-		std::shared_ptr<context> 	Context;
-		VkFramebuffer 				Handle;
-
-		framebuffer(std::shared_ptr<context> aContext, std::shared_ptr<pipeline> aPipeline, std::vector<std::shared_ptr<image>> aImageAttachements, math::vec<uint, 3> aResolution);
-		framebuffer(std::shared_ptr<context> aContext, std::shared_ptr<pipeline> aPipeline, std::map<std::string, std::shared_ptr<image>> aImage, std::vector<std::string> aAttachmentSelection, math::vec<uint, 3> aResolution);
 
 	};
 

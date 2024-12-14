@@ -1,6 +1,6 @@
 #pragma once
-#ifndef JOYSTICK_H
-#define JOYSTICK_H
+#ifndef GEODESY_CORE_HID_JOYSTICK_H
+#define GEODESY_CORE_HID_JOYSTICK_H
 
 namespace geodesy::core::hid {
 
@@ -12,4 +12,4 @@ namespace geodesy::core::hid {
 
 }
 
-#endif // !JOYSTICK_H
+#endif // !GEODESY_CORE_HID_JOYSTICK_H

@@ -8,33 +8,98 @@ namespace geodesy::bltn::obj {
 	using namespace geodesy::core::gfx;
 	using namespace geodesy::core::gcl;
 
-	camera3d::geometry_buffer::geometry_buffer(std::shared_ptr<core::gcl::context> aContext, core::math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount) : framechain(aContext, aFrameRate, aFrameCount) {
-		// New API design?
-		image::create_info DepthCreateInfo;
-		DepthCreateInfo.Layout		= image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		DepthCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
-		DepthCreateInfo.Usage		= image::usage::SAMPLED | image::usage::DEPTH_STENCIL_ATTACHMENT  | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
+	namespace {
 
-		image::create_info ColorCreateInfo;
-		ColorCreateInfo.Layout		= image::layout::SHADER_READ_ONLY_OPTIMAL;
-		ColorCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
-		ColorCreateInfo.Usage		= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
+		struct camera_uniform_data {
+			alignas(16) math::vec<float, 3> Position;
+			alignas(16) math::mat<float, 4, 4> Rotation;
+			alignas(16) math::mat<float, 4, 4> Projection;
+			camera_uniform_data(
+				math::vec<float, 3> aPosition, 
+				math::vec<float, 3> aDirRight,
+				math::vec<float, 3> aDirUp,
+				math::vec<float, 3> aDirForward,
+				float aFOV,
+				math::vec<uint, 3> aResolution,
+				float aNear,
+				float aFar
+			);
+		};
 
-		image::format ColorFormat = image::format::B8G8R8A8_UNORM; //image::format::R32G32B32A32_SFLOAT;
-		image::format DepthFormat = image::format::D32_SFLOAT;
-
-		this->Resolution = aResolution;
-		for (std::size_t i = 0; i < this->Image.size(); i++) {
-			// This is the finalized color output.
-			this->Image[i]["Color"] 		= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			// Opaque Geometry Buffer, used for Opaque and Transparent mesh instances.
-			this->Image[i]["OGB.Color"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Position"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Normal"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Depth"] 	= aContext->create_image(DepthCreateInfo, DepthFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["FinalColor"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+		camera_uniform_data::camera_uniform_data(
+			math::vec<float, 3> aPosition, 
+			math::vec<float, 3> aDirRight,
+			math::vec<float, 3> aDirUp,
+			math::vec<float, 3> aDirForward,
+			float aFOV,
+			math::vec<uint, 3> aResolution,
+			float aNear,
+			float aFar
+		) {
+			float AspectRatio = static_cast<float>(aResolution[0]) / static_cast<float>(aResolution[1]);
+			this->Position = aPosition;
+			this->Rotation = math::mat<float, 4, 4>(
+				 aDirRight[0], 		 aDirRight[1], 		 aDirRight[2], 			0.0f,
+				-aDirUp[0], 		-aDirUp[1], 		-aDirUp[2], 			0.0f,
+				 aDirForward[0], 	 aDirForward[1], 	 aDirForward[2], 		0.0f,
+				 0.0f, 				 0.0f, 				 0.0f, 					1.0f
+			);
+			this->Projection = math::perspective(math::radians(aFOV), AspectRatio, aNear, aFar);
 		}
+
+		class geometry_buffer : public framechain {
+		public:
+			geometry_buffer(std::shared_ptr<context> aContext, math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount);
+		};
+
+		geometry_buffer::geometry_buffer(std::shared_ptr<context> aContext, math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount) : framechain(aContext, aFrameRate, aFrameCount) {
+			// New API design?
+			image::create_info DepthCreateInfo;
+			DepthCreateInfo.Layout		= image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			DepthCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
+			DepthCreateInfo.Usage		= image::usage::SAMPLED | image::usage::DEPTH_STENCIL_ATTACHMENT  | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
+
+			image::create_info ColorCreateInfo;
+			ColorCreateInfo.Layout		= image::layout::SHADER_READ_ONLY_OPTIMAL;
+			ColorCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
+			ColorCreateInfo.Usage		= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
+
+			image::format ColorFormat = image::format::R32G32B32A32_SFLOAT;
+			image::format DepthFormat = image::format::D32_SFLOAT;
+
+			this->Resolution = aResolution;
+			for (std::size_t i = 0; i < this->Image.size(); i++) {
+				// This is the finalized color output.
+				this->Image[i]["Color"] 		= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+				// Opaque Geometry Buffer, used for Opaque and Transparent mesh instances.
+				this->Image[i]["OGB.Color"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+				this->Image[i]["OGB.Position"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+				this->Image[i]["OGB.Normal"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+				this->Image[i]["OGB.Depth"] 	= aContext->create_image(DepthCreateInfo, DepthFormat, aResolution[0], aResolution[1]);
+				this->Image[i]["FinalColor"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			}
+
+			// Setup frame clearing commands.
+			this->PredrawFrameOperation = std::vector<command_batch>(this->Image.size());
+			this->PostdrawFrameOperation = std::vector<command_batch>(this->Image.size());
+			for (size_t i = 0; i < this->Image.size(); i++) {
+				// Creates Clearing command for images in frame chain.
+				VkCommandBuffer	ClearCommand = aContext->allocate_command_buffer(device::operation::GRAPHICS_AND_COMPUTE);
+				aContext->begin(ClearCommand);
+				// this->Image[i]["Color"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+				this->Image[i]["OGB.Color"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+				this->Image[i]["OGB.Position"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+				this->Image[i]["OGB.Normal"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+				this->Image[i]["OGB.Depth"]->clear_depth(ClearCommand, { 1.0f, 0 }, image::layout::DEPTH_ATTACHMENT_OPTIMAL);
+				// this->Image[i]["FinalColor"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+				aContext->end(ClearCommand);
+				this->PredrawFrameOperation[i] += ClearCommand;
+			}
+
+		}
+
 	}
+
 
 	camera3d::camera3d(
 		std::shared_ptr<core::gcl::context> 	aContext, 
@@ -43,10 +108,13 @@ namespace geodesy::bltn::obj {
 		core::math::vec<uint, 3> 				aFrameResolution, 
 		double 									aFrameRate, 
 		uint32_t 								aFrameCount
-	) : ecs::subject(aContext, aStage, aName, aFrameResolution, aFrameRate, aFrameCount, 4, { 0.0f, -10.0f, 0.0f }, { 90.0f, 90.0f }) 
+	) : ecs::subject(aContext, aStage, aName, aFrameResolution, aFrameRate, aFrameCount, 4, { 0.0f, -10.0f, 0.0f }, { 0.0f, 0.0f }) 
 	{
 		VkResult Result = VK_SUCCESS;
 		engine* Engine = aContext->Device->Engine;
+		this->FOV = 70.0f;
+		this->Near = 0.1f;
+		this->Far = 1000.0f;
 
 		// List of assets Camera3D will load into memory.
 		std::vector<std::string> AssetList = {
@@ -64,7 +132,7 @@ namespace geodesy::bltn::obj {
 		std::shared_ptr<gcl::shader> VertexShader = std::dynamic_pointer_cast<gcl::shader>(Asset[0]);
 		std::shared_ptr<gcl::shader> PixelShader = std::dynamic_pointer_cast<gcl::shader>(Asset[1]);
 		std::vector<std::shared_ptr<gcl::shader>> ShaderList = { VertexShader, PixelShader };
-		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::make_shared<pipeline::rasterizer>(ShaderList, aFrameResolution, VK_FORMAT_D32_SFLOAT);
+		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::make_shared<pipeline::rasterizer>(ShaderList, aFrameResolution);
 
 		// This code specifies how the vextex data is to be interpreted from the bound vertex buffers.
 		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 0, offsetof(gfx::mesh::vertex, Position));
@@ -77,10 +145,10 @@ namespace geodesy::bltn::obj {
 		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 1, sizeof(gfx::mesh::vertex::weight), 7, offsetof(gfx::mesh::vertex::weight, BoneWeight));
 		
 		// Select output attachments for pipeline.
-		Rasterizer->attach(0, this->current_frame()["OGB.Color"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
-		Rasterizer->attach(1, this->current_frame()["OGB.Position"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
-		Rasterizer->attach(2, this->current_frame()["OGB.Normal"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
-		Rasterizer->attach(3, this->current_frame()["OGB.Depth"], 		image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+		Rasterizer->attach(0, this->Framechain->draw_frame()["OGB.Color"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
+		Rasterizer->attach(1, this->Framechain->draw_frame()["OGB.Position"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
+		Rasterizer->attach(2, this->Framechain->draw_frame()["OGB.Normal"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
+		Rasterizer->attach(3, this->Framechain->draw_frame()["OGB.Depth"], 		image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 		// How to intepret vertex data in rasterization.
 		Rasterizer->InputAssembly.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -89,7 +157,7 @@ namespace geodesy::bltn::obj {
 		// Rasterizer Info
 		Rasterizer->Rasterizer.rasterizerDiscardEnable		= VK_FALSE;
 		Rasterizer->Rasterizer.polygonMode					= VK_POLYGON_MODE_FILL;
-		Rasterizer->Rasterizer.cullMode						= VK_CULL_MODE_NONE;
+		Rasterizer->Rasterizer.cullMode						= VK_CULL_MODE_BACK_BIT;
 		Rasterizer->Rasterizer.frontFace					= VK_FRONT_FACE_COUNTER_CLOCKWISE;
 
 		// Copy Paste
@@ -99,9 +167,9 @@ namespace geodesy::bltn::obj {
 		// Needed for 3D graphics.
 		Rasterizer->DepthStencil.depthTestEnable			= VK_TRUE;
 		Rasterizer->DepthStencil.depthWriteEnable			= VK_TRUE;
-		Rasterizer->DepthStencil.depthCompareOp				= VK_COMPARE_OP_GREATER; // Camera, +z is closer.
-		// Rasterizer->DepthStencil.minDepthBounds				= -1.0f;
-		// Rasterizer->DepthStencil.maxDepthBounds				= +1.0f;
+		Rasterizer->DepthStencil.depthCompareOp				= VK_COMPARE_OP_LESS; // Camera, +z is closer.
+		Rasterizer->DepthStencil.minDepthBounds				= 0.0f;
+		Rasterizer->DepthStencil.maxDepthBounds				= 1.0f;
 
 		// Create render pipeline for camera3d.
 		this->Pipeline = Context->create_pipeline(Rasterizer);
@@ -110,24 +178,64 @@ namespace geodesy::bltn::obj {
 		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
 		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 
-		camera_uniform_data UniformData;
-		float AspectRatio = (float)aFrameResolution[1] / (float)aFrameResolution[0];
-		UniformData.Position 		= this->Position;
-		UniformData.Rotation 		= {
-			DirectionRight[0], 		DirectionRight[1], 		DirectionRight[2], 		0.0f,
-			-DirectionUp[0], 		-DirectionUp[1], 		-DirectionUp[2], 		0.0f,
-			DirectionFront[0], 		DirectionFront[1], 		DirectionFront[2], 		0.0f,
-			0.0f, 					0.0f, 					0.0f, 					1.0f
-		};
-		UniformData.Projection 		= math::perspective(math::radians(90.0f), AspectRatio, 0.1f, 100.0f);
-		std::cout << UniformData.Projection << std::endl;
-
+		camera_uniform_data UniformData = camera_uniform_data(
+			this->Position, 
+			this->DirectionRight, 
+			this->DirectionUp, 
+			this->DirectionFront, 
+			this->FOV, 
+			this->Framechain->Resolution, 
+			this->Near,
+			this->Far
+		);
 		this->CameraUniformBuffer = Context->create_buffer(UBCI, sizeof(UniformData), &UniformData);
 		this->CameraUniformBuffer->map_memory(0, sizeof(UniformData));
 	}
 
 	camera3d::~camera3d() {
 
+	}
+
+	void camera3d::input(const core::hid::input& aInputState) {
+		float LinearSpeed = 250.0f;
+		float RotationSpeed = 1.0f;
+		float ForwardSpeed = 0.0f, RightSpeed = 0.0f;		
+		float DeltaTheta = 0.0f, DeltaPhi = 0.0f;
+
+		if (aInputState.Keyboard[hid::keyboard::KEY_W]) ForwardSpeed 	+= LinearSpeed;
+		if (aInputState.Keyboard[hid::keyboard::KEY_S]) ForwardSpeed 	-= LinearSpeed;
+		if (aInputState.Keyboard[hid::keyboard::KEY_A]) RightSpeed 		-= LinearSpeed;
+		if (aInputState.Keyboard[hid::keyboard::KEY_D]) RightSpeed 		+= LinearSpeed;
+
+		// TODO: Lock look angles to prevent gimbal lock.
+		this->Theta 	+= math::radians(aInputState.Mouse.Velocity[1]) * RotationSpeed;
+		this->Phi 		-= math::radians(aInputState.Mouse.Velocity[0]) * RotationSpeed;
+		if (this->Theta > math::constant::pi) this->Theta = math::constant::pi;
+		if (this->Theta < 0) this->Theta = 0;
+		this->InputVelocity = this->DirectionFront * ForwardSpeed + this->DirectionRight * RightSpeed;
+
+	}
+
+	void camera3d::update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce, core::math::vec<float, 3> aAppliedTorque) {
+		// How the object will move according to its current momentum.
+		this->LinearMomentum += (aAppliedForce + this->InputForce) * aDeltaTime;
+		this->Position += (this->LinearMomentum / this->Mass + this->InputVelocity) * aDeltaTime;
+
+		this->DirectionRight			= {  std::sin(Phi), 					-std::cos(Phi), 					0.0f 			};
+		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
+		this->DirectionFront			= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
+
+		camera_uniform_data UniformData = camera_uniform_data(
+			this->Position, 
+			this->DirectionRight, 
+			this->DirectionUp, 
+			this->DirectionFront, 
+			this->FOV, 
+			this->Framechain->Resolution, 
+			this->Near,
+			this->Far
+		);
+		memcpy(this->CameraUniformBuffer->Ptr, &UniformData, sizeof(camera_uniform_data));
 	}
 
 	std::vector<std::vector<core::gfx::draw_call>> camera3d::default_renderer(object* aObject) {

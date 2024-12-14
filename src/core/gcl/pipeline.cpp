@@ -86,28 +86,19 @@ namespace geodesy::core::gcl {
 		this->DynamicState.pNext 							= NULL;
 		this->DynamicState.flags 							= 0;
 
-		this->DepthAttachment.Description.flags 			= 0;
-		this->DepthAttachment.Description.format 			= VK_FORMAT_UNDEFINED;
-		this->DepthAttachment.Description.samples 			= VK_SAMPLE_COUNT_1_BIT;
-		this->DepthAttachment.Description.loadOp 			= VK_ATTACHMENT_LOAD_OP_CLEAR;
-		this->DepthAttachment.Description.storeOp 			= VK_ATTACHMENT_STORE_OP_STORE;
-		this->DepthAttachment.Description.stencilLoadOp 	= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		this->DepthAttachment.Description.stencilStoreOp 	= VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		this->DepthAttachment.Description.initialLayout 	= VK_IMAGE_LAYOUT_UNDEFINED;
-		this->DepthAttachment.Description.finalLayout 		= VK_IMAGE_LAYOUT_UNDEFINED;
+		this->DepthStencilAttachment.Description.flags 				= 0;
+		this->DepthStencilAttachment.Description.format 			= VK_FORMAT_UNDEFINED;
+		this->DepthStencilAttachment.Description.samples 			= VK_SAMPLE_COUNT_1_BIT;
+		this->DepthStencilAttachment.Description.loadOp 			= VK_ATTACHMENT_LOAD_OP_LOAD;
+		this->DepthStencilAttachment.Description.storeOp 			= VK_ATTACHMENT_STORE_OP_STORE;
+		this->DepthStencilAttachment.Description.stencilLoadOp 		= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		this->DepthStencilAttachment.Description.stencilStoreOp 	= VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		this->DepthStencilAttachment.Description.initialLayout 		= VK_IMAGE_LAYOUT_UNDEFINED;
+		this->DepthStencilAttachment.Description.finalLayout 		= VK_IMAGE_LAYOUT_UNDEFINED;
 
-		this->StencilAttachment.Description.flags 			= 0;
-		this->StencilAttachment.Description.format 			= VK_FORMAT_UNDEFINED;
-		this->StencilAttachment.Description.samples 		= VK_SAMPLE_COUNT_1_BIT;
-		this->StencilAttachment.Description.loadOp 			= VK_ATTACHMENT_LOAD_OP_CLEAR;
-		this->StencilAttachment.Description.storeOp 		= VK_ATTACHMENT_STORE_OP_STORE;
-		this->StencilAttachment.Description.stencilLoadOp 	= VK_ATTACHMENT_LOAD_OP_CLEAR;
-		this->StencilAttachment.Description.stencilStoreOp 	= VK_ATTACHMENT_STORE_OP_STORE;
-		this->StencilAttachment.Description.initialLayout 	= VK_IMAGE_LAYOUT_UNDEFINED;
-		this->StencilAttachment.Description.finalLayout 	= VK_IMAGE_LAYOUT_UNDEFINED;
 	}
 
-	pipeline::rasterizer::rasterizer(std::vector<std::shared_ptr<shader>> aShaderList, math::vec<uint, 3> aResolution, VkFormat aDepthFormat, VkFormat aStencilFormat) : rasterizer() {
+	pipeline::rasterizer::rasterizer(std::vector<std::shared_ptr<shader>> aShaderList, math::vec<uint, 3> aResolution) : rasterizer() {
 		bool Success = true;
 
 		this->Resolution = aResolution;
@@ -116,9 +107,6 @@ namespace geodesy::core::gcl {
 
 		// Load shaders.
 		this->Shader = aShaderList;
-
-		this->DepthAttachment.Description.format = aDepthFormat;
-		this->StencilAttachment.Description.format = aStencilFormat;
 
 		// Link Shader Stages.
 		if (Success) {
@@ -270,7 +258,7 @@ namespace geodesy::core::gcl {
 				this->ColorAttachment[Location].Description.flags				= 0;
 				this->ColorAttachment[Location].Description.format				= (VkFormat)image::t2f(this->ColorAttachment[Location].Variable.Type.ID);
 				this->ColorAttachment[Location].Description.samples				= VK_SAMPLE_COUNT_1_BIT;
-				this->ColorAttachment[Location].Description.loadOp				= VK_ATTACHMENT_LOAD_OP_CLEAR;
+				this->ColorAttachment[Location].Description.loadOp				= VK_ATTACHMENT_LOAD_OP_LOAD;
 				this->ColorAttachment[Location].Description.storeOp				= VK_ATTACHMENT_STORE_OP_STORE;
 				this->ColorAttachment[Location].Description.stencilLoadOp		= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 				this->ColorAttachment[Location].Description.stencilStoreOp		= VK_ATTACHMENT_STORE_OP_DONT_CARE;
@@ -374,23 +362,21 @@ namespace geodesy::core::gcl {
 	}
 
 	void pipeline::rasterizer::attach(uint32_t aAttachmentIndex, std::shared_ptr<image> aAttachmentImage, image::layout aImageLayout) {
+		this->attach(aAttachmentIndex, (image::format)aAttachmentImage->CreateInfo.format, (image::sample)aAttachmentImage->CreateInfo.samples, aImageLayout);
+	}
+
+	void pipeline::rasterizer::attach(uint32_t aAttachmentIndex, image::format aFormat, image::sample aSampleCount, image::layout aImageLayout) {
 		if (aAttachmentIndex < this->ColorAttachment.size()) {
-			this->ColorAttachment[aAttachmentIndex].Description.format			= aAttachmentImage->CreateInfo.format;
-			this->ColorAttachment[aAttachmentIndex].Description.samples			= aAttachmentImage->CreateInfo.samples;
+			this->ColorAttachment[aAttachmentIndex].Description.format			= (VkFormat)aFormat;
+			this->ColorAttachment[aAttachmentIndex].Description.samples			= (VkSampleCountFlagBits)aSampleCount;
 			this->ColorAttachment[aAttachmentIndex].Description.initialLayout	= (VkImageLayout)aImageLayout;
 			this->ColorAttachment[aAttachmentIndex].Description.finalLayout		= (VkImageLayout)aImageLayout;
 		}
 		else if (aAttachmentIndex == this->ColorAttachment.size()) {
-			this->DepthAttachment.Description.format							= aAttachmentImage->CreateInfo.format;
-			this->DepthAttachment.Description.samples							= aAttachmentImage->CreateInfo.samples;
-			this->DepthAttachment.Description.initialLayout						= (VkImageLayout)aImageLayout;
-			this->DepthAttachment.Description.finalLayout						= (VkImageLayout)aImageLayout;
-		}
-		else if (aAttachmentIndex == this->ColorAttachment.size() + 1) {
-			this->StencilAttachment.Description.format							= aAttachmentImage->CreateInfo.format;
-			this->StencilAttachment.Description.samples							= aAttachmentImage->CreateInfo.samples;
-			this->StencilAttachment.Description.initialLayout					= (VkImageLayout)aImageLayout;
-			this->StencilAttachment.Description.finalLayout						= (VkImageLayout)aImageLayout;
+			this->DepthStencilAttachment.Description.format						= (VkFormat)aFormat;
+			this->DepthStencilAttachment.Description.samples					= (VkSampleCountFlagBits)aSampleCount;
+			this->DepthStencilAttachment.Description.initialLayout				= (VkImageLayout)aImageLayout;
+			this->DepthStencilAttachment.Description.finalLayout				= (VkImageLayout)aImageLayout;
 		}
 	}
 
@@ -437,16 +423,10 @@ namespace geodesy::core::gcl {
 				AttachmentDescription[i] = aRasterizer->ColorAttachment[i].Description;
 			}
 			
-			// If depth format is not undefined, add to attachment description.
-			if (aRasterizer->DepthAttachment.Description.format != VK_FORMAT_UNDEFINED) {
+			// If depth stencil format is not undefined, add to attachment description.
+			if (aRasterizer->DepthStencilAttachment.Description.format != VK_FORMAT_UNDEFINED) {
 				DepthAttachmentReference = { (uint32_t)AttachmentDescription.size(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
-				AttachmentDescription.push_back(aRasterizer->DepthAttachment.Description);
-			}
-
-			// If stencil format is not undefined, add to attachment description.
-			if (aRasterizer->StencilAttachment.Description.format != VK_FORMAT_UNDEFINED) {
-				StencilAttachmentReference = { (uint32_t)AttachmentDescription.size(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
-				AttachmentDescription.push_back(aRasterizer->StencilAttachment.Description);
+				AttachmentDescription.push_back(aRasterizer->DepthStencilAttachment.Description);
 			}
 
 			// Convert to references. 
@@ -464,14 +444,8 @@ namespace geodesy::core::gcl {
 			SubpassDescription[0].colorAttachmentCount			= ColorAttachmentReference.size();
 			SubpassDescription[0].pColorAttachments				= ColorAttachmentReference.data();
 			SubpassDescription[0].pResolveAttachments			= NULL;
-			if (aRasterizer->DepthAttachment.Description.format != VK_FORMAT_UNDEFINED) {
+			if (aRasterizer->DepthStencilAttachment.Description.format != VK_FORMAT_UNDEFINED) {
 				SubpassDescription[0].pDepthStencilAttachment		= &DepthAttachmentReference;
-			}
-			else {
-				SubpassDescription[0].pDepthStencilAttachment		= NULL;
-			}
-			if (aRasterizer->StencilAttachment.Description.format != VK_FORMAT_UNDEFINED) {
-				SubpassDescription[0].pDepthStencilAttachment		= &StencilAttachmentReference;
 			}
 			else {
 				SubpassDescription[0].pDepthStencilAttachment		= NULL;
@@ -627,7 +601,7 @@ namespace geodesy::core::gcl {
 			RasterizerCreateInfo.pViewportState					= &aRasterizer->Viewport;
 			RasterizerCreateInfo.pRasterizationState			= &aRasterizer->Rasterizer;
 			RasterizerCreateInfo.pMultisampleState				= &aRasterizer->Multisample;
-			if ((aRasterizer->DepthAttachment.Description.format != VK_FORMAT_UNDEFINED) || (aRasterizer->StencilAttachment.Description.format != VK_FORMAT_UNDEFINED)) {
+			if (aRasterizer->DepthStencilAttachment.Description.format != VK_FORMAT_UNDEFINED) {
 				RasterizerCreateInfo.pDepthStencilState				= &aRasterizer->DepthStencil;
 			}
 			else {
@@ -882,68 +856,6 @@ namespace geodesy::core::gcl {
 			break;
 		}
 		return DescriptorSetLayoutBinding;
-	}
-
-	// std::shared_ptr<uniform_array> pipeline::create_uniform_array() {
-	// 	return std::make_shared<uniform_array>(this->Context, this);
-	// }
-
-	// frame::frame() {}
-
-	framechain::framechain(std::shared_ptr<context> aContext, double aFrameRate, uint32_t aFrameCount) {
-		this->DrawIndex = 0;
-		this->ReadIndex = 0;
-		this->FrameRate = aFrameRate;
-		this->Timer = 1.0 / aFrameRate;
-		this->Context = aContext;
-		this->Image = std::vector<std::map<std::string, std::shared_ptr<image>>>(aFrameCount);
-		this->DrawCommand = std::vector<std::vector<VkCommandBuffer>>(aFrameCount);
-	}
-
-	framebuffer::framebuffer(std::shared_ptr<context> aContext, std::shared_ptr<pipeline> aPipeline, std::vector<std::shared_ptr<image>> aImageAttachements, math::vec<uint, 3> aResolution) {
-		this->ClearValue = std::vector<VkClearValue>(aImageAttachements.size());
-		for (size_t i = 0; i < aImageAttachements.size(); i++) {
-			this->ClearValue[i].color = { 0.0f, 0.0f, 0.0f, 1.0f };
-		}
-		std::vector<VkImageView> Attachment(aImageAttachements.size());
-		for (size_t i = 0; i < aImageAttachements.size(); i++) {
-			Attachment[i] = aImageAttachements[i]->View;
-		}
-		VkResult Result = VK_SUCCESS;
-		VkFramebufferCreateInfo FBCI{};
-		FBCI.sType				= VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		FBCI.pNext				= NULL;
-		FBCI.flags				= 0;
-		FBCI.renderPass			= aPipeline->RenderPass;
-		FBCI.attachmentCount	= Attachment.size();
-		FBCI.pAttachments		= Attachment.data();
-		FBCI.width				= aResolution[0];
-		FBCI.height				= aResolution[1];
-		FBCI.layers				= 1;
-		Result = vkCreateFramebuffer(aContext->Handle, &FBCI, NULL, &this->Handle);
-	}
-
-	framebuffer::framebuffer(std::shared_ptr<context> aContext, std::shared_ptr<pipeline> aPipeline, std::map<std::string, std::shared_ptr<image>> aImage, std::vector<std::string> aAttachmentSelection, math::vec<uint, 3> aResolution) {
-		this->ClearValue = std::vector<VkClearValue>(aAttachmentSelection.size());
-		for (size_t i = 0; i < aAttachmentSelection.size(); i++) {
-			this->ClearValue[i].color = { 0.0f, 0.0f, 0.0f, 1.0f };
-		}
-		std::vector<VkImageView> Attachment(aAttachmentSelection.size());
-		for (size_t i = 0; i < aAttachmentSelection.size(); i++) {
-			Attachment[i] = aImage[aAttachmentSelection[i]]->View;
-		}
-		VkResult Result = VK_SUCCESS;
-		VkFramebufferCreateInfo FBCI{};
-		FBCI.sType				= VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		FBCI.pNext				= NULL;
-		FBCI.flags				= 0;
-		FBCI.renderPass			= aPipeline->RenderPass;
-		FBCI.attachmentCount	= Attachment.size();
-		FBCI.pAttachments		= Attachment.data();
-		FBCI.width				= aResolution[0];
-		FBCI.height				= aResolution[1];
-		FBCI.layers				= 1;
-		Result = vkCreateFramebuffer(aContext->Handle, &FBCI, NULL, &this->Handle);
 	}
 
 }

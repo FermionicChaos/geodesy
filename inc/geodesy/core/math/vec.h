@@ -156,6 +156,16 @@ namespace geodesy::core::math {
 		return ((aLhs[0] * aRhs[1]) - (aLhs[1] * aRhs[0]));
 	}
 
+	template<typename T, std::size_t N> inline
+	T length(const vec<T, N>& aVector) {
+		return std::sqrt(aVector * aVector);
+	}
+
+	template<typename T, std::size_t N> inline
+	vec<T, N> normalize(const vec<T, N>& aVector) {
+		return aVector / length(aVector);
+	}
+
 	template<typename T> inline 
 	vec<T, 3> operator^(const vec<T, 3>& aLhs, const vec<T, 3>& aRhs) {
 		return vec<T, 3>(
@@ -163,11 +173,6 @@ namespace geodesy::core::math {
 			aLhs[2] * aRhs[0] - aLhs[0] * aRhs[2],
 			aLhs[0] * aRhs[1] - aLhs[1] * aRhs[0]
 		);
-	}
-
-	template<typename T, std::size_t N> inline
-	T length(const vec<T, N>& aVector) {
-		return std::sqrt(aVector * aVector);
 	}
 
 	// Arbitrary rotation of a vector around an axis by an angle.

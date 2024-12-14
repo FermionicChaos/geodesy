@@ -1,5 +1,6 @@
-#ifndef MOUSE_H
-#define MOUSE_H
+#pragma once
+#ifndef GEODESY_CORE_HID_MOUSE_H
+#define GEODESY_CORE_HID_MOUSE_H
 
 #include "../math.h"
 
@@ -30,25 +31,29 @@ namespace geodesy::core::hid {
 			MODE_DISABLED	= 0x00034003
 		};
 
-		// Mouse Input
-		int Action[8];
-		int Modifier[8];
-		math::vec<float, 2> Scroll;
+		struct state {
+			int Action;
+			int Modifier;
+		};
 
-		// Cursor Variables
-		int Mode;
-		bool InWindow;
-		math::vec<float, 2> Position;
-		math::vec<float, 2> Velocity;
-		math::vec<float, 2> Acceleration;
+		state 					State[8];
+		math::vec<float, 2> 	Scroll;
+		float 					Time;
+		math::vec<float, 2> 	Position;
+		bool 					NewPosition;
+		math::vec<float, 2> 	Velocity;
+		math::vec<float, 2> 	Acceleration;
 
 		mouse();
 		~mouse();
 
-		bool operator[](int buttonID);
+		state& operator[](int aButtonID);
+		state operator[](int aButtonID) const;
+
+		void update(double aDeltaTime);
 
 	};
 
 }
 
-#endif // !MOUSE_H
+#endif // !GEODESY_CORE_HID_MOUSE_H

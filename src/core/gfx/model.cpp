@@ -607,7 +607,7 @@ namespace geodesy::core::gfx {
 			this->Material[i]->Name = Mat->GetName().C_Str();
 
 			for (size_t j = 0; j < TextureTypeDatabase.size(); j++) {
-				std::shared_ptr<gcl::image> LoadedTexture = load_texture(aFileManager, this->Directory, Mat, TextureTypeDatabase[i].Type);
+				std::shared_ptr<gcl::image> LoadedTexture = load_texture(aFileManager, this->Directory, Mat, TextureTypeDatabase[j].Type);
 				if (LoadedTexture != nullptr) {
 					// Load texture
 					this->Material[i]->Texture[TextureTypeDatabase[j].Name] = LoadedTexture;

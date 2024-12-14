@@ -442,7 +442,7 @@ namespace geodesy::core::gcl {
 	}
 
 	VkResult context::execute(device::operation aDeviceOperation, const std::vector<VkSubmitInfo>& aSubmissionList, VkFence aFence) {
-		return this->execute(device::operation::PRESENT, aSubmissionList, std::vector<VkPresentInfoKHR>(0), aFence);
+		return this->execute(aDeviceOperation, aSubmissionList, std::vector<VkPresentInfoKHR>(0), aFence);
 	}
 
 	VkResult context::present(const std::vector<VkPresentInfoKHR>& aPresentationList) {

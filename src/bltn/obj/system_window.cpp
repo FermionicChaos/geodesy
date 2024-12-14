@@ -2,6 +2,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include <iostream>
+
 /* --------------- Platform Dependent Libraries --------------- */
 //#if defined(_WIN32) || defined(_WIN64)
 //#include <Windows.h>
@@ -132,8 +134,23 @@ namespace geodesy::bltn::obj {
 		FrameRate = 60.0f;
 	}
 
-	system_window::system_window(std::shared_ptr<core::gcl::context> aContext, std::shared_ptr<system_display> aDisplay, std::string aName, const create_info& aCreateInfo, core::math::vec<int, 2> aPosition, core::math::vec<int, 2> aSize) :
-	window(aContext, nullptr, aName, core::math::vec<uint, 3>(aSize[0], aSize[1], 1u), aCreateInfo.FrameRate, aCreateInfo.Swapchain.FrameCount, 1u) {
+	system_window::system_window(
+		std::shared_ptr<gcl::context> aContext, 
+		std::shared_ptr<system_display> aDisplay, 
+		std::string aName, 
+		const create_info& aCreateInfo, 
+		math::vec<int, 2> aPosition, 
+		math::vec<int, 2> aSize
+	) : window(
+		aContext, 
+		nullptr, 
+		aName, 
+		aCreateInfo.Swapchain.PixelFormat,
+		math::vec<uint, 3>(aSize[0], aSize[1], 1u), 
+		aCreateInfo.FrameRate, 
+		aCreateInfo.Swapchain.FrameCount, 
+		1u
+	) {
 		VkResult Result = VK_SUCCESS;
 		core::math::vec<uint, 3> FramebufferResolution;
 
@@ -158,7 +175,6 @@ namespace geodesy::bltn::obj {
 			this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(Swapchain);
 		}
 
-		// Acquire Swapchain Images.	
 	}
 
 	system_window::system_window(std::shared_ptr<core::gcl::context> aContext, std::shared_ptr<system_display> aDisplay, std::string aName, const create_info& aCreateInfo, core::math::vec<float, 3> aPosition, core::math::vec<float, 2> aSize) :
@@ -166,51 +182,18 @@ namespace geodesy::bltn::obj {
 
 	}
 
-	VkResult system_window::next_frame(VkSemaphore aSemaphore, VkFence aFence) {
-		VkResult ReturnValue = VK_SUCCESS;
-		std::shared_ptr<core::gcl::swapchain> Swapchain = std::dynamic_pointer_cast<core::gcl::swapchain>(this->Framechain);
+	system_window::~system_window() {
+		// Destroy Swapchain.
 		this->Framechain = nullptr;
-		Swapchain->ReadIndex = Swapchain->DrawIndex;
-		while (true) {
-			VkResult Result = VK_SUCCESS;
-
-			// Acquire next image from swapchain.
-			Result = vkAcquireNextImageKHR(this->Context->Handle, Swapchain->Handle, UINT64_MAX, aSemaphore, aFence, &Swapchain->DrawIndex);
-
-			// If image succussfully acquired, break loop.
-			if (Result == VK_SUCCESS) break;
-
-			// Check if window has resized.
-			if ((Result == VK_ERROR_OUT_OF_DATE_KHR) || (Result == VK_SUBOPTIMAL_KHR)) {
-				ReturnValue = Result;
-				// Create new swap chain.
-				gcl::swapchain::property NewProperty = gcl::swapchain::property(Swapchain->CreateInfo, Swapchain->FrameRate);
-				Swapchain = std::make_shared<core::gcl::swapchain>(this->Context, this->SurfaceHandle, NewProperty, Swapchain->Handle);
-				// Also reset fence.
-				if (aFence != VK_NULL_HANDLE) {
-					Result = this->Context->wait_and_reset(aFence);
-				}
-			}
-			else {
-				ReturnValue = Result;
-			}
-		}
-		this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(Swapchain);
-		return ReturnValue;
+		// Destroy Vulkan Surface.
+		vkDestroySurfaceKHR(this->Context->Device->Engine->Handle, this->SurfaceHandle, NULL);
+		// Destroy GLFW Window.
+		this->destroy_window_handle(this->WindowHandle);
 	}
 
-	VkPresentInfoKHR system_window::present_frame(const std::vector<VkSemaphore>& aWaitSemaphore) {
-		VkPresentInfoKHR PresentInfo{};
-		std::shared_ptr<core::gcl::swapchain> Swapchain = std::dynamic_pointer_cast<core::gcl::swapchain>(this->Framechain);
-		PresentInfo.sType					= VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		PresentInfo.pNext					= NULL;
-		PresentInfo.waitSemaphoreCount		= aWaitSemaphore.size();
-		PresentInfo.pWaitSemaphores			= aWaitSemaphore.data();
-		PresentInfo.swapchainCount			= 1;
-		PresentInfo.pSwapchains				= &Swapchain->Handle;
-		PresentInfo.pImageIndices			= &Swapchain->DrawIndex;
-		PresentInfo.pResults				= NULL;
-		return PresentInfo;
+	void system_window::update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce, core::math::vec<float, 3> aAppliedTorque) {
+		this->InputState.Mouse.update(aDeltaTime);
+		this->Time += aDeltaTime;
 	}
 
 	GLFWwindow* system_window::create_window_handle(window::property aSetting, int aWidth, int aHeight, const char* aTitle, GLFWmonitor* aMonitor, GLFWwindow* aWindow) {
@@ -227,7 +210,7 @@ namespace geodesy::bltn::obj {
 		glfwWindowHint(GLFW_CLIENT_API,				GLFW_NO_API);
 		glfwWindowHint(GLFW_REFRESH_RATE,			GLFW_DONT_CARE);
 		GLFWwindow* ReturnHandle = glfwCreateWindow(aWidth, aHeight, aTitle, aMonitor, aWindow);
-		if (ReturnHandle == NULL) {
+		if (ReturnHandle != NULL) {
 			// User pointer to forward input stream.
 			glfwSetWindowUserPointer(ReturnHandle, (void*)this);
 
@@ -257,6 +240,7 @@ namespace geodesy::bltn::obj {
 			// File drop
 			glfwSetDropCallback(ReturnHandle, system_window::file_drop_callback);
 		}
+		glfwSetInputMode(ReturnHandle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		return ReturnHandle;
 	}
 
@@ -326,8 +310,23 @@ namespace geodesy::bltn::obj {
 	}
 
 	void system_window::cursor_position_callback(GLFWwindow* aWindowHandle, double aPosX, double aPosY) {
+		static double Time = 0.0f;
+		double DeltaTime = lgc::timer::get_time() - Time;
+		Time = lgc::timer::get_time();
 		system_window* Window = (system_window*)glfwGetWindowUserPointer(aWindowHandle);
-
+		math::vec<double, 2> OldPosition = math::vec<double, 2>(Window->InputState.Mouse.Position[0], Window->InputState.Mouse.Position[1]);
+		math::vec<double, 2> OldVelocity = math::vec<double, 2>(Window->InputState.Mouse.Velocity[0], Window->InputState.Mouse.Velocity[1]);
+		math::vec<double, 2> NewPosition = { aPosX / ((double)Window->Framechain->Resolution[0]), aPosY / ((double)Window->Framechain->Resolution[1]) };
+		math::vec<double, 2> NewVelocity = normalize((NewPosition - OldPosition) / DeltaTime);
+		math::vec<double, 2> NewAcceleration = (NewVelocity - OldVelocity) / DeltaTime;
+		Window->InputState.Mouse.Position = math::vec<float, 2>(NewPosition[0], NewPosition[1]);
+		Window->InputState.Mouse.Velocity = math::vec<float, 2>(NewVelocity[0], NewVelocity[1]);
+		Window->InputState.Mouse.Acceleration = math::vec<float, 2>(NewAcceleration[0], NewAcceleration[1]);
+		Window->InputState.Mouse.NewPosition = true;
+		if (!Window->InputTarget.expired()) {
+			// If object still exists, pass through input.
+			Window->InputTarget.lock()->input(Window->InputState);
+		}
 	}
 
 	void system_window::cursor_enter_callback(GLFWwindow* aWindowHandle, int aEntered) {
@@ -342,6 +341,11 @@ namespace geodesy::bltn::obj {
 
 	void system_window::key_callback(GLFWwindow* aWindowHandle, int aKey, int aScancode, int aAction, int aMods) {
 		system_window* Window = (system_window*)glfwGetWindowUserPointer(aWindowHandle);
+		Window->InputState.Keyboard(aKey) = { aAction, aMods, aScancode };
+		if (!Window->InputTarget.expired()) {
+			// If object still exists, pass through input.
+			Window->InputTarget.lock()->input(Window->InputState);
+		}
 	}
 
 	void system_window::character_callback(GLFWwindow* aWindowHandle, uint aCodepoint) {
