@@ -127,9 +127,9 @@ namespace geodesy::bltn::obj {
 	) {
 		VkResult Result = VK_SUCCESS;
 		engine* Engine = aContext->Device->Engine;
-		this->FOV = 70.0f;
-		this->Near = 0.1f;
-		this->Far = 1000.0f;
+		this->FOV = aCreateInfo.FOV;
+		this->Near = aCreateInfo.Near;
+		this->Far = aCreateInfo.Far;
 
 		// List of assets Camera3D will load into memory.
 		std::vector<std::string> AssetList = {
@@ -213,7 +213,7 @@ namespace geodesy::bltn::obj {
 
 	void camera3d::input(const core::hid::input& aInputState) {
 		float LinearSpeed = 250.0f;
-		float RotationSpeed = 1.0f;
+		float RotationSpeed = 1.5f;
 		float ForwardSpeed = 0.0f, RightSpeed = 0.0f;		
 		float DeltaTheta = 0.0f, DeltaPhi = 0.0f;
 

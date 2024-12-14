@@ -32,33 +32,6 @@ namespace geodesy::bltn {
 
 	}
 
-	math::vec<uchar, 4> complex_to_color(math::complex<float> aValue) {
-		math::vec<uchar, 4> Color;
-		math::vec<float, 3> ColorFloat;
-
-		// Calculate phase (Hue)
-		float Phase = phase(aValue); // Phase is in radians
-		float Magnitude = abs(aValue);
-		// Calculate magnitude (Brightness)
-		float Brightness = std::min(Magnitude, 1.0f); // Cap the brightness to 1.0
-
-		// Determine color by phase.
-		ColorFloat[2] = std::sin(Phase);
-		ColorFloat[1] = std::sin(Phase - (2.0f * math::constant::pi / 3.0f));
-		ColorFloat[0] = std::sin(Phase + (2.0f * math::constant::pi / 3.0f));
-
-		ColorFloat[2] = Brightness * std::clamp(ColorFloat[2], 0.0f, 1.0f);
-		ColorFloat[1] = Brightness * std::clamp(ColorFloat[1], 0.0f, 1.0f);
-		ColorFloat[0] = Brightness * std::clamp(ColorFloat[0], 0.0f, 1.0f);
-
-		Color[3] = 255;  // Fully opaque alpha channel
-		Color[2] = static_cast<uchar>(ColorFloat[2] * 255.0f);
-		Color[1] = static_cast<uchar>(ColorFloat[1] * 255.0f);
-		Color[0] = static_cast<uchar>(ColorFloat[0] * 255.0f);
-
-		return Color;
-	}
-
 	void unit_test::run() {
 		VkResult Result = VK_SUCCESS;
 		std::cout << "Thread Count: " << omp_get_max_threads() << std::endl;
@@ -80,7 +53,7 @@ namespace geodesy::bltn {
 		//^ Implement API Later
 		//^ this->Stage["Window Testing"]->share_subject_from(this->Stage["3D Rendering Testing"], "Camera3D", math::vec<float, 2>(1.0f, 1.0f));
 		this->Stage[1]->create_object<obj::subject_window>(
-			"Camera3D Reflection", 
+			"Camera3D Window", 
 			std::dynamic_pointer_cast<ecs::subject>(this->Stage[0]->Object[0]), 
 			math::vec<float, 2>(1.0f, 1.0f)
 		);
