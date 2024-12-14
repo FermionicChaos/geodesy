@@ -64,7 +64,7 @@ namespace geodesy::bltn::obj {
 			ColorCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
 			ColorCreateInfo.Usage		= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
 
-			image::format ColorFormat = image::format::B8G8R8A8_UNORM; //image::format::R32G32B32A32_SFLOAT;
+			image::format ColorFormat = image::format::R32G32B32A32_SFLOAT;
 			image::format DepthFormat = image::format::D32_SFLOAT;
 
 			this->Resolution = aResolution;
@@ -132,7 +132,7 @@ namespace geodesy::bltn::obj {
 		std::shared_ptr<gcl::shader> VertexShader = std::dynamic_pointer_cast<gcl::shader>(Asset[0]);
 		std::shared_ptr<gcl::shader> PixelShader = std::dynamic_pointer_cast<gcl::shader>(Asset[1]);
 		std::vector<std::shared_ptr<gcl::shader>> ShaderList = { VertexShader, PixelShader };
-		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::make_shared<pipeline::rasterizer>(ShaderList, aFrameResolution, VK_FORMAT_D32_SFLOAT);
+		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::make_shared<pipeline::rasterizer>(ShaderList, aFrameResolution);
 
 		// This code specifies how the vextex data is to be interpreted from the bound vertex buffers.
 		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 0, offsetof(gfx::mesh::vertex, Position));
@@ -167,7 +167,7 @@ namespace geodesy::bltn::obj {
 		// Needed for 3D graphics.
 		Rasterizer->DepthStencil.depthTestEnable			= VK_TRUE;
 		Rasterizer->DepthStencil.depthWriteEnable			= VK_TRUE;
-		Rasterizer->DepthStencil.depthCompareOp				= VK_COMPARE_OP_GREATER; // Camera, +z is closer.
+		Rasterizer->DepthStencil.depthCompareOp				= VK_COMPARE_OP_LESS; // Camera, +z is closer.
 		Rasterizer->DepthStencil.minDepthBounds				= 0.0f;
 		Rasterizer->DepthStencil.maxDepthBounds				= 1.0f;
 

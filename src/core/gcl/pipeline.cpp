@@ -86,28 +86,19 @@ namespace geodesy::core::gcl {
 		this->DynamicState.pNext 							= NULL;
 		this->DynamicState.flags 							= 0;
 
-		this->DepthAttachment.Description.flags 			= 0;
-		this->DepthAttachment.Description.format 			= VK_FORMAT_UNDEFINED;
-		this->DepthAttachment.Description.samples 			= VK_SAMPLE_COUNT_1_BIT;
-		this->DepthAttachment.Description.loadOp 			= VK_ATTACHMENT_LOAD_OP_CLEAR;
-		this->DepthAttachment.Description.storeOp 			= VK_ATTACHMENT_STORE_OP_STORE;
-		this->DepthAttachment.Description.stencilLoadOp 	= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		this->DepthAttachment.Description.stencilStoreOp 	= VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		this->DepthAttachment.Description.initialLayout 	= VK_IMAGE_LAYOUT_UNDEFINED;
-		this->DepthAttachment.Description.finalLayout 		= VK_IMAGE_LAYOUT_UNDEFINED;
+		this->DepthStencilAttachment.Description.flags 				= 0;
+		this->DepthStencilAttachment.Description.format 			= VK_FORMAT_UNDEFINED;
+		this->DepthStencilAttachment.Description.samples 			= VK_SAMPLE_COUNT_1_BIT;
+		this->DepthStencilAttachment.Description.loadOp 			= VK_ATTACHMENT_LOAD_OP_LOAD;
+		this->DepthStencilAttachment.Description.storeOp 			= VK_ATTACHMENT_STORE_OP_STORE;
+		this->DepthStencilAttachment.Description.stencilLoadOp 		= VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		this->DepthStencilAttachment.Description.stencilStoreOp 	= VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		this->DepthStencilAttachment.Description.initialLayout 		= VK_IMAGE_LAYOUT_UNDEFINED;
+		this->DepthStencilAttachment.Description.finalLayout 		= VK_IMAGE_LAYOUT_UNDEFINED;
 
-		this->StencilAttachment.Description.flags 			= 0;
-		this->StencilAttachment.Description.format 			= VK_FORMAT_UNDEFINED;
-		this->StencilAttachment.Description.samples 		= VK_SAMPLE_COUNT_1_BIT;
-		this->StencilAttachment.Description.loadOp 			= VK_ATTACHMENT_LOAD_OP_CLEAR;
-		this->StencilAttachment.Description.storeOp 		= VK_ATTACHMENT_STORE_OP_STORE;
-		this->StencilAttachment.Description.stencilLoadOp 	= VK_ATTACHMENT_LOAD_OP_CLEAR;
-		this->StencilAttachment.Description.stencilStoreOp 	= VK_ATTACHMENT_STORE_OP_STORE;
-		this->StencilAttachment.Description.initialLayout 	= VK_IMAGE_LAYOUT_UNDEFINED;
-		this->StencilAttachment.Description.finalLayout 	= VK_IMAGE_LAYOUT_UNDEFINED;
 	}
 
-	pipeline::rasterizer::rasterizer(std::vector<std::shared_ptr<shader>> aShaderList, math::vec<uint, 3> aResolution, VkFormat aDepthFormat, VkFormat aStencilFormat) : rasterizer() {
+	pipeline::rasterizer::rasterizer(std::vector<std::shared_ptr<shader>> aShaderList, math::vec<uint, 3> aResolution) : rasterizer() {
 		bool Success = true;
 
 		this->Resolution = aResolution;
@@ -116,9 +107,6 @@ namespace geodesy::core::gcl {
 
 		// Load shaders.
 		this->Shader = aShaderList;
-
-		this->DepthAttachment.Description.format = aDepthFormat;
-		this->StencilAttachment.Description.format = aStencilFormat;
 
 		// Link Shader Stages.
 		if (Success) {
@@ -385,16 +373,10 @@ namespace geodesy::core::gcl {
 			this->ColorAttachment[aAttachmentIndex].Description.finalLayout		= (VkImageLayout)aImageLayout;
 		}
 		else if (aAttachmentIndex == this->ColorAttachment.size()) {
-			this->DepthAttachment.Description.format							= (VkFormat)aFormat;
-			this->DepthAttachment.Description.samples							= (VkSampleCountFlagBits)aSampleCount;
-			this->DepthAttachment.Description.initialLayout						= (VkImageLayout)aImageLayout;
-			this->DepthAttachment.Description.finalLayout						= (VkImageLayout)aImageLayout;
-		}
-		else if (aAttachmentIndex == this->ColorAttachment.size() + 1) {
-			this->StencilAttachment.Description.format							= (VkFormat)aFormat;
-			this->StencilAttachment.Description.samples							= (VkSampleCountFlagBits)aSampleCount;
-			this->StencilAttachment.Description.initialLayout					= (VkImageLayout)aImageLayout;
-			this->StencilAttachment.Description.finalLayout						= (VkImageLayout)aImageLayout;
+			this->DepthStencilAttachment.Description.format						= (VkFormat)aFormat;
+			this->DepthStencilAttachment.Description.samples					= (VkSampleCountFlagBits)aSampleCount;
+			this->DepthStencilAttachment.Description.initialLayout				= (VkImageLayout)aImageLayout;
+			this->DepthStencilAttachment.Description.finalLayout				= (VkImageLayout)aImageLayout;
 		}
 	}
 
@@ -441,16 +423,10 @@ namespace geodesy::core::gcl {
 				AttachmentDescription[i] = aRasterizer->ColorAttachment[i].Description;
 			}
 			
-			// If depth format is not undefined, add to attachment description.
-			if (aRasterizer->DepthAttachment.Description.format != VK_FORMAT_UNDEFINED) {
+			// If depth stencil format is not undefined, add to attachment description.
+			if (aRasterizer->DepthStencilAttachment.Description.format != VK_FORMAT_UNDEFINED) {
 				DepthAttachmentReference = { (uint32_t)AttachmentDescription.size(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
-				AttachmentDescription.push_back(aRasterizer->DepthAttachment.Description);
-			}
-
-			// If stencil format is not undefined, add to attachment description.
-			if (aRasterizer->StencilAttachment.Description.format != VK_FORMAT_UNDEFINED) {
-				StencilAttachmentReference = { (uint32_t)AttachmentDescription.size(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL };
-				AttachmentDescription.push_back(aRasterizer->StencilAttachment.Description);
+				AttachmentDescription.push_back(aRasterizer->DepthStencilAttachment.Description);
 			}
 
 			// Convert to references. 
@@ -468,14 +444,8 @@ namespace geodesy::core::gcl {
 			SubpassDescription[0].colorAttachmentCount			= ColorAttachmentReference.size();
 			SubpassDescription[0].pColorAttachments				= ColorAttachmentReference.data();
 			SubpassDescription[0].pResolveAttachments			= NULL;
-			if (aRasterizer->DepthAttachment.Description.format != VK_FORMAT_UNDEFINED) {
+			if (aRasterizer->DepthStencilAttachment.Description.format != VK_FORMAT_UNDEFINED) {
 				SubpassDescription[0].pDepthStencilAttachment		= &DepthAttachmentReference;
-			}
-			else {
-				SubpassDescription[0].pDepthStencilAttachment		= NULL;
-			}
-			if (aRasterizer->StencilAttachment.Description.format != VK_FORMAT_UNDEFINED) {
-				SubpassDescription[0].pDepthStencilAttachment		= &StencilAttachmentReference;
 			}
 			else {
 				SubpassDescription[0].pDepthStencilAttachment		= NULL;
@@ -631,7 +601,7 @@ namespace geodesy::core::gcl {
 			RasterizerCreateInfo.pViewportState					= &aRasterizer->Viewport;
 			RasterizerCreateInfo.pRasterizationState			= &aRasterizer->Rasterizer;
 			RasterizerCreateInfo.pMultisampleState				= &aRasterizer->Multisample;
-			if ((aRasterizer->DepthAttachment.Description.format != VK_FORMAT_UNDEFINED) || (aRasterizer->StencilAttachment.Description.format != VK_FORMAT_UNDEFINED)) {
+			if (aRasterizer->DepthStencilAttachment.Description.format != VK_FORMAT_UNDEFINED) {
 				RasterizerCreateInfo.pDepthStencilState				= &aRasterizer->DepthStencil;
 			}
 			else {

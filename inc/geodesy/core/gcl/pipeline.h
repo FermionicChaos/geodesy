@@ -126,11 +126,10 @@ namespace geodesy::core::gcl {
 
 			// Attachment metadata
 			std::vector<attachment> 									ColorAttachment;					// Vulkan Spec Minimum Req: 4 Attachments
-			attachment 													DepthAttachment;
-			attachment 													StencilAttachment;
+			attachment 													DepthStencilAttachment;
 
 			rasterizer();
-			rasterizer(std::vector<std::shared_ptr<shader>> aShaderList, math::vec<uint, 3> aResolution, VkFormat aDepthFormat = VK_FORMAT_UNDEFINED, VkFormat aStencilFormat = VK_FORMAT_UNDEFINED);
+			rasterizer(std::vector<std::shared_ptr<shader>> aShaderList, math::vec<uint, 3> aResolution);
 
 			// bind maps the vertex attributes in the shader to where the vertex buffer is intended to be bound.
 			void bind(VkVertexInputRate aInputRate, uint32_t aBindingIndex, size_t aVertexStride, uint32_t aLocationIndex, size_t aVertexOffset);
