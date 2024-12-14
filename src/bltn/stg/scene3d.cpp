@@ -15,8 +15,19 @@ namespace geodesy::bltn::stg {
 		math::vec<uint, 3> Resolution = { 1280, 720, 1 };
 		double FrameRate = 60.0f;
 		uint32_t FrameCount = 4;
-		this->create_object<obj::camera3d>("Camera3D", CameraCreateInfo);
-		this->create_object<ecs::object>("Triangle", "../glTF-Sample-Models/2.0/Lantern/glTF/Lantern.gltf", math::vec<float, 3>(0.0f, 10.0f, -10.0f), math::vec<float, 2>(-90.0f, 0.0f));
+		this->create_object<obj::camera3d>("Camera3D", CameraCreateInfo, math::vec<float, 3>(0.0f, -10.0f, 10.0f));
+
+		std::vector<std::string> SpawnObjects = {
+			"../glTF-Sample-Models/2.0/Box/glTF/Box.gltf",
+			"../glTF-Sample-Models/2.0/Lantern/glTF/Lantern.gltf",
+		};
+
+		for (size_t i = 0; i < SpawnObjects.size(); i++) {
+			std::string ObjectName = "Object" + std::to_string(i);
+			math::vec<float, 3> Position = { 5.0f * (float)i, 0.0f, 0.0f };
+			math::vec<float, 2> Direction = { -90.0f, 0.0f };
+			this->create_object<ecs::object>(ObjectName, SpawnObjects[i], Position, Direction);
+		}
 	}
 
 }

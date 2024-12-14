@@ -35,6 +35,7 @@ namespace geodesy::ecs {
 		this->Time						= 0.0f;
 		this->DeltaTime					= 0.0f;
 		this->Mass						= 1.0f;
+		this->Scale						= { 1.0f, 1.0f, 1.0f };
 		this->Position					= aPosition;
 		this->Theta 					= math::radians(aDirection[0] + 90.0f);
 		this->Phi 						= math::radians(aDirection[1] + 90.0f);

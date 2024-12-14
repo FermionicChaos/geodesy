@@ -48,6 +48,7 @@ namespace geodesy::ecs {
 		float																		Time;				// Second 			[s]
 		float 																		DeltaTime; 			// Second 			[s]
 		float																		Mass;				// Kilogram			[kg]
+		core::math::vec<float, 3> 													Scale;				// Scaling Factor	[N/A]
 		core::math::vec<float, 3>													Position;			// Meter			[m]
 		float 																		Theta, Phi;			// Radians			[rad]
 		core::math::vec<float, 3>													DirectionRight;		// Right			[Normalized]

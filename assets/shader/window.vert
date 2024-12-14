@@ -25,7 +25,7 @@ layout (set = 0, binding = 1) uniform ObjectUBO {
 
 void main() {
     // Convert Vertex to World Space.
-    vec4 v = (Object.Orientation * vec4(2.0 * VertexPosition, 1.0f)) + vec4(Object.Position, Window.Size.x);
+    vec4 v = (Object.Orientation * vec4(2.0 * VertexPosition, 1.0f)) + vec4(Object.Position, 0.0f);
     gl_Position = v;
     TextureCoordinate = VertexTextureCoordinate.xy;
     InterpolatedColor = VertexColor;
