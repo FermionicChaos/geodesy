@@ -128,8 +128,8 @@ namespace geodesy::bltn::obj {
 		Rasterizer->DepthStencil.depthTestEnable			= VK_TRUE;
 		Rasterizer->DepthStencil.depthWriteEnable			= VK_TRUE;
 		Rasterizer->DepthStencil.depthCompareOp				= VK_COMPARE_OP_GREATER; // Camera, +z is closer.
-		// Rasterizer->DepthStencil.minDepthBounds				= -1.0f;
-		// Rasterizer->DepthStencil.maxDepthBounds				= +1.0f;
+		Rasterizer->DepthStencil.minDepthBounds				= 0.0f;
+		Rasterizer->DepthStencil.maxDepthBounds				= 1.0f;
 
 		// Create render pipeline for camera3d.
 		this->Pipeline = Context->create_pipeline(Rasterizer);
@@ -160,14 +160,16 @@ namespace geodesy::bltn::obj {
 	}
 
 	void camera3d::input(const core::hid::input& aInputState) {
-		float LinearSpeed = 100.0f;
-		float RotationSpeed = 0.001f;
+		float LinearSpeed = 250.0f;
+		float RotationSpeed = 0.025f;
 		float ForwardSpeed = 0.0f, RightSpeed = 0.0f;		
+		float DeltaTheta = 0.0f, DeltaPhi = 0.0f;
 
 		if (aInputState.Keyboard[hid::keyboard::KEY_W]) ForwardSpeed 	+= LinearSpeed;
 		if (aInputState.Keyboard[hid::keyboard::KEY_S]) ForwardSpeed 	-= LinearSpeed;
 		if (aInputState.Keyboard[hid::keyboard::KEY_A]) RightSpeed 		-= LinearSpeed;
 		if (aInputState.Keyboard[hid::keyboard::KEY_D]) RightSpeed 		+= LinearSpeed;
+
 
 		this->Theta 	+= aInputState.Mouse.Velocity[1] * RotationSpeed;
 		this->Phi 		-= aInputState.Mouse.Velocity[0] * RotationSpeed;

@@ -317,7 +317,7 @@ namespace geodesy::bltn::obj {
 		math::vec<double, 2> OldPosition = math::vec<double, 2>(Window->InputState.Mouse.Position[0], Window->InputState.Mouse.Position[1]);
 		math::vec<double, 2> OldVelocity = math::vec<double, 2>(Window->InputState.Mouse.Velocity[0], Window->InputState.Mouse.Velocity[1]);
 		math::vec<double, 2> NewPosition = { aPosX / ((double)Window->Framechain->Resolution[0]), aPosY / ((double)Window->Framechain->Resolution[1]) };
-		math::vec<double, 2> NewVelocity = (NewPosition - OldPosition) / DeltaTime;
+		math::vec<double, 2> NewVelocity = normalize((NewPosition - OldPosition) / DeltaTime);
 		math::vec<double, 2> NewAcceleration = (NewVelocity - OldVelocity) / DeltaTime;
 		Window->InputState.Mouse.Position = math::vec<float, 2>(NewPosition[0], NewPosition[1]);
 		Window->InputState.Mouse.Velocity = math::vec<float, 2>(NewVelocity[0], NewVelocity[1]);
