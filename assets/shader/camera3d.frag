@@ -109,7 +109,7 @@ void main() {
     mat3 TBN = mat3(normalize(WorldTangent), normalize(WorldBitangent), normalize(WorldNormal));
 
 	// Calculate UV coordinates after applying the height map.
-	vec2 UV = bisection_parallax(TextureCoordinate.xy, TBN);
+	vec2 UV = TextureCoordinate.xy; //bisection_parallax(TextureCoordinate.xy, TBN);
 
 	// Determine Modified World Space Normals of surface applying material properties.
     // Acquire the surface normals of the normal map with the modified UV coordinates.
