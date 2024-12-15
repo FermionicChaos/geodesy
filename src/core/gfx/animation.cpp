@@ -13,15 +13,31 @@ namespace geodesy::core::gfx {
 	using namespace math;
 
 	mat<float, 4, 4> animation::node_anim::operator[](double aTime) const {
-		mat<float, 4, 4> T;
-		mat<float, 4, 4> R;
-		mat<float, 4, 4> S;
+		mat<float, 4, 4> T = {
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
+		};
+		mat<float, 4, 4> R = {
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
+		};
+		mat<float, 4, 4> S = {
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
+		};
 
 		// Calculates interpolated translation matrix
 		{
 			float p = 0.0f;
 			float t = aTime;
 			vec<float, 3> T1, T2, Tf;
+			bool KeyPairFound = false;
 			for (size_t i = 0; i < this->PositionKey.size() - 1; i++) {
 				float t1 = this->PositionKey[i].Time;
 				float t2 = this->PositionKey[i + 1].Time;
@@ -29,23 +45,28 @@ namespace geodesy::core::gfx {
 					p = ((t - t1) / (t2 - t1));
 					T1 = this->PositionKey[i].Value;
 					T2 = this->PositionKey[i + 1].Value;
+					KeyPairFound = true;
 					break;
 				}
 			}
-			Tf = (1.0f - p) * T1 + p * T2;
-			T = mat<float, 4, 4>(
-				1.0f, 0.0f, 0.0f, Tf[0],
-				0.0f, 1.0f, 0.0f, Tf[1],
-				0.0f, 0.0f, 1.0f, Tf[2],
-				0.0f, 0.0f, 0.0f, 1.0f
-			);
+			if (KeyPairFound) {
+				// Interpolate Translation Keys
+				Tf = (1.0f - p) * T1 + p * T2;
+				T = mat<float, 4, 4>(
+					1.0f, 0.0f, 0.0f, Tf[0],
+					0.0f, 1.0f, 0.0f, Tf[1],
+					0.0f, 0.0f, 1.0f, Tf[2],
+					0.0f, 0.0f, 0.0f, 1.0f
+				);
+			}
 		}
 
-		// Calculates interpoted quaternion.
+		// Calculates interpolated quaternion.
 		{
 			float p = 0.0f;
 			float t = aTime;
 			quaternion<float> Q1, Q2, Qf;
+			bool KeyPairFound = false;
 			for (size_t i = 0; i < this->RotationKey.size() - 1; i++) {
 				float t1 = this->RotationKey[i].Time;
 				float t2 = this->RotationKey[i + 1].Time;
@@ -53,12 +74,16 @@ namespace geodesy::core::gfx {
 					p = ((t - t1) / (t2 - t1));
 					Q1 = this->RotationKey[i].Value;
 					Q2 = this->RotationKey[i + 1].Value;
+					KeyPairFound = true;
 					break;
 				}
 			}
-			float Theta = std::acos(Q1[0]*Q2[0] + Q1[1]*Q2[1] + Q1[2]*Q2[2] + Q1[3]*Q2[3]);
-			Qf = ((std::sin((1.0f - p) * Theta) * Q1 + std::sin(p * Theta) * Q2) / std::sin(Theta));
-			R = rotation(Qf);
+			if (KeyPairFound) {
+				// Interpolate Rotation Keys (quaternions)
+				float Theta = std::acos(Q1[0]*Q2[0] + Q1[1]*Q2[1] + Q1[2]*Q2[2] + Q1[3]*Q2[3]);
+				Qf = ((std::sin((1.0f - p) * Theta) * Q1 + std::sin(p * Theta) * Q2) / std::sin(Theta));
+				R = rotation(Qf);
+			}
 		}
 
 		// Calculates interpolated scaling matrix
@@ -66,6 +91,7 @@ namespace geodesy::core::gfx {
 			float p = 0.0f;
 			float t = aTime;
 			vec<float, 3> S1, S2, Sf;
+			bool KeyPairFound = false;
 			for (size_t i = 0; i < this->ScalingKey.size() - 1; i++) {
 				float t1 = this->ScalingKey[i].Time;
 				float t2 = this->ScalingKey[i + 1].Time;
@@ -73,16 +99,19 @@ namespace geodesy::core::gfx {
 					p = ((t - t1) / (t2 - t1));
 					S1 = this->ScalingKey[i].Value;
 					S2 = this->ScalingKey[i + 1].Value;
+					KeyPairFound = true;
 					break;
 				}
 			}
-			Sf = (1.0f - p) * S1 + p * S2;
-			T = mat<float, 4, 4>(
-				Sf[0], 0.0f, 0.0f, 0.0f,
-				0.0f, Sf[1], 0.0f, 0.0f,
-				0.0f, 0.0f, Sf[2], 0.0f,
-				0.0f, 0.0f, 0.0f, 1.0f
-			);
+			if (KeyPairFound) {
+				Sf = (1.0f - p) * S1 + p * S2;
+				T = mat<float, 4, 4>(
+					Sf[0], 0.0f, 0.0f, 0.0f,
+					0.0f, Sf[1], 0.0f, 0.0f,
+					0.0f, 0.0f, Sf[2], 0.0f,
+					0.0f, 0.0f, 0.0f, 1.0f
+				);
+			}
 		}
 
 		// Order matters, scaling is applied first, then the object is rotated, then translated.
@@ -98,6 +127,10 @@ namespace geodesy::core::gfx {
 
 	animation::node_anim animation::operator[](std::string aNodeName) {
 		return this->NodeAnimMap[aNodeName];
+	}
+
+	bool animation::exists(std::string aName) const {
+		return (this->NodeAnimMap.find(aName) != this->NodeAnimMap.end());
 	}
 
 }

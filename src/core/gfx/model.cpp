@@ -128,8 +128,9 @@ namespace geodesy::core::gfx {
 		// Copy over traversal data
 		aModelNode.Child.resize(aAssimpNode->mNumChildren);
 		for (size_t i = 0; i < aModelNode.Child.size(); i++) {
-			aModelNode[i].Root 	= aModelNode.Root;
-			aModelNode[i].Parent = &aModelNode;
+			aModelNode[i].Model 	= aModelNode.Model;
+			aModelNode[i].Root 		= aModelNode.Root;
+			aModelNode[i].Parent 	= &aModelNode;
 			fill_and_traverse(aScene, aModelNode[i], aAssimpNode->mChildren[i]);
 		}
 
@@ -233,7 +234,6 @@ namespace geodesy::core::gfx {
 			this->Child[i].Parent 	= this;
 		}
 		this->Name 				= aNode.Name;
-		this->Weight 			= aNode.Weight;
 		this->Transformation 	= aNode.Transformation;
 		this->MeshInstance 		= std::vector<mesh::instance>(aNode.MeshInstance.size());
 		for (size_t i = 0; i < aNode.MeshInstance.size(); i++) {
@@ -279,29 +279,34 @@ namespace geodesy::core::gfx {
 		return this->Child[aIndex];
 	}
 
-	model::node& model::node::operator[](const char* aName) {
-		for (node& Chd : Child) {
-			if (Chd.Name == aName) {
-				return Chd;
-			}
-			else {
-				return Chd[aName];
+	model::node* model::node::operator[](std::string aName) {
+		node* Node = nullptr;
+		if (this->Name == aName) {
+			Node = this;
+		}
+		else {
+			for (size_t i = 0; i < this->Child.size(); i++) {
+				Node = this->Child[i][aName];
+				if (Node != nullptr) break;
 			}
 		}
-		throw std::runtime_error("Node Not Found");
+		return Node;
+	}
+
+	bool model::node::exists(std::string aName) const {
+		if (this->Name == aName) return true;
+		for (const node& Chd : Child) {
+			if (Chd.exists(aName)) return true;
+		}
+		return false;
 	}
 
 	void model::node::update(double aTime) {
-		// Work done here will start at the root
-		// of the node hierarchy.
-
-		// Cycle Through Animation;
+		// Iterate through node hierarchy and update node transforms
+		// according to their weighted reference animations.
 		for (node& Chd : Child) {
 			Chd.update(aTime);
 		}
-
-		// Work done here implies that the leafs
-		// will be updated first.
 
 		// For each mesh instance, and for each bone, update the 
 		// bone transformations according to their respective
@@ -310,8 +315,11 @@ namespace geodesy::core::gfx {
 			// This is only used to tranform mesh instance vertices without bone animation.
 			MI.Transform = this->global_transform(aTime);
 			for (mesh::bone& B : MI.Bone) {
-				// Update Bone Transformations from Bone Hierarchies
-				B.Transform = (*this->Root)[B.Name.c_str()].global_transform(aTime);
+				// Check if bone exists in the node hierarchy.
+				if (this->exists(B.Name)) {
+					// Update Bone Transformations from Bone Hierarchies
+					B.Transform = (*this->Root)[B.Name]->global_transform(aTime);
+				}
 			}
 			// Update Bone Buffer Date GPU side.
 			MI.update(aTime);
@@ -350,15 +358,19 @@ namespace geodesy::core::gfx {
 		//
 
 		// Bind Pose Transform
-		math::mat<float, 4, 4> NodeTransform = (this->Transformation * this->Weight);
+		math::mat<float, 4, 4> NodeTransform = (this->Transformation * Model->BindPoseWeight);
 
-		// Overrides/Averages Animation Transformations with Bind Pose Transform based on weights.
-		// if (this->Root->Animation.size() > 0) {
-		// 	// If there are, iterate through them, get their transforms and
+		// // Overrides/Averages Animation Transformations with Bind Pose Transform based on weights.
+		// if (Model->Animation.size() > 0) {
+		// 	// If there are any animations, iterate through them, get their transforms and
 		// 	// their contribution factors (weights).
-		// 	for (animation& Anim : this->Root->Animation) {
-		// 		// NodeTransform += AnimationTransform * Contribution Factor
-		// 		NodeTransform += Anim[this->Name][aTime]*Anim.Weight;
+		// 	for (animation& Anim : Model->Animation) {
+		// 		// Check if animation exists for this node.
+		// 		if (Anim.exists(this->Name))  {
+		// 			// Get the animation transform at the current time and factor into the node transform.
+		// 			double TickerTime = std::fmod(aTime * Anim.TicksPerSecond, Anim.Duration);
+		// 			NodeTransform += Anim[this->Name][TickerTime] * Anim.Weight;
+		// 		}
 		// 	}
 		// }
 
@@ -400,7 +412,6 @@ namespace geodesy::core::gfx {
 		this->Root				= this;
 		this->Parent			= nullptr;
 		this->Name				= "";
-		this->Weight 			= 1.0f;
 		this->Transformation 	= math::mat<float, 4, 4>(
 			1.0f, 	0.0f, 	0.0f, 	0.0f,
 			0.0f,	1.0f, 	0.0f, 	0.0f,
@@ -421,10 +432,12 @@ namespace geodesy::core::gfx {
 
 	model::model() {
 		this->Time = 0.0;
+		this->BindPoseWeight = 1.0f;
 	}
 
 	model::model(std::string aFilePath, file::manager* aFileManager) : file(aFilePath) {
 		this->Time = 0.0;
+		this->BindPoseWeight = 1.0f;
 		if (aFilePath.length() == 0) return;
 		const aiScene *Scene = ModelImporter->ReadFile(aFilePath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
 
@@ -445,6 +458,7 @@ namespace geodesy::core::gfx {
 		this->Name = Scene->mName.C_Str();
 
 		// Extract Scene Hiearchy
+		this->Hierarchy.Model = this;
 		fill_and_traverse(Scene, this->Hierarchy, Scene->mRootNode);
 		this->Hierarchy.Model = this;
 
@@ -609,43 +623,43 @@ namespace geodesy::core::gfx {
 
 				// Load values from Assimp Material on stack memory, and then convert to internal format.
 
-				aiShadingMode shadingModel;
-				aiColor3D diffuseColor;
-				aiColor3D emissiveColor;
-				aiColor3D ambientColor;
-				aiColor3D specularColor;
-				float opacity = 1.0f;
+				aiShadingMode ShadingModel;
+				aiColor3D DiffuseColor;
+				aiColor3D EmissiveColor;
+				aiColor3D AmbientColor;
+				aiColor3D SpecularColor;
+				float Opacity = 1.0f;
 				float RefrationIndex = 1.0f;
-				float shininess = 0.0f;
-				float metallic = 0.0f;
-				float roughness = 0.5f;
+				float Shininess = 0.0f;
+				float Metallic = 0.0f;
+				float Roughness = 0.5f;
 
 				// Get shading model.
-				Mat->Get(AI_MATKEY_SHADING_MODEL, shadingModel);
+				Mat->Get(AI_MATKEY_SHADING_MODEL, ShadingModel);
 
 				// Base colors
-				Mat->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
-				Mat->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor);
-				Mat->Get(AI_MATKEY_COLOR_AMBIENT, ambientColor);
-				Mat->Get(AI_MATKEY_COLOR_SPECULAR, specularColor);
+				Mat->Get(AI_MATKEY_COLOR_DIFFUSE, DiffuseColor);
+				Mat->Get(AI_MATKEY_COLOR_EMISSIVE, EmissiveColor);
+				Mat->Get(AI_MATKEY_COLOR_AMBIENT, AmbientColor);
+				Mat->Get(AI_MATKEY_COLOR_SPECULAR, SpecularColor);
 
 				// Surface properties
-				Mat->Get(AI_MATKEY_OPACITY, opacity);
+				Mat->Get(AI_MATKEY_OPACITY, Opacity);
 				Mat->Get(AI_MATKEY_REFRACTI, RefrationIndex);
-				Mat->Get(AI_MATKEY_SHININESS, shininess);
-				Mat->Get(AI_MATKEY_METALLIC_FACTOR, metallic);
-				Mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
+				Mat->Get(AI_MATKEY_SHININESS, Shininess);
+				Mat->Get(AI_MATKEY_METALLIC_FACTOR, Metallic);
+				Mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, Roughness);
 
 				// Convert to geodesy internal format.
-				this->Material[i]->Color = math::vec<float, 3>(diffuseColor.r, diffuseColor.g, diffuseColor.b);
-				this->Material[i]->Emissive = math::vec<float, 3>(emissiveColor.r, emissiveColor.g, emissiveColor.b);
-				this->Material[i]->Ambient = math::vec<float, 3>(ambientColor.r, ambientColor.g, ambientColor.b);
-				this->Material[i]->Specular = math::vec<float, 3>(specularColor.r, specularColor.g, specularColor.b);
-				this->Material[i]->Opacity = opacity;
+				this->Material[i]->Color = math::vec<float, 3>(DiffuseColor.r, DiffuseColor.g, DiffuseColor.b);
+				this->Material[i]->Emissive = math::vec<float, 3>(EmissiveColor.r, EmissiveColor.g, EmissiveColor.b);
+				this->Material[i]->Ambient = math::vec<float, 3>(AmbientColor.r, AmbientColor.g, AmbientColor.b);
+				this->Material[i]->Specular = math::vec<float, 3>(SpecularColor.r, SpecularColor.g, SpecularColor.b);
+				this->Material[i]->Opacity = Opacity;
 				
-				this->Material[i]->Shininess = shininess;
-				this->Material[i]->Metallic = metallic;
-				this->Material[i]->Roughness = roughness;
+				this->Material[i]->Shininess = Shininess;
+				this->Material[i]->Metallic = Metallic;
+				this->Material[i]->Roughness = Roughness;
 			}
 			// Get Material Textures.
 			for (size_t j = 0; j < TextureTypeDatabase.size(); j++) {
@@ -705,9 +719,9 @@ namespace geodesy::core::gfx {
 	}
 
 	void model::update(double aDeltaTime) {
-		Time += aDeltaTime;
+		this->Time += aDeltaTime;
 		// Choose animation here.
-		this->Hierarchy.update(aDeltaTime);
+		this->Hierarchy.update(this->Time);
 	}
 
 }

@@ -13,6 +13,11 @@
 
 namespace geodesy::core::gfx {
 
+	// A model can come with multiple animations. Each animation can have multiple
+	// node animations. Each node animation animates a single node by name. I have
+	// added a weight factor to each animation to allow for blending between animations.
+
+
 	class animation {
 	public:
 
@@ -37,12 +42,14 @@ namespace geodesy::core::gfx {
 		float 								Weight;
 		double 								Duration;				// Duration is in Ticks
 		double 								TicksPerSecond;			// Conversion Factor for Ticks to Seconds
-		std::map<std::string, node_anim> 	NodeAnimMap;
+		std::map<std::string, node_anim> 	NodeAnimMap;			// Node Animations, Keyed by Node Name
 		std::map<std::string, mesh_anim> 	MeshAnimMap;
 
 		animation();
 
 		node_anim operator[](std::string aNodeName);
+
+		bool exists(std::string aName) const;
 
 	};
 

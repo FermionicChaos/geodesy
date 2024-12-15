@@ -27,7 +27,6 @@ namespace geodesy::core::gfx {
 
 			// Metadata
 			std::string							Name;				// Name of the Node in Hierarchy
-			float 								Weight;				// Default Weight of the Node is 1.0f. 
 			math::mat<float, 4, 4>				Transformation;		// Static Bone to Model Space Transform Component = T0*T1*T2*...*Tn*Vbs
 			std::vector<mesh::instance> 		MeshInstance; 		// Mesh Instance located in node hierarchy.
 
@@ -41,8 +40,10 @@ namespace geodesy::core::gfx {
 			node& operator=(node&& aRhs) noexcept;
 
 			node& operator[](int aIndex);
-			node& operator[](const char* aName);
+			node* operator[](std::string aName);
 
+			// Checks if node exists in hierarchy tree.
+			bool exists(std::string aName) const;
 			// Update the node hierarchy. (Applies Node & Mesh Animations)
 			void update(double aTime);	
 			// Total Number of Nodes from this point on.
@@ -73,6 +74,7 @@ namespace geodesy::core::gfx {
 		// Model Metadata
 		std::string										Name;
 		double 											Time;
+		float 											BindPoseWeight;		// Default Weight of the Node is 1.0f. 
 
 		// Resources
 		std::shared_ptr<gcl::context> 					Context;

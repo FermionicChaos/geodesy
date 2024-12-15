@@ -125,9 +125,9 @@ namespace geodesy::ecs {
 		// TODO: Add update using angular momentum to change orientation of object over time.
 
 
-		if (this->Model.get() != nullptr) {
-			// this->Model->update(aDeltaTime);
-		}
+		// if (this->Model.get() != nullptr) {
+		// 	this->Model->update(aDeltaTime);
+		// }
 
 		this->DirectionRight			= {  std::sin(Phi), 					-std::cos(Phi), 					0.0f 			};
 		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };

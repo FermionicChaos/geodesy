@@ -2,3 +2,4 @@
 - Implement animation system for model class.
 - Implement method for handling in built textures to model class.
 - Implement mip map for base image class.
+- Implement skybox.
