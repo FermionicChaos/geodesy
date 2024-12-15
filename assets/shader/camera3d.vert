@@ -27,7 +27,7 @@ layout (set = 0, binding = 1) uniform ObjectUBO {
 } Object;
 
 layout (set = 0, binding = 2) uniform MeshUBO {
-    mat4 Transform;
+    mat4 DefaultTransform;
     mat4 BoneTransform[MAX_BONE_COUNT];
     mat4 OffsetTransform[MAX_BONE_COUNT];
 } Mesh;
@@ -52,7 +52,7 @@ void main() {
             mt += Mesh.BoneTransform[VertexBoneID[i]] * Mesh.OffsetTransform[VertexBoneID[i]] * VertexBoneWeight[i];
         }
     } else {
-        mt = Mesh.Transform;
+        mt = Mesh.DefaultTransform;
     }
 
     // Convert to model space
