@@ -6,7 +6,7 @@ namespace geodesy::bltn::stg {
 
 	scene3d::scene3d(std::shared_ptr<core::gcl::context> aContext, std::string aName) : ecs::stage(aContext, aName) {
 		obj::camera3d::create_info CameraCreateInfo;
-		CameraCreateInfo.Resolution 	= { 1280, 720, 1 };
+		CameraCreateInfo.Resolution 	= { 1920, 1080, 1 };
 		CameraCreateInfo.FrameRate 		= 60.0f;
 		CameraCreateInfo.FrameCount 	= 4;
 		CameraCreateInfo.FOV 			= 70.0f;

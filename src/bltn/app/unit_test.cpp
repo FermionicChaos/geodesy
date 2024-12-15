@@ -42,7 +42,7 @@ namespace geodesy::bltn {
 		timer PerformanceTimer(1.0);
 
 		system_window::create_info WindowCreateInfo;
-		math::vec<uint, 3> Resolution = { 1280, 720, 1 };
+		math::vec<uint, 3> Resolution = { 1920, 1080, 1 };
 		WindowCreateInfo.Swapchain.FrameRate = 60.0f;
 		WindowCreateInfo.Swapchain.ImageUsage = image::usage::COLOR_ATTACHMENT | image::usage::SAMPLED | image::usage::TRANSFER_DST | image::usage::TRANSFER_SRC;
 		Window = std::make_shared<system_window>(DeviceContext, Engine->PrimaryDisplay, std::string("System Window"), WindowCreateInfo, math::vec<int, 2>(0, 0), math::vec<int, 2>(Resolution[0], Resolution[1]));
