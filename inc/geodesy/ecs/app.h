@@ -35,11 +35,11 @@ namespace geodesy::ecs {
 
 		template<typename T, typename... Args>
 		std::shared_ptr<T> create_stage(std::shared_ptr<core::gcl::context> aContext, std::string aName, Args&&... aArgs) {
-			std::shared_ptr<T> NewStage = std::make_shared<T>(
+			std::shared_ptr<T> NewStage(new T(
 				aContext,
 				std::move(aName),
 				std::forward<Args>(aArgs)...
-			);
+			));
 			this->Stage.push_back(NewStage);
 			return NewStage;
 		}

@@ -20,6 +20,7 @@ namespace geodesy::bltn::stg {
 			"../glTF-Sample-Models/2.0/Lantern/glTF/Lantern.gltf",
 			"../glTF-Sample-Models/2.0/CesiumMilkTruck/glTF/CesiumMilkTruck.gltf",
 			"assets/models/Pigwithanimation.gltf",
+			"../glTF-Sample-Models/2.0/BrainStem/glTF/BrainStem.gltf",
 		};
 
 		for (size_t i = 0; i < SpawnObjects.size(); i++) {

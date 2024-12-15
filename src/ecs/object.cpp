@@ -121,7 +121,6 @@ namespace geodesy::ecs {
 
 
 		if (this->Model.get() != nullptr) {
-			// TODO: Update Model animation later.
 			// this->Model->update(aDeltaTime);
 		}
 

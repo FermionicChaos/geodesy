@@ -11,7 +11,6 @@ layout (location = 5) in vec4 InterpolatedVertexColor;
 
 // -------------------- UNIFORM DATA -------------------- //
 
-// Buffer Data
 layout (set = 0, binding = 0) uniform Camera3DUBO {
 	vec3 Position;
     mat4 Rotation;
@@ -19,10 +18,19 @@ layout (set = 0, binding = 0) uniform Camera3DUBO {
 } Camera3D;
 
 layout (set = 0, binding = 3) uniform MaterialUBO {
-	float ParallaxScale;
-	int ParallaxIterations;
-	float VertexColorWeight;
+	vec3 Color;
+	vec3 Emissive;
+	vec3 Ambient;
+	vec3 Specular;
+	float Opacity;
 	float RefractionIndex;
+	float Shininess;
+	float Metallic;
+	float Roughness;
+	float VertexColorWeight;
+	float MaterialColorWeight;
+	float ParallaxScale;
+	int ParallaxIterationCount;
 } Material;
 
 // Texture Data
@@ -79,7 +87,7 @@ vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
 	// to start biased towards the end and move inwards. That
 	// way it finds the first intersection farthest to UVMax.
 	vec2 UVMid;
-    for (int i = 0; i < Material.ParallaxIterations; i++) {
+    for (int i = 0; i < Material.ParallaxIterationCount; i++) {
 
 	    // Compute the midpoint between UVStart and UVEnd
         UVMid = (UVStart + UVEnd) * 0.5;
@@ -127,6 +135,11 @@ void main() {
 	PixelPosition = vec4(WorldPosition, 1.0) + PixelNormal * texture(SurfaceHeightMap, UV).r;
 
 	// Simple Tranmsmission of the surface color.
-	PixelColor = mix(texture(SurfaceColor, UV), InterpolatedVertexColor, Material.VertexColorWeight);
+	vec4 TextureColor = texture(SurfaceColor, UV);
+	vec4 VertexColor = InterpolatedVertexColor;
+	vec4 MaterialColor = vec4(Material.Color, Material.Opacity);
+
+	PixelColor = mix(TextureColor, VertexColor, Material.VertexColorWeight);
+	PixelColor = mix(PixelColor, MaterialColor, Material.MaterialColorWeight);
 
 }

@@ -73,7 +73,7 @@ namespace geodesy::core::gfx {
 	}
 
 	// Default values for each texture type as unsigned char arrays
-	static const unsigned char DefaultColorData[4] 			= {255, 255, 255, 255}; 	// White
+	static const unsigned char DefaultColorData[4] 			= {255, 0, 255, 255}; 		// Magenta (Missing Texture Color)
 	static const unsigned char DefaultNormalData[4] 		= {128, 128, 255, 255};		// Up vector (0.5, 0.5, 1.0)
 	static const unsigned char DefaultHeightData[4] 		= {0, 0, 0, 0}; 			// No displacement
 	static const unsigned char DefaultEmissiveData[4] 		= {0, 0, 0, 0}; 			// No emission
@@ -595,29 +595,74 @@ namespace geodesy::core::gfx {
 		this->Material = std::vector<std::shared_ptr<material>>(Scene->mNumMaterials);
 		for (size_t i = 0; i < Scene->mNumMaterials; i++) {
 			aiMaterial *Mat = Scene->mMaterials[i];
-
-			// It seems to be there are two rendering systems which materials are 
-			// designed to accommodate, the first  is legacy Blinn-Phong and the second
-			// is the more modern PBR system. Some data is redundant between the two,
-			// but each system has data components that are not used by the other
-			// rendering system. We can reuse data such as
-
+			// Create New Material Object.
 			this->Material[i] = std::make_shared<material>();
-
+			// Get Material Name
 			this->Material[i]->Name = Mat->GetName().C_Str();
+			// Get Material Properties.
+			{
+				// It seems to be there are two rendering systems which materials are 
+				// designed to accommodate, the first  is legacy Blinn-Phong and the second
+				// is the more modern PBR system. Some data is redundant between the two,
+				// but each system has data components that are not used by the other
+				// rendering system.
 
+				// Load values from Assimp Material on stack memory, and then convert to internal format.
+
+				aiShadingMode shadingModel;
+				aiColor3D diffuseColor;
+				aiColor3D emissiveColor;
+				aiColor3D ambientColor;
+				aiColor3D specularColor;
+				float opacity = 1.0f;
+				float RefrationIndex = 1.0f;
+				float shininess = 0.0f;
+				float metallic = 0.0f;
+				float roughness = 0.5f;
+
+				// Get shading model.
+				Mat->Get(AI_MATKEY_SHADING_MODEL, shadingModel);
+
+				// Base colors
+				Mat->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor);
+				Mat->Get(AI_MATKEY_COLOR_EMISSIVE, emissiveColor);
+				Mat->Get(AI_MATKEY_COLOR_AMBIENT, ambientColor);
+				Mat->Get(AI_MATKEY_COLOR_SPECULAR, specularColor);
+
+				// Surface properties
+				Mat->Get(AI_MATKEY_OPACITY, opacity);
+				Mat->Get(AI_MATKEY_REFRACTI, RefrationIndex);
+				Mat->Get(AI_MATKEY_SHININESS, shininess);
+				Mat->Get(AI_MATKEY_METALLIC_FACTOR, metallic);
+				Mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
+
+				// Convert to geodesy internal format.
+				this->Material[i]->Color = math::vec<float, 3>(diffuseColor.r, diffuseColor.g, diffuseColor.b);
+				this->Material[i]->Emissive = math::vec<float, 3>(emissiveColor.r, emissiveColor.g, emissiveColor.b);
+				this->Material[i]->Ambient = math::vec<float, 3>(ambientColor.r, ambientColor.g, ambientColor.b);
+				this->Material[i]->Specular = math::vec<float, 3>(specularColor.r, specularColor.g, specularColor.b);
+				this->Material[i]->Opacity = opacity;
+				
+				this->Material[i]->Shininess = shininess;
+				this->Material[i]->Metallic = metallic;
+				this->Material[i]->Roughness = roughness;
+			}
+			// Get Material Textures.
 			for (size_t j = 0; j < TextureTypeDatabase.size(); j++) {
 				std::shared_ptr<gcl::image> LoadedTexture = load_texture(aFileManager, this->Directory, Mat, TextureTypeDatabase[j].Type);
 				if (LoadedTexture != nullptr) {
-					// Load texture
+					// Texture Loaded Successfully for model.
 					this->Material[i]->Texture[TextureTypeDatabase[j].Name] = LoadedTexture;
 				}
 				else {
-					// Load default texture
+					// Texture does not exist, load default texture.
 					this->Material[i]->Texture[TextureTypeDatabase[j].Name] = TextureTypeDatabase[j].DefaultTexture;
+					if ((TextureTypeDatabase[j].Name == "Color") && (!(this->Material[i]->Color == math::vec<float, 3>(0.0f, 0.0f, 0.0f)))) {
+						// Use material values for color texture.
+						this->Material[i]->MaterialColorWeight = 1.0f;
+					}
 				}
 			}
-
 		}
 
 		// TODO: Implement direct texture loader later.

@@ -24,12 +24,13 @@ namespace geodesy::core::gfx {
 		};
 
 		struct node_anim {
-			std::vector<key<math::vec<float, 3>>> PositionKey;
-			std::vector<key<math::quaternion<float>>> RotationKey;
-			std::vector<key<math::vec<float, 3>>> ScalingKey;
+			std::vector<key<math::vec<float, 3>>> 		PositionKey;
+			std::vector<key<math::quaternion<float>>> 	RotationKey;
+			std::vector<key<math::vec<float, 3>>> 		ScalingKey;
 			math::mat<float, 4, 4> operator[](double aTime) const; // Expects Time in Ticks
 		};
 
+		// Not Implemented Yet
 		struct mesh_anim {};
 
 		std::string 						Name;

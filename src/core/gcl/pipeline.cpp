@@ -269,23 +269,30 @@ namespace geodesy::core::gcl {
 				this->ColorAttachment[Location].Description.finalLayout			= VK_IMAGE_LAYOUT_UNDEFINED;
 			}
 
+			std::cout << "// -------------------- Pipeline Reflection Start -------------------- \\\\" << std::endl << std::endl;
+
 			// Print Inputs
+			std::cout << "----- Vertex Input Attributes -----" << std::endl;
 			for (size_t i = 0; i < this->VertexAttribute.size(); i++) {
 				std::cout << "layout (location = " << i << ") in " << this->VertexAttribute[i].Variable;
 			}
 			std::cout << std::endl;
 
 			// Print Uniforms
+			std::cout << "----- Uniform Objects -----" << std::endl;
 			for (std::pair<std::pair<int, int>, util::variable> Variable : this->DescriptorSetVariable) {
 				std::cout << "layout (set = " << Variable.first.first << ", binding = " << Variable.first.second << ") uniform " << Variable.second;
 			}
 			std::cout << std::endl;
 
 			// Print Outputs
+			std::cout << "----- Framebuffer Attachment Outputs -----" << std::endl;
 			for (size_t i = 0; i < this->ColorAttachment.size(); i++) {
 				std::cout << "layout (location = " << i << ") out " << this->ColorAttachment[i].Variable;
 			}
 			std::cout << std::endl;
+
+			std::cout << "\\\\ -------------------- Pipeline Reflection End -------------------- //" << std::endl;
 		}
 		else {
 			// Linking failed.
