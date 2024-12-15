@@ -21,11 +21,13 @@ namespace geodesy::ecs {
 		struct uniform_data {
 			alignas(16) core::math::vec<float, 3> Position;
 			alignas(16) core::math::mat<float, 4, 4> Orientation;
+			alignas(16) core::math::vec<float, 3> Scale;
 			uniform_data(
 				core::math::vec<float, 3> aPosition, 
 				core::math::vec<float, 3> aDirRight, 
 				core::math::vec<float, 3> aDirUp, 
-				core::math::vec<float, 3> aDirForward
+				core::math::vec<float, 3> aDirForward,
+				core::math::vec<float, 3> aScale
 			);
 		};
 
@@ -48,12 +50,12 @@ namespace geodesy::ecs {
 		float																		Time;				// Second 			[s]
 		float 																		DeltaTime; 			// Second 			[s]
 		float																		Mass;				// Kilogram			[kg]
-		core::math::vec<float, 3> 													Scale;				// Scaling Factor	[N/A]
 		core::math::vec<float, 3>													Position;			// Meter			[m]
 		float 																		Theta, Phi;			// Radians			[rad]
 		core::math::vec<float, 3>													DirectionRight;		// Right			[Normalized]
 		core::math::vec<float, 3>													DirectionUp;		// Up				[Normalized]
 		core::math::vec<float, 3>													DirectionFront;		// Backward			[Normalized]
+		core::math::vec<float, 3> 													Scale;				// Scaling Factor	[N/A]
 		core::math::vec<float, 3>													LinearMomentum;		// Linear Momentum	[kg*m/s]
 		core::math::vec<float, 3>													AngularMomentum;	// Angular Momentum [kg*m/s]
 
@@ -80,7 +82,8 @@ namespace geodesy::ecs {
 			std::string 							aName,
 			std::string 							aModelPath = "",
 			core::math::vec<float, 3> 				aPosition = { 0.0f, 0.0f, 0.0f }, 
-			core::math::vec<float, 2> 				aDirection = { 0.0f, 0.0f }
+			core::math::vec<float, 2> 				aDirection = { 0.0f, 0.0f },
+			core::math::vec<float, 3> 				aScale = { 1.0f, 1.0f, 1.0f }
 		);
 		~object();
 

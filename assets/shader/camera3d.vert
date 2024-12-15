@@ -23,6 +23,7 @@ layout (set = 0, binding = 0) uniform Camera3DUBO {
 layout (set = 0, binding = 1) uniform ObjectUBO {
     vec3 Position;
     mat4 Orientation;
+    vec3 Scale;
 } Object;
 
 layout (set = 0, binding = 2) uniform MeshUBO {
@@ -40,7 +41,7 @@ layout (location = 4) out vec3 TextureCoordinate;
 layout (location = 5) out vec4 InterpolatedVertexColor;
 
 void main() {
-    vec4 v = vec4(VertexPosition, 1.0);
+    vec4 v = vec4(Object.Scale * VertexPosition, 1.0);
     vec4 n = vec4(VertexNormal, 1.0);
 	vec4 t = vec4(VertexTangent, 1.0);
 	vec4 b = vec4(VertexBitangent, 1.0);

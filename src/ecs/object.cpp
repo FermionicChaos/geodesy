@@ -7,10 +7,11 @@ namespace geodesy::ecs {
 	using namespace gcl;
 
 	object::uniform_data::uniform_data(
-		core::math::vec<float, 3> aPosition, 
-		core::math::vec<float, 3> aDirRight, 
-		core::math::vec<float, 3> aDirUp, 
-		core::math::vec<float, 3> aDirForward
+		math::vec<float, 3> aPosition, 
+		math::vec<float, 3> aDirRight, 
+		math::vec<float, 3> aDirUp, 
+		math::vec<float, 3> aDirForward,
+		math::vec<float, 3> aScale
 	) {
 		this->Position = aPosition;
 		this->Orientation = {
@@ -19,6 +20,7 @@ namespace geodesy::ecs {
 			aDirRight[2], 	aDirForward[2], 	aDirUp[2], 		0.0f,
 			0.0f, 			0.0f, 				0.0f, 			1.0f
 		};
+		this->Scale = aScale;
 	}
 
 	object::object(
@@ -27,7 +29,8 @@ namespace geodesy::ecs {
 		std::string 							aName, 
 		std::string 							aModelPath,
 		math::vec<float, 3> 					aPosition, 
-		math::vec<float, 2> 					aDirection
+		math::vec<float, 2> 					aDirection,
+		math::vec<float, 3> 					aScale
 	) {
 		this->Name 						= aName;
 		this->Stage 					= aStage;
@@ -42,6 +45,7 @@ namespace geodesy::ecs {
 		this->DirectionRight			= {  std::sin(Phi), 					-std::cos(Phi), 					0.0f 			};
 		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
 		this->DirectionFront			= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
+		this->Scale						= aScale;
 		this->LinearMomentum			= { 0.0f, 0.0f, 0.0f };
 		this->AngularMomentum			= { 0.0f, 0.0f, 0.0f };
 
@@ -85,7 +89,8 @@ namespace geodesy::ecs {
 			this->Position, 
 			this->DirectionRight, 
 			this->DirectionUp, 
-			this->DirectionFront
+			this->DirectionFront,
+			this->Scale
 		);
 		this->UniformBuffer = aContext->create_buffer(UBCI, sizeof(uniform_data), &UniformData);
 		this->UniformBuffer->map_memory(0, sizeof(uniform_data));
@@ -132,7 +137,8 @@ namespace geodesy::ecs {
 			this->Position, 
 			this->DirectionRight, 
 			this->DirectionUp, 
-			this->DirectionFront
+			this->DirectionFront,
+			this->Scale
 		);
 		memcpy(this->UniformBuffer->Ptr, &UniformData, sizeof(uniform_data));
 	}

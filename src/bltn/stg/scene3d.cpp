@@ -23,12 +23,19 @@ namespace geodesy::bltn::stg {
 			"../glTF-Sample-Models/2.0/BrainStem/glTF/BrainStem.gltf",
 		};
 
-		for (size_t i = 0; i < SpawnObjects.size(); i++) {
-			std::string ObjectName = "Object" + std::to_string(i);
-			math::vec<float, 3> Position = { 10.0f * (float)i, 0.0f, 0.0f };
-			math::vec<float, 2> Direction = { -90.0f, 0.0f };
-			this->create_object<ecs::object>(ObjectName, SpawnObjects[i], Position, Direction);
-		}
+		// for (size_t i = 0; i < SpawnObjects.size(); i++) {
+		// 	std::string ObjectName = "Object" + std::to_string(i);
+		// 	math::vec<float, 3> Position = { 10.0f * (float)i, 0.0f, 0.0f };
+		// 	math::vec<float, 2> Direction = { -90.0f, 0.0f };
+		// 	this->create_object<ecs::object>(ObjectName, SpawnObjects[i], Position, Direction);
+		// }
+
+		this->create_object<ecs::object>("Box", 				SpawnObjects[0], 	math::vec<float, 3>(0.0f, 0.0f, 0.0f), 		math::vec<float, 2>(0.0f, 0.0f), 	math::vec<float, 3>(5.0f, 5.0f, 5.0f));
+		this->create_object<ecs::object>("BoxTextured", 		SpawnObjects[1], 	math::vec<float, 3>(10.0f, 0.0f, 0.0f), 	math::vec<float, 2>(0.0f, 0.0f), 	math::vec<float, 3>(5.0f, 5.0f, 5.0f));
+		this->create_object<ecs::object>("Lantern", 			SpawnObjects[2], 	math::vec<float, 3>(20.0f, 0.0f, 0.0f), 	math::vec<float, 2>(-90.0f, 0.0f), 	math::vec<float, 3>(1.0f, 1.0f, 1.0f));
+		this->create_object<ecs::object>("CesiumMilkTruck", 	SpawnObjects[3], 	math::vec<float, 3>(0.0f, 30.0f, 0.0f), 	math::vec<float, 2>(90.0f, 0.0f), 	math::vec<float, 3>(5.0f, 5.0f, 5.0f));
+		// this->create_object<ecs::object>("Pigwithanimation", 	SpawnObjects[4], 	math::vec<float, 3>(-40.0f, 30.0f, 0.0f), 	math::vec<float, 2>(-90.0f, 0.0f), 	math::vec<float, 3>(5.0f, 5.0f, 5.0f));
+		this->create_object<ecs::object>("BrainStem", 			SpawnObjects[5], 	math::vec<float, 3>(40.0f, 30.0f, 0.0f), 	math::vec<float, 2>(0.0f, 0.0f), 	math::vec<float, 3>(10.0f, 10.0f, 10.0f));
 	}
 
 }
