@@ -3,6 +3,11 @@
 #include <vector>
 #include <algorithm>
 
+// Model Loading
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 #define MAX_BONE_COUNT 256
 
 namespace geodesy::core::gfx {
@@ -128,6 +133,89 @@ namespace geodesy::core::gfx {
 		MeshInstanceUBOData->Transform = this->Transform;
 		for (size_t i = 0; i < Bone.size(); i++) {
 			MeshInstanceUBOData->BoneTransform[i] = Bone[i].Transform;
+		}
+	}
+
+	mesh::mesh(const aiMesh* aMesh) {
+		// Size Vertex Buffer to hold all vertices.
+		Vertex = std::vector<vertex>(aMesh->mNumVertices);
+		// Load Vertex Data
+		for (size_t i = 0; i < Vertex.size(); i++) {
+			// Check if mesh has positions.
+			if (aMesh->HasPositions()) {
+				Vertex[i].Position = {
+					aMesh->mVertices[i].x,
+					aMesh->mVertices[i].y,
+					aMesh->mVertices[i].z
+				};
+			}
+			// Check if mesh has normals.
+			if (aMesh->HasNormals()) {
+				Vertex[i].Normal = {
+					aMesh->mNormals[i].x,
+					aMesh->mNormals[i].y,
+					aMesh->mNormals[i].z
+				};
+			}
+			// Check if mesh has tangents and bitangents.
+			if (aMesh->HasTangentsAndBitangents()) {
+				Vertex[i].Tangent = {
+					aMesh->mTangents[i].x,
+					aMesh->mTangents[i].y,
+					aMesh->mTangents[i].z
+				};
+				Vertex[i].Bitangent = {
+					aMesh->mBitangents[i].x,
+					aMesh->mBitangents[i].y,
+					aMesh->mBitangents[i].z
+				};
+			}
+
+			// -------------------- Texturing & Coloring -------------------- //
+
+			// TODO: Support multiple textures
+			// Take only the first element of the Texture Coordinate Array.
+			for (int k = 0; k < 1 /* AI_MAX_NUMBER_OF_TEXTURECOORDS */; k++) {
+				if (aMesh->HasTextureCoords(k)) {
+					Vertex[i].TextureCoordinate = {
+						aMesh->mTextureCoords[k][i].x,
+						aMesh->mTextureCoords[k][i].y,
+						aMesh->mTextureCoords[k][i].z
+					};
+				}
+			}
+			// Take an average of all the Colors associated with Vertex.
+			for (int k = 0; k < 1 /*AI_MAX_NUMBER_OF_COLOR_SETS*/; k++) {
+				if (aMesh->HasVertexColors(k)) {
+					Vertex[i].Color += {
+						aMesh->mColors[k][i].r,
+						aMesh->mColors[k][i].g,
+						aMesh->mColors[k][i].b,
+						aMesh->mColors[k][i].a
+					};
+				}
+			}
+			// VertexData[j].Color /= AI_MAX_NUMBER_OF_COLOR_SETS;
+		}
+
+		// Load Index Data
+		if (aMesh->mNumVertices <= (1 << 16)) {
+			Topology.Data16 = std::vector<ushort>(aMesh->mNumFaces * 3);
+		}
+		else {
+			Topology.Data32 = std::vector<uint>(aMesh->mNumFaces * 3);
+		}
+		for (size_t j = 0; j < aMesh->mNumFaces; j++) {
+			if (aMesh->mNumVertices <= (1 << 16)) {
+				Topology.Data16[3*j + 0] = (ushort)aMesh->mFaces[j].mIndices[0];
+				Topology.Data16[3*j + 1] = (ushort)aMesh->mFaces[j].mIndices[1];
+				Topology.Data16[3*j + 2] = (ushort)aMesh->mFaces[j].mIndices[2];
+			}
+			else {
+				Topology.Data16[3*j + 0] = (uint)aMesh->mFaces[j].mIndices[0];
+				Topology.Data16[3*j + 1] = (uint)aMesh->mFaces[j].mIndices[1];
+				Topology.Data16[3*j + 2] = (uint)aMesh->mFaces[j].mIndices[2];
+			}
 		}
 	}
 

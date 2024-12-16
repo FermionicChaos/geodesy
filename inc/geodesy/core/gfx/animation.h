@@ -11,6 +11,8 @@
 // #include "mesh.h"
 // #include "model.h"
 
+struct aiAnimation;
+
 namespace geodesy::core::gfx {
 
 	class animation {
@@ -41,6 +43,7 @@ namespace geodesy::core::gfx {
 		std::map<std::string, mesh_anim> 	MeshAnimMap;
 
 		animation();
+		animation(const aiAnimation* aAnimation);
 
 		node_anim operator[](std::string aNodeName);
 

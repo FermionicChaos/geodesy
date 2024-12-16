@@ -41,7 +41,7 @@ namespace geodesy::core::gfx {
 		// Finds node with name in hierarchy.
 		node* find(std::string aName);
 		// Update the node hierarchy. (Applies Node & Mesh Animations)
-		void update(double aTime);	
+		void update(float aBindPoseWeight = 1.0f, const std::vector<animation>& aPlaybackAnimation = {}, double aTime = 0.0f);	
 		// Total Number of Nodes from this point on.
 		size_t node_count() const;
 		// Counts the total number of mesh references in the tree.

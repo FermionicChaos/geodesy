@@ -126,7 +126,7 @@ namespace geodesy::ecs {
 
 
 		if (this->Model.get() != nullptr) {
-			// this->Model->update(aDeltaTime);
+			this->Model->update(aDeltaTime);
 		}
 
 		this->DirectionRight			= {  std::sin(Phi), 					-std::cos(Phi), 					0.0f 			};

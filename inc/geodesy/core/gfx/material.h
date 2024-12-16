@@ -5,8 +5,12 @@
 #include <string>
 #include <vector>
 
+#include "../io/file.h"
+
 #include "../gcl/image.h"
 #include "../gcl/shader.h"
+
+struct aiMaterial;
 
 namespace geodesy::core::gfx {
 
@@ -50,6 +54,7 @@ namespace geodesy::core::gfx {
 		std::map<std::string, std::shared_ptr<gcl::image>> 		Texture;				// Texture Maps of the Material
 
 		material();
+		material(const aiMaterial* aMaterial, std::string aDirectory, io::file::manager* aFileManager);
 		material(std::shared_ptr<gcl::context> aContext, gcl::image::create_info aCreateInfo, std::shared_ptr<material> aMaterial);
 		~material();
 

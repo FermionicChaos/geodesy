@@ -10,6 +10,8 @@
 #include "../gcl/buffer.h"
 #include "../gcl/pipeline.h"
 
+struct aiMesh;
+
 namespace geodesy::core::gfx {
 
 	class mesh : public phys::mesh {
@@ -43,6 +45,7 @@ namespace geodesy::core::gfx {
 		std::shared_ptr<gcl::buffer>		IndexBuffer;
 		std::shared_ptr<gcl::buffer>		UniformBuffer;
 
+		mesh(const aiMesh* aMesh);
 		mesh(std::shared_ptr<gcl::context> aContext, const std::vector<vertex>& aVertexData, const topology& aTopologyData);
 		mesh(std::shared_ptr<gcl::context> aContext, std::shared_ptr<mesh> aMesh);
 

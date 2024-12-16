@@ -178,7 +178,7 @@ namespace geodesy::core::gfx {
 		return Node;
 	}
 
-	void node::update(double aTime) {
+	void node::update(float aBindPoseWeight, const std::vector<animation>& aPlaybackAnimation, double aTime) {
 		// Work done here will start at the root
 		// of the node hierarchy.
 
@@ -230,7 +230,7 @@ namespace geodesy::core::gfx {
 		// Then the animation transformations will be used in a weighted average.
 
 		//tex:
-		// It is the reponsibility of the model class to insure that the sum of the contribution
+		// It is the responsibility of the model class to insure that the sum of the contribution
 		// factors (weights) is equal to 1.
 		// $$ 1 = w^{b} + \sum_{\forall A \in Anim} w_{i} $$
 		// $$ T = T^{base} \cdot w^{base} + \sum_{\forall i \in A} T_{i}^{A} \cdot w_{i}^{A} $$ 
@@ -240,12 +240,13 @@ namespace geodesy::core::gfx {
 		math::mat<float, 4, 4> NodeTransform = (this->Transformation * aBindPoseWeight);
 
 		// // Overrides/Averages Animation Transformations with Bind Pose Transform based on weights.
-		// if (Model->Animation.size() > 0) {
+		// if (aPlaybackAnimation.size() > 0) {
 		// 	// If there are, iterate through them, get their transforms and
 		// 	// their contribution factors (weights).
-		// 	for (animation& Anim : Model->Animation) {
+		// 	for (const animation& Animation : aPlaybackAnimation) {
 		// 		// NodeTransform += AnimationTransform * Contribution Factor
-		// 		NodeTransform += Anim[this->Name][aTime]*Anim.Weight;
+		// 		double TickerTime = std::fmod(aTime, Animation.Duration);
+		// 		NodeTransform += Animation[this->Name][aTime] * Animation.Weight;
 		// 	}
 		// }
 

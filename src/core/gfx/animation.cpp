@@ -6,6 +6,11 @@
 
 #include <geodesy/core/math.h>
 
+// Model Loading
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 // using namespace std;
 
 namespace geodesy::core::gfx {
@@ -94,6 +99,53 @@ namespace geodesy::core::gfx {
 		this->Weight = 0.0f;
 		this->Duration = 0.0;
 		this->TicksPerSecond = 0.0;
+	}
+
+	animation::animation(const aiAnimation* aAnimation) {
+		this->Name 				= aAnimation->mName.C_Str();
+		this->Weight 			= 0.0f;
+		this->Duration 			= aAnimation->mDuration;
+		this->TicksPerSecond 	= aAnimation->mTicksPerSecond;
+		for (uint i = 0; i < aAnimation->mNumChannels; i++) {
+			aiNodeAnim* RNA = aAnimation->mChannels[i];
+			std::string NodeName = RNA->mNodeName.C_Str();
+			this->NodeAnimMap[NodeName] = animation::node_anim();
+			animation::node_anim& LNA = this->NodeAnimMap[NodeName];
+
+			// Get Position Keys, size vector, then fill with data.
+			LNA.PositionKey = std::vector<animation::key<math::vec<float, 3>>>(RNA->mNumPositionKeys);
+			for (uint j = 0; j < RNA->mNumPositionKeys; j++) {
+				LNA.PositionKey[j].Time = RNA->mPositionKeys[j].mTime;
+				LNA.PositionKey[j].Value = {
+					RNA->mPositionKeys[j].mValue.x,
+					RNA->mPositionKeys[j].mValue.y,
+					RNA->mPositionKeys[j].mValue.z
+				};
+			}
+
+			// Get Rotation Keys, size vector, then fill with data.
+			LNA.RotationKey = std::vector<animation::key<math::quaternion<float>>>(RNA->mNumRotationKeys);
+			for (uint j = 0; j < RNA->mNumRotationKeys; j++) {
+				LNA.RotationKey[j].Time = RNA->mRotationKeys[j].mTime;
+				LNA.RotationKey[j].Value = {
+					RNA->mRotationKeys[j].mValue.w,
+					RNA->mRotationKeys[j].mValue.x,
+					RNA->mRotationKeys[j].mValue.y,
+					RNA->mRotationKeys[j].mValue.z
+				};
+			}
+
+			// Get Scaling Keys, size vector, then fill with data.
+			LNA.ScalingKey = std::vector<animation::key<math::vec<float, 3>>>(RNA->mNumScalingKeys);
+			for (uint j = 0; j < RNA->mNumScalingKeys; j++) {
+				LNA.ScalingKey[j].Time = RNA->mScalingKeys[j].mTime;
+				LNA.ScalingKey[j].Value = {
+					RNA->mScalingKeys[j].mValue.x,
+					RNA->mScalingKeys[j].mValue.y,
+					RNA->mScalingKeys[j].mValue.z
+				};
+			}
+		}
 	}
 
 	animation::node_anim animation::operator[](std::string aNodeName) {
