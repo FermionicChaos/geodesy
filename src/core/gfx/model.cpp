@@ -164,17 +164,17 @@ namespace geodesy::core::gfx {
 		// Load Meshes into device memory represntation.
 		this->Mesh = std::vector<std::shared_ptr<gfx::mesh>>(aModel->Mesh.size());
 		for (std::size_t i = 0; i < aModel->Mesh.size(); i++) {
-			this->Mesh[i] = std::make_shared<gfx::mesh>(aContext, aModel->Mesh[i]);
+			this->Mesh[i] = std::shared_ptr<mesh>(new mesh(aContext, aModel->Mesh[i]));
 		}
 
 		this->Material = std::vector<std::shared_ptr<gfx::material>>(aModel->Material.size());
 		for (std::size_t i = 0; i < aModel->Material.size(); i++) {
-			this->Material[i] = std::make_shared<gfx::material>(aContext, aCreateInfo, aModel->Material[i]);
+			this->Material[i] = std::shared_ptr<material>(new material(aContext, aCreateInfo, aModel->Material[i]));
 		}
 
 		this->Texture = std::vector<std::shared_ptr<gcl::image>>(aModel->Texture.size());
 		for (std::size_t i = 0; i < aModel->Texture.size(); i++) {
-			this->Texture[i] = std::make_shared<gcl::image>(aContext, aCreateInfo, aModel->Texture[i]);
+			this->Texture[i] = std::shared_ptr<gcl::image>(new gcl::image(aContext, aCreateInfo, aModel->Texture[i]));
 		}
 
 	}

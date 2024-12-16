@@ -205,6 +205,7 @@ namespace geodesy::core::gfx {
 			else {
 				// Texture does not exist, load default texture.
 				this->Texture[TextureTypeDatabase[j].Name] = TextureTypeDatabase[j].DefaultTexture;
+                // TODO: This is a hack to get the material color texture to work, fix later.
 				if ((TextureTypeDatabase[j].Name == "Color") && (!(this->Color == math::vec<float, 3>(0.0f, 0.0f, 0.0f)))) {
 					// Use material values for color texture.
 					this->MaterialColorWeight = 1.0f;
