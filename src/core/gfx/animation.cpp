@@ -31,6 +31,8 @@ namespace geodesy::core::gfx {
 		case 2:
 			return std::pair<animation::key<T>, animation::key<T>>(aKey[0], aKey[1]);
 		}
+		// Check if aTime is in bounds.
+		if ((aTime < aKey[0].Time) || (aTime > aKey[aKey.size() - 1].Time)) return std::pair<animation::key<T>, animation::key<T>>(Key1, Key2);
 		// Get middle index from key vector.
 		size_t LeftIndex = 0;
 		size_t RightIndex = (aKey.size() - 1);

@@ -237,16 +237,16 @@ namespace geodesy::core::gfx {
 		// Bind Pose Transform
 		math::mat<float, 4, 4> NodeTransform = (this->Transformation * aBindPoseWeight);
 
-		// Overrides/Averages Animation Transformations with Bind Pose Transform based on weights.
-		if (aPlaybackAnimation.size() > 0) {
-			// If there are, iterate through them, get their transforms and
-			// their contribution factors (weights).
-			for (const animation& Animation : aPlaybackAnimation) {
-				// NodeTransform += AnimationTransform * Contribution Factor
-				double TickerTime = std::fmod(aTime * Animation.TicksPerSecond, Animation.Duration);
-				NodeTransform += Animation[this->Name][TickerTime] * Animation.Weight;
-			}
-		}
+		// // Overrides/Averages Animation Transformations with Bind Pose Transform based on weights.
+		// if (aPlaybackAnimation.size() > 0) {
+		// 	// If there are, iterate through them, get their transforms and
+		// 	// their contribution factors (weights).
+		// 	for (const animation& Animation : aPlaybackAnimation) {
+		// 		// NodeTransform += AnimationTransform * Contribution Factor
+		// 		double TickerTime = std::fmod(aTime * Animation.TicksPerSecond, Animation.Duration);
+		// 		NodeTransform += Animation[this->Name][TickerTime] * Animation.Weight;
+		// 	}
+		// }
 
 		// Recursively apply parent transformations.
 		if (this->Root != this) {

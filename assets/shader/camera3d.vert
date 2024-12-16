@@ -41,7 +41,7 @@ layout (location = 4) out vec3 TextureCoordinate;
 layout (location = 5) out vec4 InterpolatedVertexColor;
 
 void main() {
-    vec4 v = vec4(Object.Scale * VertexPosition, 1.0);
+    vec4 v = vec4(VertexPosition, 1.0);
     vec4 n = vec4(VertexNormal, 1.0);
 	vec4 t = vec4(VertexTangent, 1.0);
 	vec4 b = vec4(VertexBitangent, 1.0);
@@ -54,25 +54,20 @@ void main() {
             }
         }
     } else {
-        mt = mat4(
-            1.0f, 0.0f, 0.0f, 0.0f,
-            0.0f, 1.0f, 0.0f, 0.0f,
-            0.0f, 0.0f, 1.0f, 0.0f,
-            0.0f, 0.0f, 0.0f, 1.0f
-        );
+        mt = Mesh.DefaultTransform;
     }
 
     // Convert to model space
-    v = Mesh.DefaultTransform * mt * v;
-    n = Mesh.DefaultTransform * mt * n;
-	t = Mesh.DefaultTransform * mt * t;
-	b = Mesh.DefaultTransform * mt * b;
+    v = mt * v;
+    n = mt * n;
+	t = mt * t;
+	b = mt * b;
 
     // Orient object in model space.
-    v = Object.Orientation * v;
-    n = Object.Orientation * n;
-	t = Object.Orientation * t;
-	b = Object.Orientation * b;
+    v = Object.Orientation * vec4(Object.Scale * v.xyz, 1.0);
+    n = Object.Orientation * vec4(Object.Scale * n.xyz, 1.0);
+	t = Object.Orientation * vec4(Object.Scale * t.xyz, 1.0);
+	b = Object.Orientation * vec4(Object.Scale * b.xyz, 1.0);
 
     // Convert to world space.
     v = vec4(v.xyz + Object.Position, 1.0f);
