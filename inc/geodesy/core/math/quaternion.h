@@ -128,6 +128,11 @@ namespace geodesy::core::math {
 			return quaternion<T>((*this)[0], -(*this)[1], -(*this)[2], -(*this)[3]);
 		}
 
+		// Calculate the conjugate of the quaternion
+		quaternion<T> operator-() const {
+			return quaternion<T>(-(*this)[0], -(*this)[1], -(*this)[2], -(*this)[3]);
+		}
+
 		// Calculates the multiplication of two quaternions, using the Hamilton product
 		// and the array accessor.
 		quaternion<T> operator*(const quaternion<T>& aRhs) const {

@@ -107,9 +107,18 @@ namespace geodesy::core::gfx {
 			float p = interpolation_factor(RP, aTime);
 			quaternion<float> Q1 = RP.first.Value;
 			quaternion<float> Q2 = RP.second.Value;
-			float Theta = std::acos(Q1[0]*Q2[0] + Q1[1]*Q2[1] + Q1[2]*Q2[2] + Q1[3]*Q2[3]);
-			quaternion<float> Qf = ((std::sin((1.0f - p) * Theta) * Q1 + std::sin(p * Theta) * Q2) / std::sin(Theta));
-			R = rotation(Qf);
+			float CosTheta = Q1[0]*Q2[0] + Q1[1]*Q2[1] + Q1[2]*Q2[2] + Q1[3]*Q2[3];
+			if (std::abs(CosTheta) > 0.999f) {
+				// Cartesian LERP.
+				quaternion<float> Qf = (1.0f - p) * Q1 + p * Q2;
+				R = rotation(Qf);
+			}
+			else {
+				// Spherical LERP.
+				float Theta = std::acos(CosTheta);
+				quaternion<float> Qf = ((std::sin((1.0f - p) * Theta) * Q1 + std::sin(p * Theta) * Q2) / std::sin(Theta));
+				R = rotation(Qf);
+			}
 		}
 
 		// Calculates interpolated scaling matrix
