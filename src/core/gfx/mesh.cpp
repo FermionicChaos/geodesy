@@ -105,6 +105,9 @@ namespace geodesy::core::gfx {
 
 			// Will take the first and largest elements.
 			for (size_t j = 0; j < std::min((size_t)4, VertexBoneWeight.size()); j++) {
+				if (VertexBoneWeight[j].Weight == 0.0f) {
+					break;
+				}
 				Vertex[i].BoneID[j] 		= VertexBoneWeight[j].ID;
 				Vertex[i].BoneWeight[j] 	= VertexBoneWeight[j].Weight;
 			}
