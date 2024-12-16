@@ -17,27 +17,82 @@ namespace geodesy::core::gfx {
 
 	using namespace math;
 
+	// This template function finds keys in a keyframe animation.
+	template <typename T> inline
+	std::pair<animation::key<T>, animation::key<T>> find_value_pair(const std::vector<animation::key<T>>& aKey, double aTime) {
+		animation::key<T> Key1, Key2;
+		switch (aKey.size()) {
+		default:
+			break;
+		case 0:
+			return std::pair<animation::key<T>, animation::key<T>>(Key1, Key2);
+		case 1:
+			return std::pair<animation::key<T>, animation::key<T>>(aKey[0], aKey[0]);
+		case 2:
+			return std::pair<animation::key<T>, animation::key<T>>(aKey[0], aKey[1]);
+		}
+		// Get middle index from key vector.
+		size_t LeftIndex = 0;
+		size_t RightIndex = (aKey.size() - 1);
+		// Binary search.
+		while (true) {
+			size_t MiddleIndex = (LeftIndex + RightIndex) >> 1;
+			double KeyTime = aKey[MiddleIndex].Time;
+			// Check if two keys are found.
+			if ((aTime >= aKey[MiddleIndex].Time) && (aTime <= aKey[MiddleIndex + 1].Time)) {
+				// Two Keys found, exit loop.
+				Key1 = aKey[MiddleIndex];
+				Key2 = aKey[MiddleIndex + 1];
+				break;
+			}
+			else if ((aTime < aKey[MiddleIndex].Time) && (aTime < aKey[MiddleIndex + 1].Time)) {
+				// If the time is less than the key time.
+				RightIndex = MiddleIndex;
+			}
+			else if ((aTime > aKey[MiddleIndex].Time) && (aTime > aKey[MiddleIndex + 1].Time)) {
+				LeftIndex = MiddleIndex;
+			}
+			else {
+				break;
+			}
+		}
+		return std::pair<animation::key<T>, animation::key<T>>(Key1, Key2);
+	}
+
+	template<typename T> inline
+	float interpolation_factor(std::pair<animation::key<T>, animation::key<T>> aKeyPair, double aTime) {
+		if (aKeyPair.first.Time == aKeyPair.second.Time) {
+			return 0.0f;
+		} else {
+			return (aTime - aKeyPair.first.Time) / (aKeyPair.second.Time - aKeyPair.first.Time);
+		}
+	}
+
 	mat<float, 4, 4> animation::node_anim::operator[](double aTime) const {
-		mat<float, 4, 4> T;
-		mat<float, 4, 4> R;
-		mat<float, 4, 4> S;
+		mat<float, 4, 4> T = {
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
+		};
+		mat<float, 4, 4> R = {
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
+		};
+		mat<float, 4, 4> S = {
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
+		};
 
 		// Calculates interpolated translation matrix
-		{
-			float p = 0.0f;
-			float t = aTime;
-			vec<float, 3> T1, T2, Tf;
-			for (size_t i = 0; i < this->PositionKey.size() - 1; i++) {
-				float t1 = this->PositionKey[i].Time;
-				float t2 = this->PositionKey[i + 1].Time;
-				if ((aTime >= t1) && (aTime <= t2)) {
-					p = ((t - t1) / (t2 - t1));
-					T1 = this->PositionKey[i].Value;
-					T2 = this->PositionKey[i + 1].Value;
-					break;
-				}
-			}
-			Tf = (1.0f - p) * T1 + p * T2;
+		if (this->PositionKey.size() > 0) {
+			std::pair<key<vec<float, 3>>, key<vec<float, 3>>> TP = find_value_pair(this->PositionKey, aTime);
+			float p = interpolation_factor(TP, aTime);
+			vec<float, 3> Tf = (1.0f - p) * TP.first.Value + p * TP.second.Value;
 			T = mat<float, 4, 4>(
 				1.0f, 0.0f, 0.0f, Tf[0],
 				0.0f, 1.0f, 0.0f, Tf[1],
@@ -46,42 +101,22 @@ namespace geodesy::core::gfx {
 			);
 		}
 
-		// Calculates interpoted quaternion.
-		{
-			float p = 0.0f;
-			float t = aTime;
-			quaternion<float> Q1, Q2, Qf;
-			for (size_t i = 0; i < this->RotationKey.size() - 1; i++) {
-				float t1 = this->RotationKey[i].Time;
-				float t2 = this->RotationKey[i + 1].Time;
-				if ((aTime >= t1) && (aTime <= t2)) {
-					p = ((t - t1) / (t2 - t1));
-					Q1 = this->RotationKey[i].Value;
-					Q2 = this->RotationKey[i + 1].Value;
-					break;
-				}
-			}
+		// Calculates interpolated quaternion.
+		if (this->RotationKey.size() > 0){
+			std::pair<key<quaternion<float>>, key<quaternion<float>>> RP = find_value_pair(this->RotationKey, aTime);
+			float p = interpolation_factor(RP, aTime);
+			quaternion<float> Q1 = RP.first.Value;
+			quaternion<float> Q2 = RP.second.Value;
 			float Theta = std::acos(Q1[0]*Q2[0] + Q1[1]*Q2[1] + Q1[2]*Q2[2] + Q1[3]*Q2[3]);
-			Qf = ((std::sin((1.0f - p) * Theta) * Q1 + std::sin(p * Theta) * Q2) / std::sin(Theta));
+			quaternion<float> Qf = ((std::sin((1.0f - p) * Theta) * Q1 + std::sin(p * Theta) * Q2) / std::sin(Theta));
 			R = rotation(Qf);
 		}
 
 		// Calculates interpolated scaling matrix
-		{
-			float p = 0.0f;
-			float t = aTime;
-			vec<float, 3> S1, S2, Sf;
-			for (size_t i = 0; i < this->ScalingKey.size() - 1; i++) {
-				float t1 = this->ScalingKey[i].Time;
-				float t2 = this->ScalingKey[i + 1].Time;
-				if ((aTime >= t1) && (aTime <= t2)) {
-					p = ((t - t1) / (t2 - t1));
-					S1 = this->ScalingKey[i].Value;
-					S2 = this->ScalingKey[i + 1].Value;
-					break;
-				}
-			}
-			Sf = (1.0f - p) * S1 + p * S2;
+		if (this->ScalingKey.size() > 0) {
+			std::pair<key<vec<float, 3>>, key<vec<float, 3>>> SP = find_value_pair(this->ScalingKey, aTime);
+			float p = interpolation_factor(SP, aTime);
+			vec<float, 3> Sf = (1.0f - p) * SP.first.Value + p * SP.second.Value;
 			T = mat<float, 4, 4>(
 				Sf[0], 0.0f, 0.0f, 0.0f,
 				0.0f, Sf[1], 0.0f, 0.0f,
@@ -148,8 +183,13 @@ namespace geodesy::core::gfx {
 		}
 	}
 
-	animation::node_anim animation::operator[](std::string aNodeName) {
-		return this->NodeAnimMap[aNodeName];
+	const animation::node_anim& animation::operator[](std::string aNodeName) const {
+		auto it = NodeAnimMap.find(aNodeName);
+    	if (it == NodeAnimMap.end()) {
+    	    static const node_anim EmptyNodeAnim;  // Static empty node animation to return if not found
+    	    return EmptyNodeAnim;
+    	}
+    	return it->second;
 	}
 
 }

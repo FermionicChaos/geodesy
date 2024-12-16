@@ -80,16 +80,24 @@ namespace geodesy::core::gfx {
 				for (size_t k = 0; k < Bone[j].Vertex.size(); k++) {
 					// If the vertex index matches the bone vertex index, then then copy over.
 					if (i == Bone[j].Vertex[k].ID) {
-						// Uses insert sort to keep the weights sorted from largest to smallest.
-						// {  0,  1   2,  3, 4 }
-						// { 69, 25, 21, 10, 4 } <- 15
-						// Insert at index 3
-						// { 69, 25, 21, 15, 10, 4 }
-						for (size_t a = 0; a < VertexBoneWeight.size(); a++) {
-							if (VertexBoneWeight[a].Weight < Bone[j].Vertex[k].Weight) {
-								VertexBoneWeight.insert(VertexBoneWeight.begin() + a, Bone[j].Vertex[k]);
-								break;
+						// Store Bone Index j and Weight.
+						bone::weight NewVertexWeight = { (uint)j, Bone[j].Vertex[k].Weight };
+						if (VertexBoneWeight.size() > 0) {
+							// Uses insert sort to keep the weights sorted from largest to smallest.
+							// {  0,  1   2,  3, 4 }
+							// { 69, 25, 21, 10, 4 } <- 15
+							// Insert at index 3
+							// { 69, 25, 21, 15, 10, 4 }
+							for (size_t a = 0; a < VertexBoneWeight.size(); a++) {
+								if (VertexBoneWeight[a].Weight < NewVertexWeight.Weight) {
+									VertexBoneWeight.insert(VertexBoneWeight.begin() + a, NewVertexWeight);
+									break;
+								}
 							}
+						}
+						else {
+							// Add First Element.
+							VertexBoneWeight.push_back(NewVertexWeight);
 						}
 					}
 				}
@@ -128,9 +136,11 @@ namespace geodesy::core::gfx {
 	}
 
 	void mesh::instance::update(double DeltaTime) {
-		// TODO: Does nothing for now.
+		// Convert uniform buffer pointer into data structure for writing.
 		mesh_instance_ubo_data* MeshInstanceUBOData = (mesh_instance_ubo_data*)this->UniformBuffer->Ptr;
+		// Carry over mesh instance node transform.
 		MeshInstanceUBOData->Transform = this->Transform;
+		// Transfer all bone transformations to the uniform buffer.
 		for (size_t i = 0; i < Bone.size(); i++) {
 			MeshInstanceUBOData->BoneTransform[i] = Bone[i].Transform;
 		}

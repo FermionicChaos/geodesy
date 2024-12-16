@@ -23,6 +23,7 @@ namespace geodesy::core::gfx {
 		struct key {
 			double		Time; 		// Time in Ticks
 			T			Value;
+			key() : Time(0.0), Value() {}
 		};
 
 		struct node_anim {
@@ -45,7 +46,7 @@ namespace geodesy::core::gfx {
 		animation();
 		animation(const aiAnimation* aAnimation);
 
-		node_anim operator[](std::string aNodeName);
+		const node_anim& operator[](std::string aNodeName) const;
 
 	};
 

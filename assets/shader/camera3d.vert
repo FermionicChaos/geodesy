@@ -49,7 +49,9 @@ void main() {
     mat4 mt = mat4(0.0f);
     if (VertexBoneID[0] < MAX_BONE_COUNT) {
         for (int i = 0; i < 4; i++) {
-            mt += Mesh.BoneTransform[VertexBoneID[i]] * Mesh.OffsetTransform[VertexBoneID[i]] * VertexBoneWeight[i];
+            if (VertexBoneID[i] < MAX_BONE_COUNT) {
+                mt += Mesh.BoneTransform[VertexBoneID[i]] * Mesh.OffsetTransform[VertexBoneID[i]] * VertexBoneWeight[i];
+            }
         }
     } else {
         mt = mat4(

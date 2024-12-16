@@ -111,6 +111,7 @@ namespace geodesy::core::gfx {
 	}
 
 	node::node(std::shared_ptr<gcl::context> aContext, const node& aNode) : node() {
+		// TODO: Fix recursive node hierarchy copy.
 		this->Name 				= aNode.Name;
 		this->Transformation 	= aNode.Transformation;
 		this->MeshInstance 		= std::vector<mesh::instance>(aNode.MeshInstance.size());
@@ -182,27 +183,24 @@ namespace geodesy::core::gfx {
 		// Work done here will start at the root
 		// of the node hierarchy.
 
-		// Cycle Through Animation;
-		for (node& Chd : Child) {
-			Chd.update(aTime);
-		}
-
-		// Work done here implies that the leafs
-		// will be updated first.
-
 		// For each mesh instance, and for each bone, update the 
 		// bone transformations according to their respective
 		// animation object.
-		// for (mesh::instance& MI : MeshInstance) {
-		// 	// This is only used to tranform mesh instance vertices without bone animation.
-		// 	MI.Transform = this->transform();
-		// 	for (mesh::bone& B : MI.Bone) {
-		// 		// Update Bone Transformations from Bone Hierarchies
-		// 		B.Transform = this->Root->find(B.Name)->transform();
-		// 	}
-		// 	// Update Bone Buffer Date GPU side.
-		// 	MI.update(aTime);
-		// }
+		for (mesh::instance& MI : MeshInstance) {
+			// This is only used to tranform mesh instance vertices without bone animation.
+			MI.Transform = this->transform(aBindPoseWeight, aPlaybackAnimation, aTime);
+			for (mesh::bone& B : MI.Bone) {
+				// Update Bone Transformations from Bone Hierarchies
+				B.Transform = this->Root->find(B.Name)->transform(aBindPoseWeight, aPlaybackAnimation, aTime);
+			}
+			// Update Bone Buffer Date GPU side.
+			MI.update(aTime);
+		}
+
+		// Go to child nodes and update children nodes.
+		for (node& Chd : Child) {
+			Chd.update(aBindPoseWeight, aPlaybackAnimation, aTime);
+		}
 	}
 
 	size_t node::node_count() const {
@@ -239,16 +237,16 @@ namespace geodesy::core::gfx {
 		// Bind Pose Transform
 		math::mat<float, 4, 4> NodeTransform = (this->Transformation * aBindPoseWeight);
 
-		// // Overrides/Averages Animation Transformations with Bind Pose Transform based on weights.
-		// if (aPlaybackAnimation.size() > 0) {
-		// 	// If there are, iterate through them, get their transforms and
-		// 	// their contribution factors (weights).
-		// 	for (const animation& Animation : aPlaybackAnimation) {
-		// 		// NodeTransform += AnimationTransform * Contribution Factor
-		// 		double TickerTime = std::fmod(aTime, Animation.Duration);
-		// 		NodeTransform += Animation[this->Name][aTime] * Animation.Weight;
-		// 	}
-		// }
+		// Overrides/Averages Animation Transformations with Bind Pose Transform based on weights.
+		if (aPlaybackAnimation.size() > 0) {
+			// If there are, iterate through them, get their transforms and
+			// their contribution factors (weights).
+			for (const animation& Animation : aPlaybackAnimation) {
+				// NodeTransform += AnimationTransform * Contribution Factor
+				double TickerTime = std::fmod(aTime * Animation.TicksPerSecond, Animation.Duration);
+				NodeTransform += Animation[this->Name][TickerTime] * Animation.Weight;
+			}
+		}
 
 		// Recursively apply parent transformations.
 		if (this->Root != this) {

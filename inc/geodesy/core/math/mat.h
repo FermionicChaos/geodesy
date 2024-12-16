@@ -229,7 +229,16 @@ namespace geodesy::core::math {
 		// Citation: http://www.faqs.org/faqs/gfx/algorithms-faq/
 
 		quaternion<T> q = aQuaternion;
-		T s = 1.0 / abs2(q);
+		T qs = abs2(q);
+		if (qs < std::numeric_limits<T>::epsilon()) {
+			return mat<T, 4, 4>(
+				1.0, 0.0, 0.0, 0.0,
+				0.0, 1.0, 0.0, 0.0,
+				0.0, 0.0, 1.0, 0.0,
+				0.0, 0.0, 0.0, 1.0
+			);
+		}
+		T s = 1.0 / qs;
 		T qa = q[0], qb = q[1], qc = q[2], qd = q[3];
 		return mat<T, 4, 4>(
 			1.0 - 2.0 * s * (qc * qc + qd * qd), 	2.0 * s * (qb * qc - qd * qa), 			2.0 * s * (qb * qd + qc * qa), 			0.0,

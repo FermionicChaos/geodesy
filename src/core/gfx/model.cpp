@@ -157,21 +157,27 @@ namespace geodesy::core::gfx {
 
 	model::model(std::shared_ptr<gcl::context> aContext, std::shared_ptr<model> aModel, gcl::image::create_info aCreateInfo) : model() {
 		this->Name = aModel->Name;
-		this->Hierarchy = node(aContext, aModel->Hierarchy);
-		this->Time = aModel->Time;
-
 		this->Context = aContext;
-		// Load Meshes into device memory represntation.
+
+		// Create Node Hierarchy for GPU.
+		this->Hierarchy = node(aContext, aModel->Hierarchy);
+
+		// Load node animations.
+		this->Animation = aModel->Animation;
+
+		// Load meshes into GPU memory.
 		this->Mesh = std::vector<std::shared_ptr<gfx::mesh>>(aModel->Mesh.size());
 		for (std::size_t i = 0; i < aModel->Mesh.size(); i++) {
 			this->Mesh[i] = std::shared_ptr<mesh>(new mesh(aContext, aModel->Mesh[i]));
 		}
 
+		// Load materials into GPU memory.
 		this->Material = std::vector<std::shared_ptr<gfx::material>>(aModel->Material.size());
 		for (std::size_t i = 0; i < aModel->Material.size(); i++) {
 			this->Material[i] = std::shared_ptr<material>(new material(aContext, aCreateInfo, aModel->Material[i]));
 		}
 
+		// Load textures into GPU memory.
 		this->Texture = std::vector<std::shared_ptr<gcl::image>>(aModel->Texture.size());
 		for (std::size_t i = 0; i < aModel->Texture.size(); i++) {
 			this->Texture[i] = std::shared_ptr<gcl::image>(new gcl::image(aContext, aCreateInfo, aModel->Texture[i]));
