@@ -4,3 +4,4 @@
 - Implement mip map for base image class.
 - Weird bug where screen freezes over losing window focus.
 - Handle Swapchain recreation.
+- Animation data broken because node transforms are broken, or the wrong bones are being read by vertex buffer.
