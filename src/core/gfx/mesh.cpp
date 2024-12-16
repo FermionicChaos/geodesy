@@ -16,6 +16,7 @@ namespace geodesy::core::gfx {
 			alignas(16) math::mat<float, 4, 4> BoneTransform[MAX_BONE_COUNT];
 			alignas(16) math::mat<float, 4, 4> BoneOffset[MAX_BONE_COUNT];
 			mesh_instance_ubo_data();
+			mesh_instance_ubo_data(const mesh::instance* aInstance);
 		};
 
 		mesh_instance_ubo_data::mesh_instance_ubo_data() {
@@ -38,6 +39,14 @@ namespace geodesy::core::gfx {
 					0.0f, 0.0f, 1.0f, 0.0f,
 					0.0f, 0.0f, 0.0f, 1.0f
 				};
+			}
+		}
+
+		mesh_instance_ubo_data::mesh_instance_ubo_data(const mesh::instance* aInstance) {
+			this->Transform = aInstance->Transform;
+			for (size_t i = 0; i < aInstance->Bone.size(); i++) {
+				this->BoneTransform[i] = aInstance->Bone[i].Transform;
+				this->BoneOffset[i] = aInstance->Bone[i].Offset;
 			}
 		}
 
@@ -91,6 +100,7 @@ namespace geodesy::core::gfx {
 
 	mesh::instance::instance(std::shared_ptr<gcl::context> aContext, const instance& aInstance) {
 		this->Index 		= aInstance.Index;
+		this->Transform 	= aInstance.Transform;
 		this->Vertex 		= aInstance.Vertex;
 		this->Bone 			= aInstance.Bone;
 		this->MaterialIndex = aInstance.MaterialIndex;
@@ -106,39 +116,19 @@ namespace geodesy::core::gfx {
         buffer::create_info UBCI;
         UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
         UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
-		mesh_instance_ubo_data MeshInstanceUBOData;
-		MeshInstanceUBOData.Transform = aInstance.Transform;
-		for (size_t i = 0; i < aInstance.Bone.size(); i++) {
-			MeshInstanceUBOData.BoneTransform[i] 	= aInstance.Bone[i].Transform;
-			MeshInstanceUBOData.BoneOffset[i] 		= aInstance.Bone[i].Offset;
-		}
+
+		mesh_instance_ubo_data MeshInstanceUBOData = mesh_instance_ubo_data(this);
         this->UniformBuffer = Context->create_buffer(UBCI, sizeof(mesh_instance_ubo_data), &MeshInstanceUBOData);
 		this->UniformBuffer->map_memory(0, sizeof(mesh_instance_ubo_data));
 	}
 
 	void mesh::instance::update(double DeltaTime) {
-		// The goal here is to update the Bone Buffer in the vertex shader.
-		std::vector<math::mat<float, 4, 4>> TransformData(1 + 2*Bone.size());
-
-		// This is the Mesh Instance Transform. This transform is applied to mesh space vertices
-		// directly is no bone structure is altering the vertices. It takes the mesh space vertices
-		// and transforms them to root model space. This is directly applied to the vertices.
-		TransformData[0] = this->Transform;
-
-		// This is the current transform data for each bone modified by the current animations structure.
+		// TODO: Does nothing for now.
+		mesh_instance_ubo_data* MeshInstanceUBOData = (mesh_instance_ubo_data*)this->UniformBuffer->Ptr;
+		MeshInstanceUBOData->Transform = this->Transform;
 		for (size_t i = 0; i < Bone.size(); i++) {
-			TransformData[i + 1] = Bone[i].Transform;
+			MeshInstanceUBOData->BoneTransform[i] = Bone[i].Transform;
 		}
-
-		// This is the offset matrix data that transforms vertices from mesh space to bone space.
-		// Needed to transform vertices from bone space to mesh space for animated bones to animate
-		// the mesh.
-		for (size_t i = 0; i < Bone.size(); i++) {
-			TransformData[i + Bone.size() + 1] = Bone[i].Offset;
-		}
-
-		// Send data to the GPU Uniform Buffer.
-		this->UniformBuffer->write(0, TransformData.data(), 0, TransformData.size() * sizeof(math::mat<float, 4, 4>));
 	}
 
 	mesh::mesh(std::shared_ptr<gcl::context> aContext, const std::vector<vertex>& aVertexData, const topology& aTopologyData) : phys::mesh() {

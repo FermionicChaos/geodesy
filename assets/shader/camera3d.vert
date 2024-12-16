@@ -52,14 +52,19 @@ void main() {
             mt += Mesh.BoneTransform[VertexBoneID[i]] * Mesh.OffsetTransform[VertexBoneID[i]] * VertexBoneWeight[i];
         }
     } else {
-        mt = Mesh.DefaultTransform;
+        mt = mat4(
+            1.0f, 0.0f, 0.0f, 0.0f,
+            0.0f, 1.0f, 0.0f, 0.0f,
+            0.0f, 0.0f, 1.0f, 0.0f,
+            0.0f, 0.0f, 0.0f, 1.0f
+        );
     }
 
     // Convert to model space
-    v = mt * v;
-    n = mt * n;
-	t = mt * t;
-	b = mt * b;
+    v = Mesh.DefaultTransform * mt * v;
+    n = Mesh.DefaultTransform * mt * n;
+	t = Mesh.DefaultTransform * mt * t;
+	b = Mesh.DefaultTransform * mt * b;
 
     // Orient object in model space.
     v = Object.Orientation * v;
