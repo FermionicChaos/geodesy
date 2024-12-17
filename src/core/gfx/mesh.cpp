@@ -217,21 +217,29 @@ namespace geodesy::core::gfx {
 
 		// Load Index Data
 		if (aMesh->mNumVertices <= (1 << 16)) {
+			// Implies that the mesh has less than 2^16 vertices, only 16 bit indices are needed.
 			Topology.Data16 = std::vector<ushort>(aMesh->mNumFaces * 3);
+			for (size_t i = 0; i < aMesh->mNumFaces; i++) {
+				// Skip non triangle indices.
+				if (aMesh->mFaces[i].mNumIndices != 3) {
+					continue;
+				}
+				Topology.Data16[3*i + 0] = (ushort)aMesh->mFaces[i].mIndices[0];
+				Topology.Data16[3*i + 1] = (ushort)aMesh->mFaces[i].mIndices[1];
+				Topology.Data16[3*i + 2] = (ushort)aMesh->mFaces[i].mIndices[2];
+			} 
 		}
 		else {
+			// Implies that the mesh has more than 2^16 vertices, 32 bit indices are needed.
 			Topology.Data32 = std::vector<uint>(aMesh->mNumFaces * 3);
-		}
-		for (size_t j = 0; j < aMesh->mNumFaces; j++) {
-			if (aMesh->mNumVertices <= (1 << 16)) {
-				Topology.Data16[3*j + 0] = (ushort)aMesh->mFaces[j].mIndices[0];
-				Topology.Data16[3*j + 1] = (ushort)aMesh->mFaces[j].mIndices[1];
-				Topology.Data16[3*j + 2] = (ushort)aMesh->mFaces[j].mIndices[2];
-			}
-			else {
-				Topology.Data16[3*j + 0] = (uint)aMesh->mFaces[j].mIndices[0];
-				Topology.Data16[3*j + 1] = (uint)aMesh->mFaces[j].mIndices[1];
-				Topology.Data16[3*j + 2] = (uint)aMesh->mFaces[j].mIndices[2];
+			for (size_t i = 0; i < aMesh->mNumFaces; i++) {
+				// Skip non triangle indices.
+				if (aMesh->mFaces[i].mNumIndices != 3) {
+					continue;
+				}
+				Topology.Data32[3*i + 0] = (uint)aMesh->mFaces[i].mIndices[0];
+				Topology.Data32[3*i + 1] = (uint)aMesh->mFaces[i].mIndices[1];
+				Topology.Data32[3*i + 2] = (uint)aMesh->mFaces[i].mIndices[2];
 			}
 		}
 	}

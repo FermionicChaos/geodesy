@@ -747,7 +747,7 @@ namespace geodesy::core::gcl {
 			vkCmdBindVertexBuffers(aCommandBuffer, 0, VertexBuffer.size(), VertexBuffer.data(), VertexBufferOffset.data());
 		}
 		if (aIndexBuffer != nullptr) {
-			VkIndexType IndexType = (aIndexBuffer->ElementCount <= (1 << 16)) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+			VkIndexType IndexType = (aVertexBuffer[0]->ElementCount <= (1 << 16)) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
 			vkCmdBindIndexBuffer(aCommandBuffer, aIndexBuffer->Handle, 0, IndexType);
 		}
 	}
