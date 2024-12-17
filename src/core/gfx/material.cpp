@@ -140,8 +140,8 @@ namespace geodesy::core::gfx {
 		this->Roughness                 = 0.0f;
 		this->VertexColorWeight         = 0.0f;
         this->MaterialColorWeight       = 0.0f;
-		this->ParallaxScale             = 0.0f;
-		this->ParallaxIterationCount    = 0;
+		this->ParallaxScale             = 1.0f;
+		this->ParallaxIterationCount    = 100;
     }
 
     material::material(const aiMaterial* Mat, std::string aDirectory, io::file::manager* aFileManager) : material() {
