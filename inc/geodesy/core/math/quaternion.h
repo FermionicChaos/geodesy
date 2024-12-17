@@ -178,6 +178,11 @@ namespace geodesy::core::math {
 		return std::sqrt(abs2(aArg));
 	}
 
+	template <typename T> inline
+	quaternion<T> normalize(const quaternion<T>& aArg) {
+		return aArg / abs(aArg);
+	}
+
 	template <typename T> inline 
 	quaternion<T> exp(const quaternion<T>& aArg) {
 		quaternion<T> u = quaternion<T>(0.0, aArg.b, aArg.c, aArg.d);

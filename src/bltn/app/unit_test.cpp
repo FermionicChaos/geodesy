@@ -23,7 +23,7 @@ namespace geodesy::bltn {
 			device::operation::GRAPHICS_AND_COMPUTE,
 			device::operation::PRESENT
 		};
-		TimeStep = 1.0 / 60.0;
+		TimeStep = 1.0 / 100.0;
 		DeviceContext = Engine->create_device_context(Engine->PrimaryDevice, OperationList);
 		Window = nullptr;
 	}
@@ -66,21 +66,31 @@ namespace geodesy::bltn {
 		while (Engine->ThreadController.cycle(TimeStep)) {
 			t += Engine->ThreadController.total_time() * 100.0f;
 
+			double t1 = timer::get_time();
+
 			system_window::poll_input();
+
+			double t2 = timer::get_time();
 
 			// Update host resources.
 			Result = Engine->update_resources(this);
 
+			double t3 = timer::get_time();
+
 			// Execute render operations.
 			Result = Engine->execute_render_operations(this);
+
+			double t4 = timer::get_time();
 
 			if (PerformanceTimer.check()) {
 				math::vec<float, 2> SamplePoint = { 1.0f, 0.75f };
 				std::cout << "----- Performance Metrics -----" << std::endl;
 				std::cout << "Current Time:\t" << timer::get_time() << " s" << std::endl;
-				std::cout << "Current Time:\t" << Window->Time << " s" << std::endl;
 				std::cout << "Time Step:\t" << TimeStep * 1000 << " ms" << std::endl;
-				std::cout << "Work Time:\t" << Engine->ThreadController.work_time() * 1000.0 << " ms" << std::endl;
+				std::cout << "Work Time:\t" << (t4 - t1) * 1000.0 << " ms" << std::endl;
+				std::cout << "-Input Time:\t" << (t2 - t1) * 1000.0 << " ms" << std::endl;
+				std::cout << "-Update Time:\t" << (t3 - t2) * 1000.0 << " ms" << std::endl;
+				std::cout << "-Render Time:\t" << (t4 - t3) * 1000.0 << " ms" << std::endl;
 				std::cout << "Halt Time:\t" << Engine->ThreadController.halt_time() * 1000.0 << " ms" << std::endl;
 				std::cout << "Total Time:\t" << Engine->ThreadController.total_time() * 1000.0 << " ms" << std::endl << std::endl;
 				//std::cout << "Thread Over Time: " << Engine->ThreadController.work_time() - TimeStep << std::endl;
