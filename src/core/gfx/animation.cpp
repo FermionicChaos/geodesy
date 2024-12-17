@@ -124,7 +124,7 @@ namespace geodesy::core::gfx {
 				float Theta = std::acos(CosTheta);
 				Qf = ((std::sin((1.0f - p) * Theta) * Q1 + std::sin(p * Theta) * Q2) / std::sin(Theta));
 			}
-			R = R * rotation(normalize(Qf));
+			R = rotation(normalize(Qf));
 		}
 
 		// Calculates interpolated scaling matrix

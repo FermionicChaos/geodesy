@@ -133,6 +133,18 @@ namespace geodesy::core::math {
 			return quaternion<T>(-(*this)[0], -(*this)[1], -(*this)[2], -(*this)[3]);
 		}
 
+		quaternion<T> operator+(const T& aRhs) const {
+			quaternion<T> Out = *this;
+			Out[0] += aRhs;
+			return Out;
+		}
+
+		quaternion<T> operator-(const T& aRhs) const {
+			quaternion<T> Out = *this;
+			Out[0] -= aRhs;
+			return Out;
+		}
+
 		// Calculates the multiplication of two quaternions, using the Hamilton product
 		// and the array accessor.
 		quaternion<T> operator*(const quaternion<T>& aRhs) const {
@@ -169,6 +181,11 @@ namespace geodesy::core::math {
 	}
 
 	template <typename T> inline 
+	quaternion<T> operator+(const T& aLhs, const quaternion<T>& aRhs) {
+		return (aRhs + aLhs);
+	}
+
+	template <typename T> inline 
 	T abs2(const quaternion<T>& aArg) {
 		return (aArg[0]*aArg[0] + aArg[1]*aArg[1] + aArg[2]*aArg[2] + aArg[3]*aArg[3]);
 	}
@@ -185,9 +202,9 @@ namespace geodesy::core::math {
 
 	template <typename T> inline 
 	quaternion<T> exp(const quaternion<T>& aArg) {
-		quaternion<T> u = quaternion<T>(0.0, aArg.b, aArg.c, aArg.d);
+		quaternion<T> u = quaternion<T>(0.0, aArg[1], aArg[2], aArg[3]);
 		T uMag = abs(u);
-		return (std::exp(aArg.a) * (std::cos(uMag) + u * (std::sin(uMag) / uMag)));
+		return (std::exp(aArg[0]) * (std::cos(uMag) + u * (std::sin(uMag) / uMag)));
 	}
 
 	template <typename T> inline 

@@ -252,7 +252,8 @@ namespace geodesy::core::math {
     template <typename T> inline 
 	mat<T, 4, 4> rotation(T aAngle, vec<T, 3> aAxis) {
 		vec<T, 3> UnitAxis = normalize(aAxis);
-		quaternion<T> q = exp((aAngle / 2.0) * quaternion<T>(0.0, UnitAxis[0], UnitAxis[1], UnitAxis[2]));
+		quaternion<T> a = (T)(aAngle / 2.0) * quaternion<T>(0.0, UnitAxis[0], UnitAxis[1], UnitAxis[2]);
+		quaternion<T> q = exp(a);
 		return rotation(q);
 	}
 
