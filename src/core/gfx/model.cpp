@@ -103,12 +103,10 @@ namespace geodesy::core::gfx {
 
 	model::model() {
 		this->Time = 0.0;
-		this->BindPoseWeight = 1.0f;
 	}
 
 	model::model(std::string aFilePath, file::manager* aFileManager) : file(aFilePath) {
 		this->Time = 0.0;
-		this->BindPoseWeight = 1.0f;
 		if (aFilePath.length() == 0) return;
 		const aiScene *Scene = ModelImporter->ReadFile(aFilePath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
 
@@ -189,10 +187,10 @@ namespace geodesy::core::gfx {
 
 	}
 
-	void model::update(double aDeltaTime) {
+	void model::update(double aDeltaTime, const std::vector<float>& aAnimationWeights) {
 		this->Time += aDeltaTime;
 		// Choose animation here.
-		this->Hierarchy.update(this->BindPoseWeight, this->Animation, this->Time);
+		this->Hierarchy.update(aAnimationWeights, this->Animation, this->Time);
 	}
 
 }

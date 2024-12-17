@@ -142,14 +142,12 @@ namespace geodesy::core::gfx {
 
 	animation::animation() {
 		this->Name = "";
-		this->Weight = 0.0f;
 		this->Duration = 0.0;
 		this->TicksPerSecond = 0.0;
 	}
 
 	animation::animation(const aiAnimation* aAnimation) {
 		this->Name 				= aAnimation->mName.C_Str();
-		this->Weight 			= 0.0f;
 		this->Duration 			= aAnimation->mDuration;
 		this->TicksPerSecond 	= aAnimation->mTicksPerSecond;
 		for (uint i = 0; i < aAnimation->mNumChannels; i++) {

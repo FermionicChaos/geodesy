@@ -685,6 +685,37 @@ namespace geodesy::core::gcl {
 		}		
 	}
 
+	void pipeline::barrier(
+		VkCommandBuffer aCommandBuffer,
+		uint aSrcStage, uint aDstStage,
+		uint aSrcAccess, uint aDstAccess
+	) {
+		VkMemoryBarrier MemoryBarrier{};
+		MemoryBarrier.sType				= VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+		MemoryBarrier.pNext				= NULL;
+		MemoryBarrier.srcAccessMask		= aSrcAccess;
+		MemoryBarrier.dstAccessMask		= aDstAccess;
+		std::vector<VkMemoryBarrier> MemoryBarrierVector = { MemoryBarrier };
+		pipeline::barrier(aCommandBuffer, aSrcStage, aDstStage, MemoryBarrierVector);
+	}
+
+	void pipeline::barrier(
+		VkCommandBuffer aCommandBuffer, 
+		uint aSrcStage, uint aDstStage, 
+		const std::vector<VkMemoryBarrier>& aMemoryBarrier, 
+		const std::vector<VkBufferMemoryBarrier>& aBufferBarrier, 
+		const std::vector<VkImageMemoryBarrier>& aImageBarrier
+	) {
+		vkCmdPipelineBarrier(
+			aCommandBuffer, 
+			(VkPipelineStageFlags)aSrcStage, (VkPipelineStageFlags)aDstStage, 
+			0, 
+			aMemoryBarrier.size(), aMemoryBarrier.data(), 
+			aBufferBarrier.size(), aBufferBarrier.data(), 
+			aImageBarrier.size(), aImageBarrier.data()
+		);
+	}
+
 	void pipeline::begin(VkCommandBuffer aCommandBuffer, std::shared_ptr<framebuffer> aFramebuffer, VkRect2D aRenderArea, VkSubpassContents aSubpassContents) {
 		VkRenderPassBeginInfo RPBI{};
 		RPBI.sType				= VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;

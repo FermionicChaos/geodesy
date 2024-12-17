@@ -53,31 +53,39 @@ namespace geodesy::ecs {
 		this->Gravity 					= false;
 		this->Collision 				= false;
 
-		// TODO: Load main object assets.
-		if (aModelPath != "") {
-			// Cast into vector.
-			std::vector<std::string> AssetPath = { aModelPath };
-			// Load Model into Host Memory.
-			std::vector<std::shared_ptr<core::io::file>> NewAsset = this->Engine->FileManager.open(AssetPath);
-			// Append to already loaded assets (none).
-			this->Asset.insert(this->Asset.end(), NewAsset.begin(), NewAsset.end());
-		}
-
 		// Initialize GPU stuff.
 		this->Context 					= aContext;
+
 		// Create Object Model from GPU Device Context.
 		if (aModelPath != "") {
-			// Get Host Model
-			std::shared_ptr<gfx::model> HostModel = std::dynamic_pointer_cast<gfx::model>(this->Asset[0]);
+			// Load Host Model into memory.
+			std::shared_ptr<io::file> ModelFile = Engine->FileManager.open(aModelPath);
 
-			// Create Material Texture Info
-			image::create_info MaterialTextureInfo;
-			MaterialTextureInfo.Layout 		= image::layout::SHADER_READ_ONLY_OPTIMAL;
-			MaterialTextureInfo.Memory 		= device::memory::DEVICE_LOCAL;
-			MaterialTextureInfo.Usage	 	= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
+			// Check if Model File is valid.
+			if (ModelFile.get() != nullptr) {
+				// Save Model File Instance to Object to persist lifetime of resource.
+				this->Asset.push_back(ModelFile);
 
-			// Convert Host model into device model, and bind to object.
-			this->Model = std::make_shared<gfx::model>(aContext, HostModel, MaterialTextureInfo);
+				// Pointer cast into model type.
+				std::shared_ptr<gfx::model> HostModel = std::dynamic_pointer_cast<gfx::model>(ModelFile);
+
+				// Create Device Model from Host Model.
+				image::create_info MaterialTextureInfo;
+				MaterialTextureInfo.Layout 		= image::layout::SHADER_READ_ONLY_OPTIMAL;
+				MaterialTextureInfo.Memory 		= device::memory::DEVICE_LOCAL;
+				MaterialTextureInfo.Usage	 	= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
+
+				// TODO: Do a Device Context Registry to check which host models have been loaded
+				// into device memory, and recycle them if they have been loaded already.
+				this->Model = std::shared_ptr<gfx::model>(new gfx::model(aContext, HostModel, MaterialTextureInfo));
+
+				// If model has animations, then create animation data.
+				if (this->Model->Animation.size() > 0) {
+					// Include Bind Pose as the first Weight.
+					this->AnimationWeights = std::vector<float>(this->Model->Animation.size() + 1, 0.0f);
+					this->AnimationWeights[0] = 1.0f;
+				}
+			}
 		}
 
 		// Object Uniform Buffer Creation from GPU Device Context.
@@ -124,11 +132,6 @@ namespace geodesy::ecs {
 
 		// TODO: Add update using angular momentum to change orientation of object over time.
 
-
-		if (this->Model.get() != nullptr) {
-			this->Model->update(aDeltaTime);
-		}
-
 		this->DirectionRight			= {  std::sin(Phi), 					-std::cos(Phi), 					0.0f 			};
 		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
 		this->DirectionFront			= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
@@ -141,6 +144,11 @@ namespace geodesy::ecs {
 			this->Scale
 		);
 		memcpy(this->UniformBuffer->Ptr, &UniformData, sizeof(uniform_data));
+
+		// Update Model if animation data exists.
+		if ((this->Model.get() != nullptr) && (this->Model->Animation.size() > 0)) {
+			this->Model->update(aDeltaTime, this->AnimationWeights);
+		}
 	}
 
 	std::vector<gfx::draw_call> object::draw(subject* aSubject) {

@@ -26,7 +26,6 @@ namespace geodesy::core::gfx {
 		// Model Metadata
 		std::string										Name;
 		double 											Time;
-		float 											BindPoseWeight;		// Default Weight of the Node is 1.0f. 
 
 		// Resources
 		std::shared_ptr<gcl::context> 					Context;
@@ -44,7 +43,7 @@ namespace geodesy::core::gfx {
 		model(std::shared_ptr<gcl::context> aContext, std::shared_ptr<model> aModel, gcl::image::create_info aCreateInfo = {});
 		~model();
 
-		void update(double aDeltaTime);
+		void update(double aDeltaTime, const std::vector<float>& aAnimationWeights);
 
 	};
 

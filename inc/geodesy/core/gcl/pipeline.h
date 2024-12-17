@@ -202,6 +202,18 @@ namespace geodesy::core::gcl {
 		// Destructor
 		~pipeline();
 
+		static void barrier(
+			VkCommandBuffer aCommandBuffer,
+			uint aSrcStage, uint aDstStage,
+			uint aSrcAccess, uint aDstAccess
+		);
+		static void barrier(
+			VkCommandBuffer aCommandBuffer, 
+			uint aSrcStage, uint aDstStage, 
+			const std::vector<VkMemoryBarrier>& aMemoryBarrier = {}, 
+			const std::vector<VkBufferMemoryBarrier>& aBufferBarrier = {}, 
+			const std::vector<VkImageMemoryBarrier>& aImageBarrier = {}
+		);
 		void begin(VkCommandBuffer aCommandBuffer, std::shared_ptr<framebuffer> aFrame, VkRect2D aRenderArea, VkSubpassContents aSubpassContents = VK_SUBPASS_CONTENTS_INLINE);
 		void bind(
 			VkCommandBuffer 											aCommandBuffer, 

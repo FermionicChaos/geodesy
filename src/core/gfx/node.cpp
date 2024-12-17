@@ -179,7 +179,7 @@ namespace geodesy::core::gfx {
 		return Node;
 	}
 
-	void node::update(float aBindPoseWeight, const std::vector<animation>& aPlaybackAnimation, double aTime) {
+	void node::update(const std::vector<float>& aAnimationWeight, const std::vector<animation>& aPlaybackAnimation, double aTime) {
 		// Work done here will start at the root
 		// of the node hierarchy.
 
@@ -188,10 +188,10 @@ namespace geodesy::core::gfx {
 		// animation object.
 		for (mesh::instance& MI : MeshInstance) {
 			// This is only used to tranform mesh instance vertices without bone animation.
-			MI.Transform = this->transform(aBindPoseWeight, aPlaybackAnimation, aTime);
+			MI.Transform = this->transform(aAnimationWeight, aPlaybackAnimation, aTime);
 			for (mesh::bone& B : MI.Bone) {
 				// Update Bone Transformations from Bone Hierarchies
-				B.Transform = this->Root->find(B.Name)->transform(aBindPoseWeight, aPlaybackAnimation, aTime);
+				B.Transform = this->Root->find(B.Name)->transform(aAnimationWeight, aPlaybackAnimation, aTime);
 			}
 			// Update Bone Buffer Date GPU side.
 			MI.update(aTime);
@@ -199,7 +199,7 @@ namespace geodesy::core::gfx {
 
 		// Go to child nodes and update children nodes.
 		for (node& Chd : Child) {
-			Chd.update(aBindPoseWeight, aPlaybackAnimation, aTime);
+			Chd.update(aAnimationWeight, aPlaybackAnimation, aTime);
 		}
 	}
 
@@ -220,7 +220,7 @@ namespace geodesy::core::gfx {
 		return MeshCount;
 	}
 
-	math::mat<float, 4, 4> node::transform(float aBindPoseWeight, const std::vector<animation>& aPlaybackAnimation, double aTime) {
+	math::mat<float, 4, 4> node::transform(const std::vector<float>& aAnimationWeight, const std::vector<animation>& aPlaybackAnimation, double aTime) {
 		// This calculates the global transform of the node which it is
 		// being called from. If there are no animations associated with 
 		// the node hierarchy, the bind pose transformations will be used
@@ -235,22 +235,24 @@ namespace geodesy::core::gfx {
 		//
 
 		// Bind Pose Transform
-		math::mat<float, 4, 4> NodeTransform = (this->Transformation * aBindPoseWeight);
+		math::mat<float, 4, 4> NodeTransform = (this->Transformation * aAnimationWeight[0]);
 
-		// // Overrides/Averages Animation Transformations with Bind Pose Transform based on weights.
-		// if (aPlaybackAnimation.size() > 0) {
-		// 	// If there are, iterate through them, get their transforms and
-		// 	// their contribution factors (weights).
-		// 	for (const animation& Animation : aPlaybackAnimation) {
-		// 		// NodeTransform += AnimationTransform * Contribution Factor
-		// 		double TickerTime = std::fmod(aTime * Animation.TicksPerSecond, Animation.Duration);
-		// 		NodeTransform += Animation[this->Name][TickerTime] * Animation.Weight;
-		// 	}
-		// }
+		// TODO: Figure out how to load animations per node. Also incredibly slow right now. Optimize Later.
+		// Overrides/Averages Animation Transformations with Bind Pose Transform based on weights.
+		if (aPlaybackAnimation.size() > 0) {
+			// If there are, iterate through them, get their transforms and
+			// their contribution factors (weights).
+			for (size_t i = 0; i < aPlaybackAnimation.size(); i++) {
+				// Get the animation transform for this node
+				// NodeTransform += AnimationTransform * Contribution Factor
+				double TickerTime = std::fmod(aTime * aPlaybackAnimation[i].TicksPerSecond, aPlaybackAnimation[i].Duration);
+				NodeTransform += aPlaybackAnimation[i][this->Name][TickerTime] * aAnimationWeight[i + 1];
+			}
+		}
 
 		// Recursively apply parent transformations.
 		if (this->Root != this) {
-			return this->Parent->transform(aBindPoseWeight, aPlaybackAnimation, aTime) * NodeTransform;
+			return this->Parent->transform(aAnimationWeight, aPlaybackAnimation, aTime) * NodeTransform;
 		}
 		else {
 			return NodeTransform;

@@ -61,6 +61,7 @@ namespace geodesy::ecs {
 
 		// * Object Modes:
 		// * This section controls the broader
+		std::vector<float> 															AnimationWeights;
 		motion 																		Motion;				// Informs how the phys engine will treat the object.
 		bool 																		Gravity;			// Determines if the object is affected by gravity.
 		bool 																		Collision;			// Determines if object is affected by collisions.

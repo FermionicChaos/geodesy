@@ -41,13 +41,13 @@ namespace geodesy::core::gfx {
 		// Finds node with name in hierarchy.
 		node* find(std::string aName);
 		// Update the node hierarchy. (Applies Node & Mesh Animations)
-		void update(float aBindPoseWeight = 1.0f, const std::vector<animation>& aPlaybackAnimation = {}, double aTime = 0.0f);	
+		void update(const std::vector<float>& aAnimationWeight = { 1.0f }, const std::vector<animation>& aPlaybackAnimation = {}, double aTime = 0.0f);	
 		// Total Number of Nodes from this point on.
 		size_t node_count() const;
 		// Counts the total number of mesh references in the tree.
 		size_t instance_count() const;
 		// For this node, it will calculate the model transform for a node at a particular time.
-		math::mat<float, 4, 4> transform(float aBindPoseWeight = 1.0f, const std::vector<animation>& aPlaybackAnimation = {}, double aTime = 0.0f);
+		math::mat<float, 4, 4> transform(const std::vector<float>& aAnimationWeight = { 1.0f }, const std::vector<animation>& aPlaybackAnimation = {}, double aTime = 0.0f);
 		// Gathers a list of references to MeshInstance objects.
 		std::vector<mesh::instance*> gather_mesh_instances();
 

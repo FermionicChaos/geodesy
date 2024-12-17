@@ -41,18 +41,10 @@ namespace geodesy::bltn::stg {
 		this->create_object<ecs::object>("Cesium Man", 			SpawnObjects[6], 	math::vec<float, 3>(-20.0f, 0.0f, 0.0f), 	math::vec<float, 2>(-90.0f, 0.0f), 	math::vec<float, 3>(10.0f, 10.0f, 10.0f));
 		this->create_object<ecs::object>("Sponza", 				SpawnObjects[7], 	math::vec<float, 3>(0.0f, 0.0f, 0.0f), 		math::vec<float, 2>(-90.0f, 90.0f), 	math::vec<float, 3>(75.0f, 75.0f, 75.0f));
 
-		// // Change BrainStem animation weights.
-		// this->Object[4]->Model->BindPoseWeight = 0.0f;
-		// this->Object[4]->Model->Animation[0].Weight = 1.0f;
-		// // Change BrainStem animation weights.
-		// this->Object[5]->Model->BindPoseWeight = 0.0f;
-		// this->Object[5]->Model->Animation[0].Weight = 1.0f;
-		// // Change BrainStem animation weights.
-		// this->Object[6]->Model->BindPoseWeight = 0.0f;
-		// this->Object[6]->Model->Animation[0].Weight = 1.0f;
-
-		// this->Object[7]->Model->BindPoseWeight = 0.0f;
-		// this->Object[7]->Model->Animation[0].Weight = 1.0f;
+		this->Object[4]->AnimationWeights = { 1.0f, 0.0f };
+		this->Object[5]->AnimationWeights = { 1.0f, 0.0f };
+		this->Object[6]->AnimationWeights = { 1.0f, 0.0f };
+		this->Object[7]->AnimationWeights = { 1.0f, 0.0f };
 	}
 
 }

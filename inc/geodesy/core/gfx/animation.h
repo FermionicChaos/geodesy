@@ -37,7 +37,6 @@ namespace geodesy::core::gfx {
 		struct mesh_anim {};
 
 		std::string 						Name;
-		float 								Weight;
 		double 								Duration;				// Duration is in Ticks
 		double 								TicksPerSecond;			// Conversion Factor for Ticks to Seconds
 		std::map<std::string, node_anim> 	NodeAnimMap;
