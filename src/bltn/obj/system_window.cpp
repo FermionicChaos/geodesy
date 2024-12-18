@@ -128,39 +128,25 @@ namespace geodesy::bltn::obj {
 		glfwPollEvents();
 	}
 
-	system_window::create_info::create_info() {
-		Property = window::property();
-		Swapchain = core::gcl::swapchain::property();
-		FrameRate = 60.0f;
+	system_window::creator::creator() {		
+		this->Display			= nullptr;
+		this->ColorSpace		= core::gcl::swapchain::colorspace::SRGB_NONLINEAR;
+		this->CompositeAlpha	= core::gcl::swapchain::composite::ALPHA_OPAQUE;
+		this->PresentMode		= core::gcl::swapchain::present_mode::FIFO;
+		this->Clipped			= true;
 	}
 
-	system_window::system_window(
-		std::shared_ptr<gcl::context> 		aContext, 
-		std::shared_ptr<system_display> 	aDisplay, 
-		std::string 						aName, 
-		const create_info& 					aCreateInfo, 
-		math::vec<int, 2> 					aPosition, 
-		math::vec<int, 2> 					aSize
-	) : window(
-		aContext, 
-		nullptr, 
-		aName, 
-		aCreateInfo.Swapchain.PixelFormat,
-		math::vec<uint, 3>(aSize[0], aSize[1], 1u), 
-		{ 0.0f, 0.0f, 0.0f },							// TODO: Convert to virtual coordinates to physical coordinates.
-		{ 0.0f, 0.0f }
-	) {
+	system_window::system_window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aSystemWindowCreator) : window(aContext, aStage, aSystemWindowCreator) {
 		VkResult Result = VK_SUCCESS;
-		core::math::vec<uint, 3> FramebufferResolution;
 
 		// Create GLFW System Window.
-		this->WindowHandle = this->create_window_handle(aCreateInfo.Property, aSize[0], aSize[1], aName.c_str(), NULL, NULL);
+		this->WindowHandle = this->create_window_handle(aSystemWindowCreator, aSystemWindowCreator->Resolution[0], aSystemWindowCreator->Resolution[1], this->Name.c_str(), NULL, NULL);
 
 		if (this->WindowHandle != NULL) {
 			// Get Framebuffer Size.
 			int FramebufferWidth, FramebufferHeight;
 			glfwGetFramebufferSize(this->WindowHandle, &FramebufferWidth, &FramebufferHeight);
-			FramebufferResolution = core::math::vec<uint, 3>(FramebufferWidth, FramebufferHeight, 1u);
+			// this->Resolution = core::math::vec<uint, 3>(FramebufferWidth, FramebufferHeight, 1u);
 		}
 
 		// Create Vulkan Surface from GLFW window.
@@ -170,14 +156,18 @@ namespace geodesy::bltn::obj {
 
 		// Create Swapchain from Vulkan Surface.
 		if (Result == VK_SUCCESS) {
-			std::shared_ptr<core::gcl::swapchain> Swapchain = std::make_shared<core::gcl::swapchain>(aContext, this->SurfaceHandle, aCreateInfo.Swapchain);
+			core::gcl::swapchain::property SwapchainProperty;
+			SwapchainProperty.FrameCount		= aSystemWindowCreator->FrameCount;
+			SwapchainProperty.FrameRate			= aSystemWindowCreator->FrameRate;
+			SwapchainProperty.PixelFormat		= aSystemWindowCreator->PixelFormat;
+			SwapchainProperty.ColorSpace		= aSystemWindowCreator->ColorSpace;
+			SwapchainProperty.ImageUsage		= aSystemWindowCreator->ImageUsage;
+			SwapchainProperty.CompositeAlpha	= aSystemWindowCreator->CompositeAlpha;
+			SwapchainProperty.PresentMode		= aSystemWindowCreator->PresentMode;
+			SwapchainProperty.Clipped			= aSystemWindowCreator->Clipped;
+			std::shared_ptr<core::gcl::swapchain> Swapchain(new swapchain(aContext, this->SurfaceHandle, SwapchainProperty));
 			this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(Swapchain);
 		}
-
-	}
-
-	system_window::system_window(std::shared_ptr<core::gcl::context> aContext, std::shared_ptr<system_display> aDisplay, std::string aName, const create_info& aCreateInfo, core::math::vec<float, 3> aPosition, core::math::vec<float, 2> aSize) :
-		system_window(aContext, aDisplay, aName, aCreateInfo, core::math::vec<int, 2>(aPosition[0], aPosition[1]), core::math::vec<int, 2>(aSize[0], aSize[1])) {
 
 	}
 
@@ -195,17 +185,17 @@ namespace geodesy::bltn::obj {
 		this->Time += aDeltaTime;
 	}
 
-	GLFWwindow* system_window::create_window_handle(window::property aSetting, int aWidth, int aHeight, const char* aTitle, GLFWmonitor* aMonitor, GLFWwindow* aWindow) {
-		glfwWindowHint(GLFW_RESIZABLE,				aSetting.Resizable);
-		glfwWindowHint(GLFW_DECORATED,				aSetting.Decorated);
-		glfwWindowHint(GLFW_FOCUSED,				aSetting.UserFocused);
-		glfwWindowHint(GLFW_AUTO_ICONIFY,			aSetting.AutoMinimize);
-		glfwWindowHint(GLFW_FLOATING,				aSetting.Floating);
-		glfwWindowHint(GLFW_MAXIMIZED,				aSetting.Maximized);
-		glfwWindowHint(GLFW_VISIBLE,				aSetting.Visible);
-		glfwWindowHint(GLFW_SCALE_TO_MONITOR,		aSetting.ScaleToMonitor);
-		glfwWindowHint(GLFW_CENTER_CURSOR,			aSetting.CenterCursor);
-		glfwWindowHint(GLFW_FOCUS_ON_SHOW,			aSetting.FocusOnShow);
+	GLFWwindow* system_window::create_window_handle(window::creator* aSetting, int aWidth, int aHeight, const char* aTitle, GLFWmonitor* aMonitor, GLFWwindow* aWindow) {
+		glfwWindowHint(GLFW_RESIZABLE,				aSetting->Resizable);
+		glfwWindowHint(GLFW_DECORATED,				aSetting->Decorated);
+		glfwWindowHint(GLFW_FOCUSED,				aSetting->UserFocused);
+		glfwWindowHint(GLFW_AUTO_ICONIFY,			aSetting->AutoMinimize);
+		glfwWindowHint(GLFW_FLOATING,				aSetting->Floating);
+		glfwWindowHint(GLFW_MAXIMIZED,				aSetting->Maximized);
+		glfwWindowHint(GLFW_VISIBLE,				aSetting->Visible);
+		glfwWindowHint(GLFW_SCALE_TO_MONITOR,		aSetting->ScaleToMonitor);
+		glfwWindowHint(GLFW_CENTER_CURSOR,			aSetting->CenterCursor);
+		glfwWindowHint(GLFW_FOCUS_ON_SHOW,			aSetting->FocusOnShow);
 		glfwWindowHint(GLFW_CLIENT_API,				GLFW_NO_API);
 		glfwWindowHint(GLFW_REFRESH_RATE,			GLFW_DONT_CARE);
 		GLFWwindow* ReturnHandle = glfwCreateWindow(aWidth, aHeight, aTitle, aMonitor, aWindow);

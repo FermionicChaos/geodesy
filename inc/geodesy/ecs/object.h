@@ -32,9 +32,22 @@ namespace geodesy::ecs {
 		};
 
 		enum motion {
-			STATIC,			// Object doesn't move.
-			DYNAMIC,		// Object
-			ANIMATED,
+			STATIC,			// Object doesn't move in world space
+			DYNAMIC,		// Object moves, but based on physical forces applied.
+			ANIMATED,		// Object moves based on predetermined animation path data.
+		};
+
+		struct creator {
+			std::string 					Name;
+			std::string 					ModelPath;
+			core::math::vec<float, 3> 		Position;
+			core::math::vec<float, 2> 		Direction;
+			core::math::vec<float, 3> 		Scale;
+			std::vector<float> 				AnimationWeights;
+			motion 							MotionType;
+			bool 							GravityEnabled;
+			bool 							CollisionEnabled;
+			creator();
 		};
 
 		// ! ----- Host Data ----- ! //
@@ -86,6 +99,7 @@ namespace geodesy::ecs {
 			core::math::vec<float, 2> 				aDirection = { 0.0f, 0.0f },
 			core::math::vec<float, 3> 				aScale = { 1.0f, 1.0f, 1.0f }
 		);
+		object(std::shared_ptr<core::gcl::context> aContext, stage* aStage, creator* aCreator);
 		~object();
 
 		virtual bool is_subject();

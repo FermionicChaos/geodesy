@@ -34,7 +34,6 @@ namespace geodesy::bltn {
 
 	void unit_test::run() {
 		VkResult Result = VK_SUCCESS;
-		bool AnimationEnabled = false;
 		std::cout << "Thread Count: " << omp_get_max_threads() << std::endl;
 		omp_set_num_threads(omp_get_max_threads());
 
@@ -42,43 +41,39 @@ namespace geodesy::bltn {
 
 		timer PerformanceTimer(1.0);
 
-		system_window::create_info WindowCreateInfo;
-		math::vec<uint, 3> Resolution = { 1920, 1080, 1 };
-		WindowCreateInfo.Swapchain.FrameRate = 60.0f;
-		WindowCreateInfo.Swapchain.ImageUsage = image::usage::COLOR_ATTACHMENT | image::usage::SAMPLED | image::usage::TRANSFER_DST | image::usage::TRANSFER_SRC;
-		Window = std::make_shared<system_window>(DeviceContext, Engine->PrimaryDisplay, std::string("System Window"), WindowCreateInfo, math::vec<int, 2>(0, 0), math::vec<int, 2>(Resolution[0], Resolution[1]));
-
+		// Create Main 3D environment.
 		this->create_stage<stg::scene3d>(DeviceContext, "3D Rendering Testing");
-		this->create_stage<stg::canvas>(DeviceContext, "Window Testing", std::dynamic_pointer_cast<obj::window>(Window));
-		// TODO: Swap stage/object from vector into std::map<std::string, T>.
-		//^ Implement API Later
-		//^ this->Stage["Window Testing"]->share_subject_from(this->Stage["3D Rendering Testing"], "Camera3D", math::vec<float, 2>(1.0f, 1.0f));
-		this->Stage[1]->create_object<obj::subject_window>(
-			"Camera3D Window", 
-			std::dynamic_pointer_cast<ecs::subject>(this->Stage[0]->Object[0]), 
-			math::vec<float, 2>(1.0f, 1.0f)
-		);
+		// Create Reflection Stage for Camera3D.
+		this->create_stage<stage>(DeviceContext, "Window Testing");
 
-		// Set Camera3D as Input Target for user input.
-		Window->InputTarget = this->Stage[0]->Object[0];
+		// Create System Window Object.
+		system_window::creator SystemWindowCreator;
+		SystemWindowCreator.Name 			= "System Window";
+		SystemWindowCreator.Resolution 		= { 1920, 1080, 1 };
+		SystemWindowCreator.FrameCount 		= 3;
+		SystemWindowCreator.FrameRate 		= 60.0f;
+		SystemWindowCreator.Display 		= Engine->PrimaryDisplay;
+
+		// Use subject window to share camera3d renderings.
+		subject_window::creator SubjectWindowCreator;
+		SubjectWindowCreator.ModelPath 		= "assets/models/quad.obj";
+		SubjectWindowCreator.Position 		= { 0.0f, 0.0f, 0.5f };
+		SubjectWindowCreator.Direction 		= { 180.0f, 0.0f };
+		SubjectWindowCreator.Scale 			= { 1.0f, 1.0f, 1.0f };
+		SubjectWindowCreator.Name 			= "Camera3D Window";
+		SubjectWindowCreator.Subject 		= std::dynamic_pointer_cast<ecs::subject>(this->StageLookup["3D Rendering Testing"]->ObjectLookup["Camera3D"]);
+
+		// Create System Window.
+		Window = this->StageLookup["Window Testing"]->create_object<obj::system_window>(&SystemWindowCreator);
+		// Create Subject Window to Show Camera3D Renderings to System window.
+		this->StageLookup["Window Testing"]->create_object<obj::subject_window>(&SubjectWindowCreator);
+		// Forward Window User Input to Camera3D.
+		Window->InputTarget = this->StageLookup["3D Rendering Testing"]->ObjectLookup["Camera3D"];
 
 		// Start main loop.
 		float t = 0.0f;
 		while (Engine->ThreadController.cycle(TimeStep)) {
 			t += Engine->ThreadController.total_time() * 100.0f;
-
-			if (!AnimationEnabled) {
-				this->Stage[0]->Object[5]->AnimationWeights = { 1.0f, 0.0f };
-				this->Stage[0]->Object[6]->AnimationWeights = { 1.0f, 0.0f };
-				this->Stage[0]->Object[7]->AnimationWeights = { 1.0f, 0.0f };
-				this->Stage[0]->Object[8]->AnimationWeights = { 1.0f, 0.0f };
-			}
-			else {
-				this->Stage[0]->Object[5]->AnimationWeights = { 0.0f, 1.0f };
-				this->Stage[0]->Object[6]->AnimationWeights = { 0.0f, 1.0f };
-				this->Stage[0]->Object[7]->AnimationWeights = { 0.0f, 1.0f };
-				this->Stage[0]->Object[8]->AnimationWeights = { 0.0f, 1.0f };
-			}
 
 			double t1 = timer::get_time();
 
@@ -97,18 +92,16 @@ namespace geodesy::bltn {
 			double t4 = timer::get_time();
 
 			if (PerformanceTimer.check()) {
-				// math::vec<float, 2> SamplePoint = { 1.0f, 0.75f };
-				// std::cout << "----- Performance Metrics -----" << std::endl;
-				// std::cout << "Current Time:\t" << timer::get_time() << " s" << std::endl;
-				// std::cout << "Time Step:\t" << TimeStep * 1000 << " ms" << std::endl;
-				// std::cout << "Work Time:\t" << (t4 - t1) * 1000.0 << " ms" << std::endl;
-				// std::cout << "-Input Time:\t" << (t2 - t1) * 1000.0 << " ms" << std::endl;
-				// std::cout << "-Update Time:\t" << (t3 - t2) * 1000.0 << " ms" << std::endl;
-				// std::cout << "-Render Time:\t" << (t4 - t3) * 1000.0 << " ms" << std::endl;
-				// std::cout << "Halt Time:\t" << Engine->ThreadController.halt_time() * 1000.0 << " ms" << std::endl;
-				// std::cout << "Total Time:\t" << Engine->ThreadController.total_time() * 1000.0 << " ms" << std::endl << std::endl;
+				std::cout << "----- Performance Metrics -----" << std::endl;
+				std::cout << "Current Time:\t" << timer::get_time() << " s" << std::endl;
+				std::cout << "Time Step:\t" << TimeStep * 1000 << " ms" << std::endl;
+				std::cout << "Work Time:\t" << (t4 - t1) * 1000.0 << " ms" << std::endl;
+				std::cout << "-Input Time:\t" << (t2 - t1) * 1000.0 << " ms" << std::endl;
+				std::cout << "-Update Time:\t" << (t3 - t2) * 1000.0 << " ms" << std::endl;
+				std::cout << "-Render Time:\t" << (t4 - t3) * 1000.0 << " ms" << std::endl;
+				std::cout << "Halt Time:\t" << Engine->ThreadController.halt_time() * 1000.0 << " ms" << std::endl;
+				std::cout << "Total Time:\t" << Engine->ThreadController.total_time() * 1000.0 << " ms" << std::endl << std::endl;
 				//std::cout << "Thread Over Time: " << Engine->ThreadController.work_time() - TimeStep << std::endl;
-				AnimationEnabled = !AnimationEnabled;
 			}
 
 		}

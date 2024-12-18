@@ -6,21 +6,14 @@ namespace geodesy::ecs {
 	using namespace core;
 	using namespace gcl;
 
-	subject::subject(
-		std::shared_ptr<context> 	aContext, 
-		stage* 						aStage, 
-		std::string 				aName, 
-		std::string 				aModelPath,
-		math::vec<float, 3> 		aPosition, 
-		math::vec<float, 2> 		aDirection
-	) : object(
-		aContext, 
-		aStage, 
-		aName, 
-		aModelPath,
-		aPosition, 
-		aDirection
-	) {
+	subject::creator::creator() {
+		this->Resolution = { 1920, 1080, 1 };
+		this->FrameCount = 1;
+		this->FrameRate = 60.0f;
+		this->ImageUsage = image::usage::COLOR_ATTACHMENT | image::usage::SAMPLED | image::usage::TRANSFER_DST | image::usage::TRANSFER_SRC;
+	}
+
+	subject::subject(std::shared_ptr<core::gcl::context> aContext, stage* aStage, creator* aSubjectCreator) : object(aContext, aStage, aSubjectCreator) {
 
 		this->CommandPool = std::make_shared<gcl::command_pool>(aContext, gcl::device::operation::GRAPHICS_AND_COMPUTE);
 		this->SemaphorePool = std::make_shared<gcl::semaphore_pool>(aContext, 100); // ^Can be changed later

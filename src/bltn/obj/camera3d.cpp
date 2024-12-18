@@ -110,26 +110,12 @@ namespace geodesy::bltn::obj {
 	}
 
 
-	camera3d::camera3d(
-		std::shared_ptr<gcl::context> 		aContext, 
-		ecs::stage* 						aStage, 
-		std::string 						aName, 
-		const create_info& 					aCreateInfo,
-		math::vec<float, 3> 				aPosition,
-		math::vec<float, 2> 				aDirection
-	) : ecs::subject(
-		aContext, 
-		aStage, 
-		aName, 
-		"",	// TODO: find a model for camera3d.
-		aPosition,
-		aDirection
-	) {
+	camera3d::camera3d(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aCamera3DCreator) : ecs::subject(aContext, aStage, aCamera3DCreator) {
 		VkResult Result = VK_SUCCESS;
 		engine* Engine = aContext->Device->Engine;
-		this->FOV = aCreateInfo.FOV;
-		this->Near = aCreateInfo.Near;
-		this->Far = aCreateInfo.Far;
+		this->FOV 	= aCamera3DCreator->FOV;
+		this->Near 	= aCamera3DCreator->Near;
+		this->Far 	= aCamera3DCreator->Far;
 
 		// List of assets Camera3D will load into memory.
 		std::vector<std::string> AssetList = {
@@ -141,13 +127,13 @@ namespace geodesy::bltn::obj {
 		this->Asset = Engine->FileManager.open(AssetList);
 
 		// Allocate GPU resources.
-		this->Framechain = std::dynamic_pointer_cast<framechain>(std::make_shared<geometry_buffer>(aContext, aCreateInfo.Resolution, aCreateInfo.FrameRate, aCreateInfo.FrameCount));
+		this->Framechain = std::dynamic_pointer_cast<framechain>(std::make_shared<geometry_buffer>(aContext, aCamera3DCreator->Resolution, aCamera3DCreator->FrameRate, aCamera3DCreator->FrameCount));
 
 		// Grab shaders from asset list, compile, and link.
 		std::shared_ptr<gcl::shader> VertexShader = std::dynamic_pointer_cast<gcl::shader>(Asset[0]);
 		std::shared_ptr<gcl::shader> PixelShader = std::dynamic_pointer_cast<gcl::shader>(Asset[1]);
 		std::vector<std::shared_ptr<gcl::shader>> ShaderList = { VertexShader, PixelShader };
-		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::make_shared<pipeline::rasterizer>(ShaderList, aCreateInfo.Resolution);
+		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::make_shared<pipeline::rasterizer>(ShaderList, aCamera3DCreator->Resolution);
 
 		// This code specifies how the vextex data is to be interpreted from the bound vertex buffers.
 		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 0, offsetof(gfx::mesh::vertex, Position));

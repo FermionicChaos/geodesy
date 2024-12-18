@@ -7,23 +7,12 @@ namespace geodesy::bltn::obj {
 	using namespace core;
 	using namespace gcl;
 
-	subject_window::subject_window(
-		std::shared_ptr<core::gcl::context> 	aContext, 
-		ecs::stage* 							aStage, 
-		std::string 							aName, 
-		std::shared_ptr<ecs::subject> 			aSubjectSource, 
-		core::math::vec<float, 2> 				aSize,
-		core::math::vec<float, 3> 				aPosition,
-		core::math::vec<float, 2> 				aDirection
-	) : ecs::object(
-		aContext, 
-		aStage, 
-		aName,
-		"assets/models/quad.obj",
-		aPosition,
-		aDirection
-	) {
-		this->SubjectSource = aSubjectSource;
+	subject_window::creator::creator() {
+		this->Subject = nullptr;
+	}
+
+	subject_window::subject_window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aSubjectWindowCreator) : ecs::object(aContext, aStage, aSubjectWindowCreator) {
+		this->SubjectSource = aSubjectWindowCreator->Subject;
 	}
 
 	std::vector<core::gfx::draw_call> subject_window::draw(ecs::subject* aSubjectTarget) {

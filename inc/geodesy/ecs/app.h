@@ -23,13 +23,14 @@ namespace geodesy::ecs {
 	class app {
 	public:
 
-		std::mutex								Mutex;
-		engine*									Engine;
-		std::string								Name;
-		core::math::vec<uint, 3>				Version;
-		double									TimeStep;
-		double									Time;
-		std::vector<std::shared_ptr<stage>>		Stage;
+		std::mutex											Mutex;
+		engine*												Engine;
+		std::string											Name;
+		core::math::vec<uint, 3>							Version;
+		double												TimeStep;
+		double												Time;
+		std::vector<std::shared_ptr<stage>>					Stage;
+		std::map<std::string, std::shared_ptr<stage>> 		StageLookup;
 		
 		app(engine* aEngine, std::string aName, core::math::vec<uint, 3> aVersion);
 
@@ -41,6 +42,7 @@ namespace geodesy::ecs {
 				std::forward<Args>(aArgs)...
 			));
 			this->Stage.push_back(NewStage);
+			this->StageLookup[NewStage->Name] = NewStage;
 			return NewStage;
 		}
 

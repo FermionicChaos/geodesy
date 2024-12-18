@@ -20,18 +20,15 @@ namespace geodesy::bltn::obj {
 	class subject_window : public ecs::object {
 	public:
 
+		struct creator : object::creator {
+			std::shared_ptr<ecs::subject> 	Subject;
+			creator();
+		};
+
 		core::math::vec<float, 2> Size;
 		std::shared_ptr<ecs::subject> SubjectSource; 		// ! Change to std::weak_ptr
 
-		subject_window(
-			std::shared_ptr<core::gcl::context> 	aContext, 
-			ecs::stage* 							aStage, 
-			std::string 							aName, 
-			std::shared_ptr<ecs::subject> 			aSubjectSource, 
-			core::math::vec<float, 2> 				aSize,
-			core::math::vec<float, 3> 				aPosition = { 0.0f, 0.0f, 0.5f },
-			core::math::vec<float, 2> 				aDirection = { 180.0f, 0.0f }
-		);
+		subject_window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aSubjectWindowCreator);
 
 		std::vector<core::gfx::draw_call> draw(ecs::subject* aSubject) override;
 
