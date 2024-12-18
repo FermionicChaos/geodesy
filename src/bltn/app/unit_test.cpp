@@ -34,6 +34,7 @@ namespace geodesy::bltn {
 
 	void unit_test::run() {
 		VkResult Result = VK_SUCCESS;
+		bool AnimationEnabled = false;
 		std::cout << "Thread Count: " << omp_get_max_threads() << std::endl;
 		omp_set_num_threads(omp_get_max_threads());
 
@@ -66,6 +67,19 @@ namespace geodesy::bltn {
 		while (Engine->ThreadController.cycle(TimeStep)) {
 			t += Engine->ThreadController.total_time() * 100.0f;
 
+			if (!AnimationEnabled) {
+				this->Stage[0]->Object[5]->AnimationWeights = { 1.0f, 0.0f };
+				this->Stage[0]->Object[6]->AnimationWeights = { 1.0f, 0.0f };
+				this->Stage[0]->Object[7]->AnimationWeights = { 1.0f, 0.0f };
+				this->Stage[0]->Object[8]->AnimationWeights = { 1.0f, 0.0f };
+			}
+			else {
+				this->Stage[0]->Object[5]->AnimationWeights = { 0.0f, 1.0f };
+				this->Stage[0]->Object[6]->AnimationWeights = { 0.0f, 1.0f };
+				this->Stage[0]->Object[7]->AnimationWeights = { 0.0f, 1.0f };
+				this->Stage[0]->Object[8]->AnimationWeights = { 0.0f, 1.0f };
+			}
+
 			double t1 = timer::get_time();
 
 			system_window::poll_input();
@@ -94,6 +108,7 @@ namespace geodesy::bltn {
 				std::cout << "Halt Time:\t" << Engine->ThreadController.halt_time() * 1000.0 << " ms" << std::endl;
 				std::cout << "Total Time:\t" << Engine->ThreadController.total_time() * 1000.0 << " ms" << std::endl << std::endl;
 				//std::cout << "Thread Over Time: " << Engine->ThreadController.work_time() - TimeStep << std::endl;
+				AnimationEnabled = !AnimationEnabled;
 			}
 
 		}
