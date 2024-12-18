@@ -56,11 +56,11 @@ namespace geodesy::bltn {
 
 		// Use subject window to share camera3d renderings.
 		subject_window::creator SubjectWindowCreator;
+		SubjectWindowCreator.Name 			= "Camera3D Window";
 		SubjectWindowCreator.ModelPath 		= "assets/models/quad.obj";
 		SubjectWindowCreator.Position 		= { 0.0f, 0.0f, 0.5f };
 		SubjectWindowCreator.Direction 		= { 180.0f, 0.0f };
 		SubjectWindowCreator.Scale 			= { 1.0f, 1.0f, 1.0f };
-		SubjectWindowCreator.Name 			= "Camera3D Window";
 		SubjectWindowCreator.Subject 		= std::dynamic_pointer_cast<ecs::subject>(this->StageLookup["3D Rendering Testing"]->ObjectLookup["Camera3D"]);
 
 		// Create System Window.
