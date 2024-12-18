@@ -51,6 +51,8 @@ namespace geodesy::core::gfx {
 		// Gathers a list of references to MeshInstance objects.
 		std::vector<mesh::instance*> gather_mesh_instances();
 
+		std::vector<node*> linearize();
+
 	};
 
 }

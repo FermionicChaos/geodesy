@@ -144,6 +144,10 @@ namespace geodesy::core::gfx {
 		return T * R * S;
 	}
 
+	bool animation::node_anim::exists() const {
+		return (PositionKey.size() > 0) || (RotationKey.size() > 0) || (ScalingKey.size() > 0);
+	}
+
 	animation::animation() {
 		this->Name = "";
 		this->Duration = 0.0;

@@ -239,14 +239,21 @@ namespace geodesy::core::gfx {
 
 		// TODO: Figure out how to load animations per node. Also incredibly slow right now. Optimize Later.
 		// Overrides/Averages Animation Transformations with Bind Pose Transform based on weights.
-		if (aPlaybackAnimation.size() > 0) {
-			// If there are, iterate through them, get their transforms and
-			// their contribution factors (weights).
-			for (size_t i = 0; i < aPlaybackAnimation.size(); i++) {
-				// Get the animation transform for this node
-				// NodeTransform += AnimationTransform * Contribution Factor
+		for (size_t i = 0; i < aPlaybackAnimation.size(); i++) {
+			// Check if Animation Data exists for this node, if not, use bind pose.
+			if (aPlaybackAnimation[i][this->Name].exists()) {
+				// Animation Data Exists
 				double TickerTime = std::fmod(aTime * aPlaybackAnimation[i].TicksPerSecond, aPlaybackAnimation[i].Duration);
-				NodeTransform += aPlaybackAnimation[i][this->Name][TickerTime] * aAnimationWeight[i + 1];
+				if (this->Root == this) {
+					NodeTransform += this->Transformation * aPlaybackAnimation[i][this->Name][TickerTime] * aAnimationWeight[i + 1];
+				}
+				else {
+					NodeTransform += aPlaybackAnimation[i][this->Name][TickerTime] * aAnimationWeight[i + 1];
+				}
+			}
+			else {
+				// Animation Data Does Not Exist, use bind pose animation.
+				NodeTransform += this->Transformation * aAnimationWeight[i + 1];
 			}
 		}
 
@@ -269,6 +276,16 @@ namespace geodesy::core::gfx {
 			MIL.insert(MIL.end(), CMIL.begin(), CMIL.end());
 		}
 		return MIL;
+	}
+
+	std::vector<node*> node::linearize() {
+		std::vector<node*> Nodes;
+		Nodes.push_back(this);
+		for (node& Chd : this->Child) {
+			std::vector<node*> CNodes = Chd.linearize();
+			Nodes.insert(Nodes.end(), CNodes.begin(), CNodes.end());
+		}
+		return Nodes;
 	}
 
 }

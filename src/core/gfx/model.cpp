@@ -150,6 +150,38 @@ namespace geodesy::core::gfx {
 		// TODO: Implement direct texture loader later.
 		// this->Texture = std::vector<std::shared_ptr<gcl::image>>(Scene->mNumTextures);
 
+		// std::vector<node*> LinearHierarchy = this->Hierarchy.linearize();
+
+		// for (node* N : LinearHierarchy) {
+		// 	// Print Name of Node.
+		// 	std::cout << "Node Name: " << N->Name << std::endl;
+		// 	// Print Bind Pose Transformation Matrix
+		// 	// std::cout << "Bind Pose Transformation: " << N->Transformation << std::endl;
+		// 	// Print Animation Node Override Data.
+		// 	for (animation& A : this->Animation) {
+		// 		std::cout << "Animation Name: " << A.Name << std::endl;
+		// 		std::cout << "Applies To :" << N->Name << std::endl;
+		// 		//std::cout << "Animation Node Transform: " << A[N->Name][0.0] << std::endl;
+		// 		std::cout << "Bind Pose - Animation Transformation Matrix" << N->Transformation - A[N->Name][0.0] << std::endl;
+		// 	}
+		// 	// Print Mesh Instances
+		// 	// for (mesh::instance& MI : N->MeshInstance) {
+		// 	// 	std::cout << "Mesh Instance: " << MI.Index << std::endl;
+		// 	// 	std::cout << "Mesh Instance Transform: " << MI.Transform << std::endl;
+		// 	// 	std::cout << "Mesh Instance Bone Data: " << std::endl;
+		// 	// 	for (mesh::bone& B : MI.Bone) {
+		// 	// 		std::cout << "\tBone Name: " << B.Name << std::endl;
+		// 	// 		std::cout << "\tBone Transform: " << B.Transform << std::endl;
+		// 	// 		std::cout << "\tBone Offset: " << B.Offset << std::endl;
+		// 	// 		std::cout << "\tBone Vertex Weights: " << std::endl;
+		// 	// 		for (mesh::bone::weight& W : B.Vertex) {
+		// 	// 			std::cout << "\t\tVertex ID: " << W.ID << ", Weight: " << W.Weight << std::endl;
+		// 	// 		}
+		// 	// 	}
+		// 	// }
+		// 	// Print Animation Transformations at time 0.
+		// }
+
 		ModelImporter->FreeScene();
 	}
 

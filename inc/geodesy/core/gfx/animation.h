@@ -31,6 +31,7 @@ namespace geodesy::core::gfx {
 			std::vector<key<math::quaternion<float>>> 	RotationKey;
 			std::vector<key<math::vec<float, 3>>> 		ScalingKey;
 			math::mat<float, 4, 4> operator[](double aTime) const; // Expects Time in Ticks
+			bool exists() const;
 		};
 
 		// Not Implemented Yet
