@@ -21,24 +21,21 @@ namespace geodesy::ecs {
 	class subject : public object {
 	public:
 
+		struct creator : object::creator {
+			core::math::vec<uint, 3> 		Resolution;
+			uint 							FrameCount;
+			float 							FrameRate;
+			int 							ImageUsage;
+			creator();
+		};
+
 		std::shared_ptr<core::gcl::framechain> 						Framechain;
 		std::shared_ptr<core::gcl::pipeline> 						Pipeline;
 		std::shared_ptr<core::gcl::command_pool>					CommandPool;
 		std::shared_ptr<core::gcl::semaphore_pool> 					SemaphorePool;
 		std::vector<core::gcl::command_batch>						RenderingOperations;
 
-		subject(
-			std::shared_ptr<core::gcl::context> aContext, 
-			stage* aStage, 
-			std::string aName, 
-			core::math::vec<uint, 3> 
-			aFrameResolution, 
-			double aFrameRate, 
-			uint32_t aFrameCount, 
-			uint32_t aAttachmentCount, 
-			core::math::vec<float, 3> aPosition = { 0.0f, 0.0f, 0.0f }, 
-			core::math::vec<float, 2> aDirection = { 90.0f, 90.0f }
-		);
+		subject(std::shared_ptr<core::gcl::context> aContext, stage* aStage, creator* aSubjectCreator);
 		~subject();
 
 		virtual bool is_subject() override;

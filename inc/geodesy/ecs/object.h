@@ -21,18 +21,33 @@ namespace geodesy::ecs {
 		struct uniform_data {
 			alignas(16) core::math::vec<float, 3> Position;
 			alignas(16) core::math::mat<float, 4, 4> Orientation;
+			alignas(16) core::math::vec<float, 3> Scale;
 			uniform_data(
 				core::math::vec<float, 3> aPosition, 
 				core::math::vec<float, 3> aDirRight, 
 				core::math::vec<float, 3> aDirUp, 
-				core::math::vec<float, 3> aDirForward
+				core::math::vec<float, 3> aDirForward,
+				core::math::vec<float, 3> aScale
 			);
 		};
 
 		enum motion {
-			STATIC,			// Object doesn't move.
-			DYNAMIC,		// Object
-			ANIMATED,
+			STATIC,			// Object doesn't move in world space
+			DYNAMIC,		// Object moves, but based on physical forces applied.
+			ANIMATED,		// Object moves based on predetermined animation path data.
+		};
+
+		struct creator {
+			std::string 					Name;
+			std::string 					ModelPath;
+			core::math::vec<float, 3> 		Position;
+			core::math::vec<float, 2> 		Direction;
+			core::math::vec<float, 3> 		Scale;
+			std::vector<float> 				AnimationWeights;
+			motion 							MotionType;
+			bool 							GravityEnabled;
+			bool 							CollisionEnabled;
+			creator();
 		};
 
 		// ! ----- Host Data ----- ! //
@@ -53,11 +68,13 @@ namespace geodesy::ecs {
 		core::math::vec<float, 3>													DirectionRight;		// Right			[Normalized]
 		core::math::vec<float, 3>													DirectionUp;		// Up				[Normalized]
 		core::math::vec<float, 3>													DirectionFront;		// Backward			[Normalized]
+		core::math::vec<float, 3> 													Scale;				// Scaling Factor	[N/A]
 		core::math::vec<float, 3>													LinearMomentum;		// Linear Momentum	[kg*m/s]
 		core::math::vec<float, 3>													AngularMomentum;	// Angular Momentum [kg*m/s]
 
 		// * Object Modes:
 		// * This section controls the broader
+		std::vector<float> 															AnimationWeights;
 		motion 																		Motion;				// Informs how the phys engine will treat the object.
 		bool 																		Gravity;			// Determines if the object is affected by gravity.
 		bool 																		Collision;			// Determines if object is affected by collisions.
@@ -74,12 +91,15 @@ namespace geodesy::ecs {
 		std::map<subject*, std::vector<std::vector<core::gfx::draw_call>>>			Renderer;
 
 		object(
-			std::shared_ptr<core::gcl::context> aContext, 
-			stage* aStage, 
-			std::string aName, 
-			core::math::vec<float, 3> aPosition = { 0.0f, 0.0f, 0.0f }, 
-			core::math::vec<float, 2> aDirection = { 0.0f, 0.0f }
+			std::shared_ptr<core::gcl::context> 	aContext, 
+			stage* 									aStage, 
+			std::string 							aName,
+			std::string 							aModelPath = "",
+			core::math::vec<float, 3> 				aPosition = { 0.0f, 0.0f, 0.0f }, 
+			core::math::vec<float, 2> 				aDirection = { 0.0f, 0.0f },
+			core::math::vec<float, 3> 				aScale = { 1.0f, 1.0f, 1.0f }
 		);
+		object(std::shared_ptr<core::gcl::context> aContext, stage* aStage, creator* aCreator);
 		~object();
 
 		virtual bool is_subject();

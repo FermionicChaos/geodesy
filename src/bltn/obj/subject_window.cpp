@@ -7,42 +7,12 @@ namespace geodesy::bltn::obj {
 	using namespace core;
 	using namespace gcl;
 
-	subject_window::subject_window(
-		std::shared_ptr<core::gcl::context> aContext, 
-		ecs::stage* aStage, 
-		std::string aName, 
-		std::shared_ptr<ecs::subject> aSubjectSource, 
-		core::math::vec<float, 2> aSize,
-		core::math::vec<float, 3> aPosition,
-		core::math::vec<float, 2> aDirection
-	) : ecs::object(
-		aContext, 
-		aStage, 
-		aName,
-		aPosition,
-		aDirection
-	) {
-		engine* Engine = aContext->Device->Engine;
-		this->SubjectSource = aSubjectSource;
+	subject_window::creator::creator() {
+		this->Subject = nullptr;
+	}
 
-		// Create asset list.
-		std::vector<std::string> AssetPath = {
-			"assets/models/quad.obj"
-		};
-
-		// Load assets into memory.
-		this->Asset = Engine->FileManager.open(AssetPath);
-
-		// Get Host Model.
-		std::shared_ptr<gfx::model> HostModel = std::dynamic_pointer_cast<gfx::model>(this->Asset[0]);
-
-		gcl::image::create_info MaterialTextureInfo;
-		MaterialTextureInfo.Layout 		= image::layout::SHADER_READ_ONLY_OPTIMAL;
-		MaterialTextureInfo.Memory 		= device::memory::DEVICE_LOCAL;
-		MaterialTextureInfo.Usage	 	= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
-
-		// Get Device Model
-		this->Model = std::make_shared<core::gfx::model>(aContext, HostModel, MaterialTextureInfo);
+	subject_window::subject_window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aSubjectWindowCreator) : ecs::object(aContext, aStage, aSubjectWindowCreator) {
+		this->SubjectSource = aSubjectWindowCreator->Subject;
 	}
 
 	std::vector<core::gfx::draw_call> subject_window::draw(ecs::subject* aSubjectTarget) {

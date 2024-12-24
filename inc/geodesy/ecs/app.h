@@ -23,24 +23,26 @@ namespace geodesy::ecs {
 	class app {
 	public:
 
-		std::mutex								Mutex;
-		engine*									Engine;
-		std::string								Name;
-		core::math::vec<uint, 3>				Version;
-		double									TimeStep;
-		double									Time;
-		std::vector<std::shared_ptr<stage>>		Stage;
+		std::mutex											Mutex;
+		engine*												Engine;
+		std::string											Name;
+		core::math::vec<uint, 3>							Version;
+		double												TimeStep;
+		double												Time;
+		std::vector<std::shared_ptr<stage>>					Stage;
+		std::map<std::string, std::shared_ptr<stage>> 		StageLookup;
 		
 		app(engine* aEngine, std::string aName, core::math::vec<uint, 3> aVersion);
 
 		template<typename T, typename... Args>
 		std::shared_ptr<T> create_stage(std::shared_ptr<core::gcl::context> aContext, std::string aName, Args&&... aArgs) {
-			std::shared_ptr<T> NewStage = std::make_shared<T>(
+			std::shared_ptr<T> NewStage(new T(
 				aContext,
 				std::move(aName),
 				std::forward<Args>(aArgs)...
-			);
+			));
 			this->Stage.push_back(NewStage);
+			this->StageLookup[NewStage->Name] = NewStage;
 			return NewStage;
 		}
 

@@ -42,9 +42,14 @@ namespace geodesy::core::gcl {
 			array(std::shared_ptr<context> aContext, std::shared_ptr<pipeline> aPipeline, VkSamplerCreateInfo aSamplerCreateInfo = DefaultSamplerCreateInfo);
 			~array();
 
-			void bind(uint32_t aSet, uint32_t aBinding, uint32_t aArrayElement, std::shared_ptr<image> aImage, image::layout aImageLayout = image::layout::SHADER_READ_ONLY_OPTIMAL);
-			void bind(uint32_t aSet, uint32_t aBinding, uint32_t aArrayElement, std::shared_ptr<buffer> aBuffer, size_t aSize = VK_WHOLE_SIZE, size_t aOffset = 0);
-			void bind(uint32_t aSet, uint32_t aBinding, uint32_t aArrayElement, VkBufferView aBufferView);
+			void bind(int aSet, int aBinding, int aArrayElement, std::shared_ptr<image> aImage, image::layout aImageLayout = image::layout::SHADER_READ_ONLY_OPTIMAL);
+			void bind(int aSet, int aBinding, int aArrayElement, std::shared_ptr<buffer> aBuffer, size_t aSize = VK_WHOLE_SIZE, size_t aOffset = 0);
+			void bind(int aSet, int aBinding, int aArrayElement, VkBufferView aBufferView);
+
+		private:
+
+			bool exists(int aSet, int aBinding);
+			VkDescriptorSetLayoutBinding get_descriptor_set_layout_binding(int aSet, int aBinding);
 
 		};
 

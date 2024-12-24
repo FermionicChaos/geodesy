@@ -116,13 +116,13 @@ namespace geodesy::core::gcl {
 			std::vector<VkRect2D> 										DefaultScissor;
 			std::vector<VkPipelineColorBlendAttachmentState> 			AttachmentBlendingRules;
 
-			// Uniform metatdata
-			std::vector<std::vector<VkDescriptorSetLayoutBinding>>		DescriptorSetLayoutBinding;			// Vulkan Spec Minimum Req: 4 Descriptor Sets
-			std::map<std::pair<int, int>, util::variable> 				DescriptorSetVariable;
-
 			// Vertex metadata
 			std::vector<VkVertexInputBindingDescription> 				VertexBufferBindingDescription;		// Vulkan Spec Minimum Req: 16 Vertex Buffer Bindings
 			std::vector<attribute> 										VertexAttribute;					// Vulkan Spec Minimum Req: 16 Vertex Attributes
+
+			// Uniform metatdata
+			std::vector<std::vector<VkDescriptorSetLayoutBinding>>		DescriptorSetLayoutBinding;			// Vulkan Spec Minimum Req: 4 Descriptor Sets
+			std::map<std::pair<int, int>, util::variable> 				DescriptorSetVariable;
 
 			// Attachment metadata
 			std::vector<attachment> 									ColorAttachment;					// Vulkan Spec Minimum Req: 4 Attachments
@@ -202,6 +202,18 @@ namespace geodesy::core::gcl {
 		// Destructor
 		~pipeline();
 
+		static void barrier(
+			VkCommandBuffer aCommandBuffer,
+			uint aSrcStage, uint aDstStage,
+			uint aSrcAccess, uint aDstAccess
+		);
+		static void barrier(
+			VkCommandBuffer aCommandBuffer, 
+			uint aSrcStage, uint aDstStage, 
+			const std::vector<VkMemoryBarrier>& aMemoryBarrier = {}, 
+			const std::vector<VkBufferMemoryBarrier>& aBufferBarrier = {}, 
+			const std::vector<VkImageMemoryBarrier>& aImageBarrier = {}
+		);
 		void begin(VkCommandBuffer aCommandBuffer, std::shared_ptr<framebuffer> aFrame, VkRect2D aRenderArea, VkSubpassContents aSubpassContents = VK_SUBPASS_CONTENTS_INLINE);
 		void bind(
 			VkCommandBuffer 											aCommandBuffer, 

@@ -205,7 +205,7 @@ namespace geodesy::core::io {
 		case IMAGE: 		return std::make_shared<gcl::image>(aFilePath);
 		case SHADER: 		return std::make_shared<gcl::shader>(aFilePath);
 		//case FONT: 			return std::make_shared<gfx::font>(aFilePath);
-		case MODEL: 		return std::make_shared<gfx::model>(aFilePath, aFileManager);
+		case MODEL: 		return std::shared_ptr<gfx::model>(new gfx::model(aFilePath, aFileManager));
 		}
 	}
 

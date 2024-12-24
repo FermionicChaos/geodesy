@@ -53,22 +53,24 @@ namespace geodesy::ecs {
 			size_t Count;
 		};
 
-		std::string									Name;
-		std::shared_ptr<core::gcl::context> 		Context;
-		std::vector<std::shared_ptr<object>>		Object;
+		std::string											Name;
+		std::shared_ptr<core::gcl::context> 				Context;
+		std::vector<std::shared_ptr<object>>				Object;
+		std::map<std::string, std::shared_ptr<object>> 		ObjectLookup;
 
 		stage(std::shared_ptr<core::gcl::context> aContext, std::string aName);
 		~stage();
 
-		template<typename T, typename... Args>
-		std::shared_ptr<T> create_object(std::string aName, Args&&... aArgs) {
-			std::shared_ptr<T> NewObject = std::make_shared<T>(
+		// This is a helper utility function that helps create arbitrary objects.
+		template<typename object_type, typename... args>
+		std::shared_ptr<object_type> create_object(args&&... aArgs) {
+			std::shared_ptr<object_type> NewObject(new object_type(
 				this->Context,
 				this,
-				std::move(aName),
-				std::forward<Args>(aArgs)...
-			);
+				std::forward<args>(aArgs)...
+			));
 			this->Object.push_back(NewObject);
+			this->ObjectLookup[NewObject->Name] = NewObject;
 			return NewObject;
 		}
 

@@ -1,0 +1,6 @@
+- Clean up asset loader to handle non existent files.
+- Implement method for handling in built textures to model class.
+- Implement mip map for base image class.
+- Weird bug where screen freezes over losing window focus.
+- Handle Swapchain recreation.
+- Rendering: Fix Parallax Map Implementation

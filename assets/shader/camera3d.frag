@@ -1,15 +1,7 @@
 #version 450 core
 #extension GL_ARB_separate_shader_objects : require
 
-// Geometry Buffer Ouput. Pixel Position is the world space
-// position of the pixel, PixelNormal is the world space normal
-// for that pixel. These world space positions and normals will
-// be used for deferred lighting calculations.
-layout (location = 0) out vec4 PixelColor;
-layout (location = 1) out vec4 PixelPosition;
-layout (location = 2) out vec4 PixelNormal;
-
-// Transformed vertex data, interpolated from the vertex shader.
+// -------------------- INPUT DATA -------------------- //
 layout (location = 0) in vec3 WorldPosition;
 layout (location = 1) in vec3 WorldNormal;
 layout (location = 2) in vec3 WorldTangent;
@@ -17,7 +9,8 @@ layout (location = 3) in vec3 WorldBitangent;
 layout (location = 4) in vec3 TextureCoordinate;
 layout (location = 5) in vec4 InterpolatedVertexColor;
 
-// Camera3D information.
+// -------------------- UNIFORM DATA -------------------- //
+
 layout (set = 0, binding = 0) uniform Camera3DUBO {
 	vec3 Position;
     mat4 Rotation;
@@ -25,13 +18,22 @@ layout (set = 0, binding = 0) uniform Camera3DUBO {
 } Camera3D;
 
 layout (set = 0, binding = 3) uniform MaterialUBO {
-	float ParallaxScale;
-	int ParallaxIterations;
-	float VertexColorWeight;
+	vec3 Color;
+	vec3 Emissive;
+	vec3 Ambient;
+	vec3 Specular;
+	float Opacity;
 	float RefractionIndex;
+	float Shininess;
+	float Metallic;
+	float Roughness;
+	float VertexColorWeight;
+	float MaterialColorWeight;
+	float ParallaxScale;
+	int ParallaxIterationCount;
 } Material;
 
-// Material texture inputs.
+// Texture Data
 layout (set = 1, binding = 0) uniform sampler2D SurfaceColor; 				// Color of the Surface
 layout (set = 1, binding = 1) uniform sampler2D SurfaceNormalMap; 			// Normal Map of the Surface.
 layout (set = 1, binding = 2) uniform sampler2D SurfaceHeightMap; 			// Bump Map of the surface.
@@ -39,6 +41,16 @@ layout (set = 1, binding = 3) uniform sampler2D SurfaceEmission; 			// Light Emi
 layout (set = 1, binding = 4) uniform sampler2D SurfaceOpacity; 			// Opacity of the Surface.
 layout (set = 1, binding = 5) uniform sampler2D SurfaceAOC; 				// Opacity of the Surface.
 layout (set = 1, binding = 6) uniform sampler2D SurfaceMetallicRoughness;	// PBR Specific
+
+// -------------------- OUTPUT DATA -------------------- //
+
+// Geometry Buffer Ouput. Pixel Position is the world space
+// position of the pixel, PixelNormal is the world space normal
+// for that pixel. These world space positions and normals will
+// be used for deferred lighting calculations.
+layout (location = 0) out vec4 PixelColor;
+layout (location = 1) out vec4 PixelPosition;
+layout (location = 2) out vec4 PixelNormal;
 
 vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
 
@@ -75,7 +87,7 @@ vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
 	// to start biased towards the end and move inwards. That
 	// way it finds the first intersection farthest to UVMax.
 	vec2 UVMid;
-    for (int i = 0; i < Material.ParallaxIterations; i++) {
+    for (int i = 0; i < Material.ParallaxIterationCount; i++) {
 
 	    // Compute the midpoint between UVStart and UVEnd
         UVMid = (UVStart + UVEnd) * 0.5;
@@ -123,6 +135,11 @@ void main() {
 	PixelPosition = vec4(WorldPosition, 1.0) + PixelNormal * texture(SurfaceHeightMap, UV).r;
 
 	// Simple Tranmsmission of the surface color.
-	PixelColor = mix(texture(SurfaceColor, UV), InterpolatedVertexColor, Material.VertexColorWeight);
+	vec4 TextureColor = texture(SurfaceColor, UV);
+	vec4 VertexColor = InterpolatedVertexColor;
+	vec4 MaterialColor = vec4(Material.Color, Material.Opacity);
+
+	PixelColor = mix(TextureColor, VertexColor, Material.VertexColorWeight);
+	PixelColor = mix(PixelColor, MaterialColor, Material.MaterialColorWeight);
 
 }

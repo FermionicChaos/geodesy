@@ -3,6 +3,11 @@
 #include <vector>
 #include <algorithm>
 
+// Model Loading
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 #define MAX_BONE_COUNT 256
 
 namespace geodesy::core::gfx {
@@ -16,6 +21,7 @@ namespace geodesy::core::gfx {
 			alignas(16) math::mat<float, 4, 4> BoneTransform[MAX_BONE_COUNT];
 			alignas(16) math::mat<float, 4, 4> BoneOffset[MAX_BONE_COUNT];
 			mesh_instance_ubo_data();
+			mesh_instance_ubo_data(const mesh::instance* aInstance);
 		};
 
 		mesh_instance_ubo_data::mesh_instance_ubo_data() {
@@ -38,6 +44,14 @@ namespace geodesy::core::gfx {
 					0.0f, 0.0f, 1.0f, 0.0f,
 					0.0f, 0.0f, 0.0f, 1.0f
 				};
+			}
+		}
+
+		mesh_instance_ubo_data::mesh_instance_ubo_data(const mesh::instance* aInstance) {
+			this->Transform = aInstance->Transform;
+			for (size_t i = 0; i < aInstance->Bone.size(); i++) {
+				this->BoneTransform[i] = aInstance->Bone[i].Transform;
+				this->BoneOffset[i] = aInstance->Bone[i].Offset;
 			}
 		}
 
@@ -66,31 +80,47 @@ namespace geodesy::core::gfx {
 				for (size_t k = 0; k < Bone[j].Vertex.size(); k++) {
 					// If the vertex index matches the bone vertex index, then then copy over.
 					if (i == Bone[j].Vertex[k].ID) {
-						// Uses insert sort to keep the weights sorted from largest to smallest.
-						// {  0,  1   2,  3, 4 }
-						// { 69, 25, 21, 10, 4 } <- 15
-						// Insert at index 3
-						// { 69, 25, 21, 15, 10, 4 }
-						for (size_t a = 0; a < VertexBoneWeight.size(); a++) {
-							if (VertexBoneWeight[a].Weight < Bone[j].Vertex[k].Weight) {
-								VertexBoneWeight.insert(VertexBoneWeight.begin() + a, Bone[j].Vertex[k]);
-								break;
+						// Store Bone Index j and Weight.
+						bone::weight NewVertexWeight = { (uint)j, Bone[j].Vertex[k].Weight };
+						if (VertexBoneWeight.size() > 0) {
+							// Uses insert sort to keep the weights sorted from largest to smallest.
+							// {  0,  1   2,  3, 4 }
+							// { 69, 25, 21, 10, 4 } <- 15
+							// Insert at index 3
+							// { 69, 25, 21, 15, 10, 4 }
+							for (size_t a = 0; a < VertexBoneWeight.size(); a++) {
+								if (VertexBoneWeight[a].Weight < NewVertexWeight.Weight) {
+									VertexBoneWeight.insert(VertexBoneWeight.begin() + a, NewVertexWeight);
+									break;
+								}
 							}
+						}
+						else {
+							// Add First Element.
+							VertexBoneWeight.push_back(NewVertexWeight);
 						}
 					}
 				}
 			}
 
-			// Will take the first and largest elements.
+			// Will take the first and largest elements. Disable this section if you
+			// want to make sure bind pose bones are equal to default mesh transform.
+			float TotalVertexWeight = 0.0f;
 			for (size_t j = 0; j < std::min((size_t)4, VertexBoneWeight.size()); j++) {
+				if (VertexBoneWeight[j].Weight == 0.0f) {
+					break;
+				}
 				Vertex[i].BoneID[j] 		= VertexBoneWeight[j].ID;
 				Vertex[i].BoneWeight[j] 	= VertexBoneWeight[j].Weight;
+				TotalVertexWeight 			+= VertexBoneWeight[j].Weight;
 			}
+			Vertex[i].BoneWeight /= TotalVertexWeight;
 		}
 	}
 
 	mesh::instance::instance(std::shared_ptr<gcl::context> aContext, const instance& aInstance) {
 		this->Index 		= aInstance.Index;
+		this->Transform 	= aInstance.Transform;
 		this->Vertex 		= aInstance.Vertex;
 		this->Bone 			= aInstance.Bone;
 		this->MaterialIndex = aInstance.MaterialIndex;
@@ -106,39 +136,112 @@ namespace geodesy::core::gfx {
         buffer::create_info UBCI;
         UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
         UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
-		mesh_instance_ubo_data MeshInstanceUBOData;
-		MeshInstanceUBOData.Transform = aInstance.Transform;
-		for (size_t i = 0; i < aInstance.Bone.size(); i++) {
-			MeshInstanceUBOData.BoneTransform[i] 	= aInstance.Bone[i].Transform;
-			MeshInstanceUBOData.BoneOffset[i] 		= aInstance.Bone[i].Offset;
-		}
+
+		mesh_instance_ubo_data MeshInstanceUBOData = mesh_instance_ubo_data(this);
         this->UniformBuffer = Context->create_buffer(UBCI, sizeof(mesh_instance_ubo_data), &MeshInstanceUBOData);
 		this->UniformBuffer->map_memory(0, sizeof(mesh_instance_ubo_data));
 	}
 
 	void mesh::instance::update(double DeltaTime) {
-		// The goal here is to update the Bone Buffer in the vertex shader.
-		std::vector<math::mat<float, 4, 4>> TransformData(1 + 2*Bone.size());
-
-		// This is the Mesh Instance Transform. This transform is applied to mesh space vertices
-		// directly is no bone structure is altering the vertices. It takes the mesh space vertices
-		// and transforms them to root model space. This is directly applied to the vertices.
-		TransformData[0] = this->Transform;
-
-		// This is the current transform data for each bone modified by the current animations structure.
+		// Convert uniform buffer pointer into data structure for writing.
+		mesh_instance_ubo_data* MeshInstanceUBOData = (mesh_instance_ubo_data*)this->UniformBuffer->Ptr;
+		// Carry over mesh instance node transform.
+		MeshInstanceUBOData->Transform = this->Transform;
+		// Transfer all bone transformations to the uniform buffer.
 		for (size_t i = 0; i < Bone.size(); i++) {
-			TransformData[i + 1] = Bone[i].Transform;
+			MeshInstanceUBOData->BoneTransform[i] = Bone[i].Transform;
+		}
+	}
+
+	mesh::mesh(const aiMesh* aMesh) {
+		// Size Vertex Buffer to hold all vertices.
+		Vertex = std::vector<vertex>(aMesh->mNumVertices);
+		// Load Vertex Data
+		for (size_t i = 0; i < Vertex.size(); i++) {
+			// Check if mesh has positions.
+			if (aMesh->HasPositions()) {
+				Vertex[i].Position = {
+					aMesh->mVertices[i].x,
+					aMesh->mVertices[i].y,
+					aMesh->mVertices[i].z
+				};
+			}
+			// Check if mesh has normals.
+			if (aMesh->HasNormals()) {
+				Vertex[i].Normal = {
+					aMesh->mNormals[i].x,
+					aMesh->mNormals[i].y,
+					aMesh->mNormals[i].z
+				};
+			}
+			// Check if mesh has tangents and bitangents.
+			if (aMesh->HasTangentsAndBitangents()) {
+				Vertex[i].Tangent = {
+					aMesh->mTangents[i].x,
+					aMesh->mTangents[i].y,
+					aMesh->mTangents[i].z
+				};
+				Vertex[i].Bitangent = {
+					aMesh->mBitangents[i].x,
+					aMesh->mBitangents[i].y,
+					aMesh->mBitangents[i].z
+				};
+			}
+
+			// -------------------- Texturing & Coloring -------------------- //
+
+			// TODO: Support multiple textures
+			// Take only the first element of the Texture Coordinate Array.
+			for (int k = 0; k < 1 /* AI_MAX_NUMBER_OF_TEXTURECOORDS */; k++) {
+				if (aMesh->HasTextureCoords(k)) {
+					Vertex[i].TextureCoordinate = {
+						aMesh->mTextureCoords[k][i].x,
+						aMesh->mTextureCoords[k][i].y,
+						aMesh->mTextureCoords[k][i].z
+					};
+				}
+			}
+			// Take an average of all the Colors associated with Vertex.
+			for (int k = 0; k < 1 /*AI_MAX_NUMBER_OF_COLOR_SETS*/; k++) {
+				if (aMesh->HasVertexColors(k)) {
+					Vertex[i].Color += {
+						aMesh->mColors[k][i].r,
+						aMesh->mColors[k][i].g,
+						aMesh->mColors[k][i].b,
+						aMesh->mColors[k][i].a
+					};
+				}
+			}
+			// VertexData[j].Color /= AI_MAX_NUMBER_OF_COLOR_SETS;
 		}
 
-		// This is the offset matrix data that transforms vertices from mesh space to bone space.
-		// Needed to transform vertices from bone space to mesh space for animated bones to animate
-		// the mesh.
-		for (size_t i = 0; i < Bone.size(); i++) {
-			TransformData[i + Bone.size() + 1] = Bone[i].Offset;
+		// Load Index Data
+		if (aMesh->mNumVertices <= (1 << 16)) {
+			// Implies that the mesh has less than 2^16 vertices, only 16 bit indices are needed.
+			Topology.Data16 = std::vector<ushort>(aMesh->mNumFaces * 3);
+			for (size_t i = 0; i < aMesh->mNumFaces; i++) {
+				// Skip non triangle indices.
+				if (aMesh->mFaces[i].mNumIndices != 3) {
+					continue;
+				}
+				Topology.Data16[3*i + 0] = (ushort)aMesh->mFaces[i].mIndices[0];
+				Topology.Data16[3*i + 1] = (ushort)aMesh->mFaces[i].mIndices[1];
+				Topology.Data16[3*i + 2] = (ushort)aMesh->mFaces[i].mIndices[2];
+			} 
 		}
-
-		// Send data to the GPU Uniform Buffer.
-		this->UniformBuffer->write(0, TransformData.data(), 0, TransformData.size() * sizeof(math::mat<float, 4, 4>));
+		else {
+			// Implies that the mesh has more than 2^16 vertices, 32 bit indices are needed.
+			Topology.Data32 = std::vector<uint>(aMesh->mNumFaces * 3);
+			for (size_t i = 0; i < aMesh->mNumFaces; i++) {
+				// Skip non triangle indices.
+				if (aMesh->mFaces[i].mNumIndices != 3) {
+					continue;
+				}
+				Topology.Data32[3*i + 0] = (uint)aMesh->mFaces[i].mIndices[0];
+				Topology.Data32[3*i + 1] = (uint)aMesh->mFaces[i].mIndices[1];
+				Topology.Data32[3*i + 2] = (uint)aMesh->mFaces[i].mIndices[2];
+			}
+		}
 	}
 
 	mesh::mesh(std::shared_ptr<gcl::context> aContext, const std::vector<vertex>& aVertexData, const topology& aTopologyData) : phys::mesh() {

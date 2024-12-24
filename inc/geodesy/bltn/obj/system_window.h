@@ -29,11 +29,13 @@ namespace geodesy::bltn::obj {
 		// Input
 		static void poll_input();
 
-		struct create_info {
-			window::property 				Property;
-			core::gcl::swapchain::property 	Swapchain;
-			float 							FrameRate;
-			create_info();
+		struct creator : window::creator {
+			std::shared_ptr<system_display> 		Display;
+			core::gcl::swapchain::colorspace		ColorSpace;
+			core::gcl::swapchain::composite 		CompositeAlpha;
+			core::gcl::swapchain::present_mode 		PresentMode;
+			bool 									Clipped;
+			creator();
 		};
 
 		std::weak_ptr<object> 					InputTarget;
@@ -41,15 +43,14 @@ namespace geodesy::bltn::obj {
 		GLFWwindow* 							WindowHandle;
 		VkSurfaceKHR 							SurfaceHandle;
 
-		system_window(std::shared_ptr<core::gcl::context> aContext, std::shared_ptr<system_display> aDisplay, std::string aName, const create_info& aCreateInfo, core::math::vec<int, 2> aPosition, core::math::vec<int, 2> aSize);
-		system_window(std::shared_ptr<core::gcl::context> aContext, std::shared_ptr<system_display> aDisplay, std::string aName, const create_info& aCreateInfo, core::math::vec<float, 3> aPosition, core::math::vec<float, 2> aSize);
+		system_window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aSystemWindowCreator);
 		~system_window();
 
 		void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f }) override;
 
 	private:
 
-		GLFWwindow* create_window_handle(window::property aSetting, int aWidth, int aHeight, const char* aTitle, GLFWmonitor* aMonitor, GLFWwindow* aWindow);
+		GLFWwindow* create_window_handle(window::creator* aSetting, int aWidth, int aHeight, const char* aTitle, GLFWmonitor* aMonitor, GLFWwindow* aWindow);
 		void destroy_window_handle(GLFWwindow* aWindowHandle);
 
 		// ------------------------------ Callbacks (Internal, Do Not Use) ------------------------------ //

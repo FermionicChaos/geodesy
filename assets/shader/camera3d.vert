@@ -3,13 +3,7 @@
 
 #define MAX_BONE_COUNT 256
 
-layout (location = 0) out vec3 WorldPosition;
-layout (location = 1) out vec3 WorldNormal;
-layout (location = 2) out vec3 WorldTangent;
-layout (location = 3) out vec3 WorldBitangent;
-layout (location = 4) out vec3 TextureCoordinate;
-layout (location = 5) out vec4 InterpolatedVertexColor;
-
+// -------------------- INPUT DATA -------------------- //
 layout (location = 0) in vec3   VertexPosition;
 layout (location = 1) in vec3   VertexNormal;
 layout (location = 2) in vec3   VertexTangent;
@@ -19,6 +13,7 @@ layout (location = 5) in vec4   VertexColor;
 layout (location = 6) in uvec4  VertexBoneID;
 layout (location = 7) in vec4   VertexBoneWeight;
 
+// -------------------- UNIFORM DATA -------------------- //
 layout (set = 0, binding = 0) uniform Camera3DUBO {
 	vec3 Position;
     mat4 Rotation;
@@ -28,13 +23,22 @@ layout (set = 0, binding = 0) uniform Camera3DUBO {
 layout (set = 0, binding = 1) uniform ObjectUBO {
     vec3 Position;
     mat4 Orientation;
+    vec3 Scale;
 } Object;
 
 layout (set = 0, binding = 2) uniform MeshUBO {
-    mat4 Transform;
+    mat4 DefaultTransform;
     mat4 BoneTransform[MAX_BONE_COUNT];
     mat4 OffsetTransform[MAX_BONE_COUNT];
 } Mesh;
+
+// -------------------- OUTPUT DATA -------------------- //
+layout (location = 0) out vec3 WorldPosition;
+layout (location = 1) out vec3 WorldNormal;
+layout (location = 2) out vec3 WorldTangent;
+layout (location = 3) out vec3 WorldBitangent;
+layout (location = 4) out vec3 TextureCoordinate;
+layout (location = 5) out vec4 InterpolatedVertexColor;
 
 void main() {
     vec4 v = vec4(VertexPosition, 1.0);
@@ -45,10 +49,12 @@ void main() {
     mat4 mt = mat4(0.0f);
     if (VertexBoneID[0] < MAX_BONE_COUNT) {
         for (int i = 0; i < 4; i++) {
-            mt += Mesh.BoneTransform[VertexBoneID[i]] * Mesh.OffsetTransform[VertexBoneID[i]] * VertexBoneWeight[i];
+            if (VertexBoneID[i] < MAX_BONE_COUNT) {
+                mt += Mesh.BoneTransform[VertexBoneID[i]] * Mesh.OffsetTransform[VertexBoneID[i]] * VertexBoneWeight[i];
+            }
         }
     } else {
-        mt = Mesh.Transform;
+        mt = Mesh.DefaultTransform;
     }
 
     // Convert to model space
@@ -58,10 +64,10 @@ void main() {
 	b = mt * b;
 
     // Orient object in model space.
-    v = Object.Orientation * v;
-    n = Object.Orientation * n;
-	t = Object.Orientation * t;
-	b = Object.Orientation * b;
+    v = Object.Orientation * vec4(Object.Scale * v.xyz, 1.0);
+    n = Object.Orientation * vec4(Object.Scale * n.xyz, 1.0);
+	t = Object.Orientation * vec4(Object.Scale * t.xyz, 1.0);
+	b = Object.Orientation * vec4(Object.Scale * b.xyz, 1.0);
 
     // Convert to world space.
     v = vec4(v.xyz + Object.Position, 1.0f);
