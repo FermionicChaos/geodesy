@@ -1,8 +1,6 @@
 #include <geodesy/engine.h>
 #include <geodesy/core/gcl/context.h>
 
-#include <geodesy/bltn/obj/system_window.h>
-
 namespace geodesy::core::gcl {
 
 	using namespace util;
@@ -34,8 +32,8 @@ namespace geodesy::core::gcl {
 			std::vector<int>							UQFI;
 			std::vector<std::vector<float>> 	 		QP;
 			std::vector<VkDeviceQueueCreateInfo> 		QCI;
-			std::vector<const char*>					Layer;
-			std::vector<const char*>					Extension = bltn::obj::system_window::context_extensions();// = aExtensionList;
+			std::vector<const char*>					Layer = aLayerList;
+			std::vector<const char*>					Extension = aExtensionList;
 			VkPhysicalDeviceDynamicRenderingFeatures 	DRF{};
 			VkDeviceCreateInfo 					 		CI{};
 

@@ -17,15 +17,19 @@ namespace geodesy::bltn {
 	using namespace lgc;
 
 	unit_test::unit_test(engine* aEngine) : ecs::app(aEngine, "geodesy-unit-test", { 1, 0, 0 }) {
+		TimeStep = 1.0 / 100.0;
+		Window = nullptr;
+		// I want my device context to support these operation types.
 		std::vector<uint> OperationList = {
 			device::operation::TRANSFER,
 			device::operation::TRANSFER_AND_COMPUTE,
 			device::operation::GRAPHICS_AND_COMPUTE,
 			device::operation::PRESENT
 		};
-		TimeStep = 1.0 / 100.0;
-		DeviceContext = Engine->create_device_context(Engine->PrimaryDevice, OperationList);
-		Window = nullptr;
+		// I want my device context to be able to render to system windows.
+		std::vector<const char*> DeviceContextExtension = system_window::context_extensions();
+		// Engine create device context for gpu operations.
+		DeviceContext = Engine->create_device_context(Engine->PrimaryDevice, OperationList, {}, DeviceContextExtension);
 	}
 
 	unit_test::~unit_test() {

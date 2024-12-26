@@ -17,6 +17,72 @@ namespace geodesy {
 	using namespace lgc;
 	using namespace gfx;
 
+	static bool Initialized = false;
+
+	bool engine::initialize() {
+		// This is to prevent loading twice. Initializes all third party libraries for the lifetime of the program.
+		if (Initialized) {
+			return true;
+		}
+
+		// Initialize Third Party Libraries.
+		bool Checker = true;
+
+		// Initialize Shader Reflection API glslang.
+		Checker &= shader::initialize();
+
+		// Initialize Font Loading Library FreeType.
+		// Checker &= font::initialize();
+
+		// Initialize Image Loading Library FreeImage.
+		// Checker &= image::initialize();
+
+		// Initialize Model Loading Library Assimp.
+		Checker &= model::initialize();
+
+		// Initialize Audio Loading Library PortAudio.
+		// Checker &= audio::initialize();
+
+		// Initialize Window System Integration GLFW.
+		Checker &= system_window::initialize();
+
+		// Set Initialized to true.
+		Initialized = Checker;
+
+		// If not initialized, terminate all third party libraries.
+		if (!Initialized) {
+			engine::terminate();
+		}
+
+		return Initialized;
+	}
+
+	void engine::terminate() {
+		if (Initialized) {
+
+			// Terminate Window System Integration GLFW.
+			system_window::terminate();
+
+			// Terminate Audio Loading Library PortAudio.
+			// audio::terminate();
+
+			// Terminate Model Loading Library Assimp.
+			model::terminate();
+
+			// Terminate Image Loading Library FreeImage.
+			// image::terminate();
+
+			// Terminate Font Loading Library FreeType.
+			// font::terminate();
+
+			// Terminate Shader Reflection API glslang.
+			shader::terminate();
+
+			// Set Initialized to false.
+			Initialized = false;
+		}
+	}
+	
 	engine::engine() {
 		this->Handle = VK_NULL_HANDLE;
 		this->PrimaryDisplay = nullptr;
@@ -28,45 +94,13 @@ namespace geodesy {
 		this->Name			= "Geodesy Engine";
 		this->Version		= math::vec<uint, 3>(GEODESY_ENGINE_VERSION_MAJOR, GEODESY_ENGINE_VERSION_MINOR, GEODESY_ENGINE_VERSION_PATCH);
 
-		// Initialize Third Party Libraries.
-		{
-			if (shader::initialize()) {
-				Logger << log::message(log::GEODESY, log::INFO, log::SUCCESS, "Shader Reflection API Initializetion Successful!");
-			}
-			else {
-				Logger << log::message(log::GEODESY, log::ERROR, log::INITIALIZATION_FAILED, "Shader Reflection API Initializetion Failed!");
-				throw Logger;
-			}
-
-			// Initialize Model Loading Library
-			if (model::initialize()) {
-				Logger << log::message(log::GEODESY, log::INFO, log::SUCCESS, "Model Loading Library Initializetion Successful!");
-			}
-			else {
-				Logger << log::message(log::GEODESY, log::ERROR, log::INITIALIZATION_FAILED, "Model Loading Library Initializetion Failed!");
-				throw Logger;
-			}
-
-			// Window System Integration
-			if (system_window::initialize()) {
-				Logger << log::message(log::GEODESY, log::INFO, log::SUCCESS, "Window System Integration Initializetion Successful!");
-			}
-			else {
-				Logger << log::message(log::GEODESY, log::ERROR, log::INITIALIZATION_FAILED, "Window System Integration Initializetion Failed!");
-				throw Logger;
-			}
-
-		}
-
 		// Initialize Vulkan Graphics & Computation API.
 		{
 			VkApplicationInfo AppInfo{};
 			VkInstanceCreateInfo CreateInfo{};
 			// Load Default Extensions
-			std::vector<const char*> Layer = { 
-				"VK_LAYER_KHRONOS_validation"
-			};
-			std::vector<const char*> Extension = system_window::engine_extensions();
+			std::vector<const char*> Layer;
+			std::vector<const char*> Extension;
 
 			// Add Validation Layers
 			Layer.insert(Layer.end(), aLayerList.begin(), aLayerList.end());

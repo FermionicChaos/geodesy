@@ -80,6 +80,9 @@ namespace geodesy {
 	class engine {
 	public:
 
+		static bool initialize();
+		static void terminate();
+
 		// ----- Host Data ----- //
 
 		std::mutex																Mutex;
