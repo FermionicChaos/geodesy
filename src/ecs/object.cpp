@@ -167,6 +167,8 @@ namespace geodesy::ecs {
 					this->AnimationWeights = std::vector<float>(this->Model->Animation.size() + 1, 0.0f);
 					this->AnimationWeights[0] = 1.0f;
 				}
+
+				this->AnimationWeights = aCreator->AnimationWeights;
 			}
 		}
 
