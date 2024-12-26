@@ -18,6 +18,7 @@ namespace geodesy::ecs {
 		this->CommandPool = std::make_shared<gcl::command_pool>(aContext, gcl::device::operation::GRAPHICS_AND_COMPUTE);
 		this->SemaphorePool = std::make_shared<gcl::semaphore_pool>(aContext, 100); // ^Can be changed later
 		// this->Timer;
+		this->RenderingCompleteSemaphore = VK_NULL_HANDLE;
 	}
 
 	subject::~subject() {
@@ -35,7 +36,7 @@ namespace geodesy::ecs {
 
 	submission_batch subject::render(stage* aStage) {
 		// Acquire next image from swapchain.
-		this->RenderingOperations += this->Framechain->next_frame();
+		this->RenderingOperations += this->Framechain->next_frame(this->RenderingCompleteSemaphore);
 
 		// Iterate through all objects in the stage.
 		gcl::command_batch StageCommandBatch;
@@ -54,12 +55,18 @@ namespace geodesy::ecs {
 		this->RenderingOperations += StageCommandBatch;
 
 		// Acquire image transition and present frame if exists.
-		this->RenderingOperations += this->Framechain->present_frame();
+		this->RenderingOperations += this->Framechain->present_frame(this->RenderingCompleteSemaphore);
 
 		// Setup safety dependencies for default rendering system.
 		for (size_t i = 0; i < this->RenderingOperations.size() - 1; i++) {
 			VkPipelineStageFlags Stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 			this->RenderingOperations[i + 1].depends_on(this->SemaphorePool, Stage, this->RenderingOperations[i]);
+		}
+
+		// ! Only applies to system_window.
+		if (this->RenderingCompleteSemaphore != VK_NULL_HANDLE) {
+			// Make sure last element signals when rendering is complete.
+			this->RenderingOperations.back().SignalSemaphoreList.push_back(this->RenderingCompleteSemaphore);
 		}
 
 		// Build submission reference object and return.

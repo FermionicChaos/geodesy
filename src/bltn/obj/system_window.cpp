@@ -54,10 +54,24 @@ namespace geodesy::bltn::obj {
 	system_window::swapchain::swapchain(std::shared_ptr<context> aContext, VkSurfaceKHR aSurface, const property& aProperty) : framechain(aContext, aProperty.FrameRate, aProperty.FrameCount) {
 		// TODO: Maybe change later to take in class?
 		VkResult Result = this->create_swapchain(aContext, aSurface, aProperty, VK_NULL_HANDLE);
+
+		// Setup next image semaphore.
+		std::vector<VkSemaphore> NextImageSemaphoreList = aContext->create_semaphore(Image.size(), 0);
+		for (size_t i = 0; i < NextImageSemaphoreList.size(); i++) {
+			this->AcquireSemaphore.push(NextImageSemaphoreList[i]);
+		}
+		this->PresentSemaphore = aContext->create_semaphore(Image.size(), 0);
     }
 
     system_window::swapchain::~swapchain() {
 		this->clear();
+		// Destroy Semaphores.
+		while (!this->AcquireSemaphore.empty()) {
+			VkSemaphore Semaphore = this->AcquireSemaphore.front();
+			this->AcquireSemaphore.pop();
+			this->Context->destroy_semaphore(Semaphore);
+		}
+		this->Context->destroy_semaphore(this->PresentSemaphore);
     }
 
 	VkImageCreateInfo system_window::swapchain::image_create_info() const {
@@ -80,14 +94,27 @@ namespace geodesy::bltn::obj {
 		return ImageCreateInfo;
 	}
 
-	VkResult system_window::swapchain::next_frame(VkSemaphore aSemaphore, VkFence aFence) {
+	VkResult system_window::swapchain::next_frame(VkSemaphore aPresentSemaphore, VkSemaphore aAcquireSemaphore, VkFence aAcquireFence) {
 		VkResult ReturnValue = VK_SUCCESS;
+		// Before acquiring next image, present current image.
+		if (aPresentSemaphore != VK_NULL_HANDLE){
+			VkPresentInfoKHR PresentInfo{};
+			PresentInfo.sType				= VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+			PresentInfo.pNext				= NULL;
+			PresentInfo.waitSemaphoreCount	= 1;
+			PresentInfo.pWaitSemaphores		= &aPresentSemaphore;
+			PresentInfo.swapchainCount		= 1;
+			PresentInfo.pSwapchains			= &Handle;
+			PresentInfo.pImageIndices		= &DrawIndex;
+			// Present image to screen.
+			vkQueuePresentKHR(Context->Queue[device::operation::PRESENT], &PresentInfo);
+		}
 		ReadIndex = DrawIndex;
 		while (true) {
 			VkResult Result = VK_SUCCESS;
 
 			// Acquire next image from swapchain.
-			Result = vkAcquireNextImageKHR(Context->Handle, Handle, UINT64_MAX, aSemaphore, aFence, &DrawIndex);
+			Result = vkAcquireNextImageKHR(Context->Handle, Handle, UINT64_MAX, aAcquireSemaphore, aAcquireFence, &DrawIndex);
 
 			// If image succussfully acquired, break loop.
 			if (Result == VK_SUCCESS) break;
@@ -100,8 +127,8 @@ namespace geodesy::bltn::obj {
 				swapchain::property NewProperty = swapchain::property(CreateInfo, FrameRate);
 				this->create_swapchain(Context, Surface, NewProperty, Handle);
 				// Also reset fence.
-				if (aFence != VK_NULL_HANDLE) {
-					Result = this->Context->wait_and_reset(aFence);
+				if (aAcquireFence != VK_NULL_HANDLE) {
+					Result = this->Context->wait_and_reset(aAcquireFence);
 				}
 			}
 			else {
@@ -111,24 +138,25 @@ namespace geodesy::bltn::obj {
 		return ReturnValue;
 	}
 
-	command_batch system_window::swapchain::next_frame() {
-		VkSemaphore Semaphore = this->NextImageSemaphore.front();
-		this->NextImageSemaphore.pop();
-		this->NextImageSemaphore.push(Semaphore);
+	command_batch system_window::swapchain::next_frame(VkSemaphore aPresentSemaphore) {
+		VkSemaphore AS = this->AcquireSemaphore.front();
+		this->AcquireSemaphore.pop();
+		this->AcquireSemaphore.push(AS);
 		// Acquire next image.
-		this->next_frame(Semaphore);
+		this->next_frame(aPresentSemaphore, AS);
 		core::gcl::command_batch PredrawTransition = PredrawFrameOperation[DrawIndex];
-		PredrawTransition.WaitSemaphoreList = { Semaphore };
+		PredrawTransition.WaitSemaphoreList = { AS };
 		PredrawTransition.WaitStageList = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		return PredrawTransition;
 	}
 
-	std::vector<command_batch> system_window::swapchain::present_frame() {
+	std::vector<command_batch> system_window::swapchain::present_frame(VkSemaphore& aPresentSemaphore) {
+		aPresentSemaphore = this->PresentSemaphore[DrawIndex];
 		core::gcl::command_batch PostdrawTransition = this->PostdrawFrameOperation[DrawIndex];
 		core::gcl::command_batch PresentInfo;
 		PresentInfo.Swapchain = { Handle };
 		PresentInfo.ImageIndex = { DrawIndex };
-		return { PostdrawTransition, PresentInfo };
+		return { PostdrawTransition };
 	}
 
 	VkResult system_window::swapchain::create_swapchain(std::shared_ptr<context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain) {

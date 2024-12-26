@@ -11,21 +11,9 @@ namespace geodesy::core::gcl {
 		this->Timer = 1.0 / aFrameRate;
 		this->Context = aContext;
 		this->Image = std::vector<std::map<std::string, std::shared_ptr<image>>>(aFrameCount);
-
-		// Setup next image semaphore.
-		std::vector<VkSemaphore> NextImageSemaphoreList = aContext->create_semaphore(Image.size(), 0);
-		for (size_t i = 0; i < NextImageSemaphoreList.size(); i++) {
-			this->NextImageSemaphore.push(NextImageSemaphoreList[i]);
-		}
 	}
 
 	framechain::~framechain() {
-		// Destroy Semaphores.
-		while (!this->NextImageSemaphore.empty()) {
-			VkSemaphore Semaphore = this->NextImageSemaphore.front();
-			this->NextImageSemaphore.pop();
-			this->Context->destroy_semaphore(Semaphore);
-		}
 	}
 
 	std::map<std::string, std::shared_ptr<image>> framechain::read_frame() {
@@ -48,13 +36,14 @@ namespace geodesy::core::gcl {
 		return VK_SUCCESS;
 	}
 
-	command_batch framechain::next_frame() {
+	command_batch framechain::next_frame(VkSemaphore aPresentSemaphore) {
 		ReadIndex = DrawIndex;
 		DrawIndex = ((DrawIndex == (Image.size() - 1)) ? 0 : (DrawIndex + 1));
 		return PredrawFrameOperation[DrawIndex];
 	}
 
-	std::vector<command_batch> framechain::present_frame() {
+	std::vector<command_batch> framechain::present_frame(VkSemaphore& aPresentSemaphore) {
+		aPresentSemaphore = VK_NULL_HANDLE;
 		return { PostdrawFrameOperation[DrawIndex]};
 	}
 

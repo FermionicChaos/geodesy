@@ -226,9 +226,6 @@ namespace geodesy {
 
 			// Unlock device context.
 			Ctx->Mutex.unlock();
-
-			// Execute all system window presentation operations.
-			Result = Ctx->present(RenderInfo[Ctx].PresentInfo);
 		}
 
 		return Result;

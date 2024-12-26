@@ -22,7 +22,6 @@ namespace geodesy::core::gcl {
 		core::lgc::timer 												Timer;
 		std::shared_ptr<context> 										Context;
 		std::vector<std::map<std::string, std::shared_ptr<image>>> 		Image;
-		std::queue<VkSemaphore> 										NextImageSemaphore;
 		std::vector<command_batch> 										PredrawFrameOperation;
 		std::vector<command_batch> 										PostdrawFrameOperation;
 
@@ -35,8 +34,8 @@ namespace geodesy::core::gcl {
 		VkResult next_frame_now();
 		VkResult present_frame_now();
 
-		virtual command_batch next_frame();
-		virtual std::vector<command_batch> present_frame();
+		virtual command_batch next_frame(VkSemaphore aPresentSemaphore = VK_NULL_HANDLE);
+		virtual std::vector<command_batch> present_frame(VkSemaphore& aPresentSemaphore);
 
 	}; 	
 
