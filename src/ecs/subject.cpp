@@ -38,7 +38,12 @@ namespace geodesy::ecs {
 	submission_batch subject::render(stage* aStage) {
 		// The next frame operation will both present previously drawn frame and acquire next
 		// frame. 
-		this->NextFrameSemaphore = this->Framechain->next_frame(this->PresentFrameSemaphore);
+		VkResult Result = this->Framechain->next_frame(this->PresentFrameSemaphore, this->NextFrameSemaphore);
+
+		// Rebuild pipelines and command buffers if out of date.
+		if ((Result == VK_ERROR_OUT_OF_DATE_KHR) || (Result == VK_SUBOPTIMAL_KHR)) {
+			// Rebuild pipeline.
+		}
 
 		// Acquire predraw rendering operations.
 		this->RenderingOperations += this->Framechain->predraw();
@@ -69,10 +74,12 @@ namespace geodesy::ecs {
 		}
 
 		// ! Only applies to system_window.
-		if ((this->NextFrameSemaphore != VK_NULL_HANDLE) && (this->PresentFrameSemaphore != VK_NULL_HANDLE)) {
+		if (this->NextFrameSemaphore != VK_NULL_HANDLE) {
 			// If system_window, make sure that next image semaphore is provided to rendering operations.
 			this->RenderingOperations.front().WaitStageList = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 			this->RenderingOperations.front().WaitSemaphoreList = { this->NextFrameSemaphore };
+		}
+		if  (this->PresentFrameSemaphore != VK_NULL_HANDLE) {
 			// If system_window, make sure that present semaphore is signaled after rendering operations.
 			this->RenderingOperations.back().SignalSemaphoreList = { this->PresentFrameSemaphore };
 		}

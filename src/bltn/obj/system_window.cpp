@@ -94,27 +94,34 @@ namespace geodesy::bltn::obj {
 		return ImageCreateInfo;
 	}
 
-	VkResult system_window::swapchain::next_frame(VkSemaphore aPresentSemaphore, VkSemaphore aAcquireSemaphore, VkFence aAcquireFence) {
+	VkResult system_window::swapchain::next_frame(VkSemaphore& aPresentFrameSemaphore, VkSemaphore& aNextFrameSemaphore, VkFence aNextFrameFence) {
 		VkResult ReturnValue = VK_SUCCESS;
+
 		// Before acquiring next image, present current image.
-		if (aPresentSemaphore != VK_NULL_HANDLE){
+		if (aPresentFrameSemaphore != VK_NULL_HANDLE){
 			VkPresentInfoKHR PresentInfo{};
 			PresentInfo.sType				= VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 			PresentInfo.pNext				= NULL;
 			PresentInfo.waitSemaphoreCount	= 1;
-			PresentInfo.pWaitSemaphores		= &aPresentSemaphore;
+			PresentInfo.pWaitSemaphores		= &aPresentFrameSemaphore;
 			PresentInfo.swapchainCount		= 1;
 			PresentInfo.pSwapchains			= &Handle;
 			PresentInfo.pImageIndices		= &DrawIndex;
 			// Present image to screen.
-			vkQueuePresentKHR(Context->Queue[device::operation::PRESENT], &PresentInfo);
+			ReturnValue = vkQueuePresentKHR(Context->Queue[device::operation::PRESENT], &PresentInfo);
 		}
+
+		// Use next semaphore in queue.
+		aNextFrameSemaphore = this->NextFrameSemaphoreList.front();
+		this->NextFrameSemaphoreList.pop();
+		this->NextFrameSemaphoreList.push(aNextFrameSemaphore);
+
 		ReadIndex = DrawIndex;
 		while (true) {
 			VkResult Result = VK_SUCCESS;
-
+			
 			// Acquire next image from swapchain.
-			Result = vkAcquireNextImageKHR(Context->Handle, Handle, UINT64_MAX, aAcquireSemaphore, aAcquireFence, &DrawIndex);
+			Result = vkAcquireNextImageKHR(Context->Handle, Handle, UINT64_MAX, aNextFrameSemaphore, aNextFrameFence, &DrawIndex);
 
 			// If image succussfully acquired, break loop.
 			if (Result == VK_SUCCESS) break;
@@ -127,28 +134,19 @@ namespace geodesy::bltn::obj {
 				swapchain::property NewProperty = swapchain::property(CreateInfo, FrameRate);
 				this->create_swapchain(Context, Surface, NewProperty, Handle);
 				// Also reset fence.
-				if (aAcquireFence != VK_NULL_HANDLE) {
-					Result = this->Context->wait_and_reset(aAcquireFence);
+				if (aNextFrameFence != VK_NULL_HANDLE) {
+					Result = this->Context->wait_and_reset(aNextFrameFence);
 				}
 			}
 			else {
 				ReturnValue = Result;
 			}
 		}
-		return ReturnValue;
-	}
 
-	VkSemaphore system_window::swapchain::next_frame(VkSemaphore& aPresentSemaphore) {
-		// Use next semaphore in queue.
-		VkSemaphore aNextFrameSemaphore = this->NextFrameSemaphoreList.front();
-		this->NextFrameSemaphoreList.pop();
-		this->NextFrameSemaphoreList.push(aNextFrameSemaphore);
-		// Acquire next image, and present old.
-		this->next_frame(aPresentSemaphore, aNextFrameSemaphore);
 		// Get new present semaphore.
-		aPresentSemaphore = this->PresentFrameSemaphoreList[DrawIndex];
-		// Pass the next frame semaphore to the user.
-		return aNextFrameSemaphore;
+		aPresentFrameSemaphore = this->PresentFrameSemaphoreList[DrawIndex];
+
+		return ReturnValue;
 	}
 
 	VkResult system_window::swapchain::create_swapchain(std::shared_ptr<context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain) {

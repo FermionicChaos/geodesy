@@ -77,8 +77,7 @@ namespace geodesy::bltn::obj {
 
 			VkImageCreateInfo image_create_info() const;
 
-			VkResult next_frame(VkSemaphore aPresentSemaphore = VK_NULL_HANDLE, VkSemaphore aAcquireSemaphore = VK_NULL_HANDLE, VkFence aAcquireFence = VK_NULL_HANDLE);
-			VkSemaphore next_frame(VkSemaphore& aPresentSemaphore) override;
+			VkResult next_frame(VkSemaphore& aPresentFrameSemaphore, VkSemaphore& aNextFrameSemaphore, VkFence aNextFrameFence = VK_NULL_HANDLE) override;
 
 		private:
 
