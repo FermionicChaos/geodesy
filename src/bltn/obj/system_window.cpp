@@ -58,20 +58,20 @@ namespace geodesy::bltn::obj {
 		// Setup next image semaphore.
 		std::vector<VkSemaphore> NextImageSemaphoreList = aContext->create_semaphore(Image.size(), 0);
 		for (size_t i = 0; i < NextImageSemaphoreList.size(); i++) {
-			this->AcquireSemaphore.push(NextImageSemaphoreList[i]);
+			this->NextFrameSemaphoreList.push(NextImageSemaphoreList[i]);
 		}
-		this->PresentSemaphore = aContext->create_semaphore(Image.size(), 0);
+		this->PresentFrameSemaphoreList = aContext->create_semaphore(Image.size(), 0);
     }
 
     system_window::swapchain::~swapchain() {
 		this->clear();
 		// Destroy Semaphores.
-		while (!this->AcquireSemaphore.empty()) {
-			VkSemaphore Semaphore = this->AcquireSemaphore.front();
-			this->AcquireSemaphore.pop();
+		while (!this->NextFrameSemaphoreList.empty()) {
+			VkSemaphore Semaphore = this->NextFrameSemaphoreList.front();
+			this->NextFrameSemaphoreList.pop();
 			this->Context->destroy_semaphore(Semaphore);
 		}
-		this->Context->destroy_semaphore(this->PresentSemaphore);
+		this->Context->destroy_semaphore(this->PresentFrameSemaphoreList);
     }
 
 	VkImageCreateInfo system_window::swapchain::image_create_info() const {
@@ -138,25 +138,17 @@ namespace geodesy::bltn::obj {
 		return ReturnValue;
 	}
 
-	command_batch system_window::swapchain::next_frame(VkSemaphore aPresentSemaphore) {
-		VkSemaphore AS = this->AcquireSemaphore.front();
-		this->AcquireSemaphore.pop();
-		this->AcquireSemaphore.push(AS);
-		// Acquire next image.
-		this->next_frame(aPresentSemaphore, AS);
-		core::gcl::command_batch PredrawTransition = PredrawFrameOperation[DrawIndex];
-		PredrawTransition.WaitSemaphoreList = { AS };
-		PredrawTransition.WaitStageList = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-		return PredrawTransition;
-	}
-
-	std::vector<command_batch> system_window::swapchain::present_frame(VkSemaphore& aPresentSemaphore) {
-		aPresentSemaphore = this->PresentSemaphore[DrawIndex];
-		core::gcl::command_batch PostdrawTransition = this->PostdrawFrameOperation[DrawIndex];
-		core::gcl::command_batch PresentInfo;
-		PresentInfo.Swapchain = { Handle };
-		PresentInfo.ImageIndex = { DrawIndex };
-		return { PostdrawTransition };
+	VkSemaphore system_window::swapchain::next_frame(VkSemaphore& aPresentSemaphore) {
+		// Use next semaphore in queue.
+		VkSemaphore aNextFrameSemaphore = this->NextFrameSemaphoreList.front();
+		this->NextFrameSemaphoreList.pop();
+		this->NextFrameSemaphoreList.push(aNextFrameSemaphore);
+		// Acquire next image, and present old.
+		this->next_frame(aPresentSemaphore, aNextFrameSemaphore);
+		// Get new present semaphore.
+		aPresentSemaphore = this->PresentFrameSemaphoreList[DrawIndex];
+		// Pass the next frame semaphore to the user.
+		return aNextFrameSemaphore;
 	}
 
 	VkResult system_window::swapchain::create_swapchain(std::shared_ptr<context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain) {

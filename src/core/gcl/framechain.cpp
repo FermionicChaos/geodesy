@@ -36,15 +36,23 @@ namespace geodesy::core::gcl {
 		return VK_SUCCESS;
 	}
 
-	command_batch framechain::next_frame(VkSemaphore aPresentSemaphore) {
+	VkSemaphore framechain::next_frame(VkSemaphore& aPresentSemaphore) {
+		// Make read index the previous frame that was drawn to.
 		ReadIndex = DrawIndex;
+		// Generate next draw index.
 		DrawIndex = ((DrawIndex == (Image.size() - 1)) ? 0 : (DrawIndex + 1));
-		return PredrawFrameOperation[DrawIndex];
+		// Set present semaphore to null handle, unless system_window.
+		aPresentSemaphore = VK_NULL_HANDLE;
+		// Return null handle if not system_window.
+		return VK_NULL_HANDLE;
 	}
 
-	std::vector<command_batch> framechain::present_frame(VkSemaphore& aPresentSemaphore) {
-		aPresentSemaphore = VK_NULL_HANDLE;
-		return { PostdrawFrameOperation[DrawIndex]};
+	std::vector<command_batch> framechain::predraw() {
+		return { PredrawFrameOperation[DrawIndex] };
+	}
+
+	std::vector<command_batch> framechain::postdraw() {
+		return { PostdrawFrameOperation[DrawIndex] };
 	}
 
 }

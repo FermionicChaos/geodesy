@@ -18,7 +18,8 @@ namespace geodesy::ecs {
 		this->CommandPool = std::make_shared<gcl::command_pool>(aContext, gcl::device::operation::GRAPHICS_AND_COMPUTE);
 		this->SemaphorePool = std::make_shared<gcl::semaphore_pool>(aContext, 100); // ^Can be changed later
 		// this->Timer;
-		this->RenderingCompleteSemaphore = VK_NULL_HANDLE;
+		this->NextFrameSemaphore = VK_NULL_HANDLE;
+		this->PresentFrameSemaphore = VK_NULL_HANDLE;
 	}
 
 	subject::~subject() {
@@ -35,8 +36,12 @@ namespace geodesy::ecs {
 	}
 
 	submission_batch subject::render(stage* aStage) {
-		// Acquire next image from swapchain.
-		this->RenderingOperations += this->Framechain->next_frame(this->RenderingCompleteSemaphore);
+		// The next frame operation will both present previously drawn frame and acquire next
+		// frame. 
+		this->NextFrameSemaphore = this->Framechain->next_frame(this->PresentFrameSemaphore);
+
+		// Acquire predraw rendering operations.
+		this->RenderingOperations += this->Framechain->predraw();
 
 		// Iterate through all objects in the stage.
 		gcl::command_batch StageCommandBatch;
@@ -55,7 +60,7 @@ namespace geodesy::ecs {
 		this->RenderingOperations += StageCommandBatch;
 
 		// Acquire image transition and present frame if exists.
-		this->RenderingOperations += this->Framechain->present_frame(this->RenderingCompleteSemaphore);
+		this->RenderingOperations += this->Framechain->postdraw();
 
 		// Setup safety dependencies for default rendering system.
 		for (size_t i = 0; i < this->RenderingOperations.size() - 1; i++) {
@@ -64,9 +69,12 @@ namespace geodesy::ecs {
 		}
 
 		// ! Only applies to system_window.
-		if (this->RenderingCompleteSemaphore != VK_NULL_HANDLE) {
-			// Make sure last element signals when rendering is complete.
-			this->RenderingOperations.back().SignalSemaphoreList.push_back(this->RenderingCompleteSemaphore);
+		if ((this->NextFrameSemaphore != VK_NULL_HANDLE) && (this->PresentFrameSemaphore != VK_NULL_HANDLE)) {
+			// If system_window, make sure that next image semaphore is provided to rendering operations.
+			this->RenderingOperations.front().WaitStageList = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+			this->RenderingOperations.front().WaitSemaphoreList = { this->NextFrameSemaphore };
+			// If system_window, make sure that present semaphore is signaled after rendering operations.
+			this->RenderingOperations.back().SignalSemaphoreList = { this->PresentFrameSemaphore };
 		}
 
 		// Build submission reference object and return.

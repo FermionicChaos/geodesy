@@ -34,7 +34,8 @@ namespace geodesy::ecs {
 		std::shared_ptr<core::gcl::command_pool>					CommandPool;
 		std::shared_ptr<core::gcl::semaphore_pool> 					SemaphorePool;
 		std::vector<core::gcl::command_batch>						RenderingOperations;
-		VkSemaphore													RenderingCompleteSemaphore;
+		VkSemaphore 												NextFrameSemaphore;
+		VkSemaphore 												PresentFrameSemaphore;
 
 		subject(std::shared_ptr<core::gcl::context> aContext, stage* aStage, creator* aSubjectCreator);
 		~subject();

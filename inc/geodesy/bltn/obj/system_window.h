@@ -66,9 +66,8 @@ namespace geodesy::bltn::obj {
 				property(VkSwapchainCreateInfoKHR aCreateInfo, float aFrameRate);
 			};
 
-			// std::queue<VkSemaphore> 				NextImageSemaphore;
-			std::queue<VkSemaphore> 				AcquireSemaphore;
-			std::vector<VkSemaphore> 				PresentSemaphore;
+			std::queue<VkSemaphore> 				NextFrameSemaphoreList;
+			std::vector<VkSemaphore> 				PresentFrameSemaphoreList;
 			VkSurfaceKHR 							Surface;
 			VkSwapchainCreateInfoKHR				CreateInfo;
 			VkSwapchainKHR							Handle;
@@ -79,8 +78,7 @@ namespace geodesy::bltn::obj {
 			VkImageCreateInfo image_create_info() const;
 
 			VkResult next_frame(VkSemaphore aPresentSemaphore = VK_NULL_HANDLE, VkSemaphore aAcquireSemaphore = VK_NULL_HANDLE, VkFence aAcquireFence = VK_NULL_HANDLE);
-			core::gcl::command_batch next_frame(VkSemaphore aPresentSemaphore = VK_NULL_HANDLE) override;
-			std::vector<core::gcl::command_batch> present_frame(VkSemaphore& aPresentSemaphore) override;
+			VkSemaphore next_frame(VkSemaphore& aPresentSemaphore) override;
 
 		private:
 
