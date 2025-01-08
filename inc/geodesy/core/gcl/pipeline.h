@@ -74,10 +74,17 @@ namespace geodesy::core::gcl {
 			// NONE_KHR 								= VK_PIPELINE_STAGE_NONE_KHR,
 		};
 
+		enum type : int {
+			UNKNOWN 							= -1,
+			RASTERIZER							= VK_PIPELINE_BIND_POINT_GRAPHICS,
+			COMPUTE 							= VK_PIPELINE_BIND_POINT_COMPUTE,
+			RAY_TRACER 							= VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
+		};
+
 		struct create_info {
 		public:
 
-			VkPipelineBindPoint											BindPoint;
+			type														BindPoint;
 			std::vector<std::shared_ptr<shader>> 						Shader;								// 5 Stages For Rasterization Graphics (3 are Optional)
 			std::shared_ptr<glslang::TProgram> 							Program;							// glslang linked program.
 			std::vector<std::vector<uint>> 								ByteCode; 							// SPIRV Byte Code for each Shader Stage.
@@ -145,7 +152,6 @@ namespace geodesy::core::gcl {
 		// Pre creation options for a raytracer pipeline.
 		struct raytracer {
 
-			VkPipelineBindPoint											BindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
 			VkRayTracingPipelineCreateInfoKHR							CreateInfo{};
 
 			raytracer();
@@ -159,8 +165,6 @@ namespace geodesy::core::gcl {
 
 			math::vec<uint, 3> 											GroupCount; // Number of Groups
 			math::vec<uint, 3> 											GroupSize; //  Number of Items
-
-			VkPipelineBindPoint											BindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
 			VkComputePipelineCreateInfo									CreateInfo{};
 
 			compute();

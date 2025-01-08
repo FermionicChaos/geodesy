@@ -40,10 +40,27 @@ namespace geodesy::ecs {
 		// frame. 
 		VkResult Result = this->Framechain->next_frame(this->PresentFrameSemaphore, this->NextFrameSemaphore);
 
-		// Rebuild pipelines and command buffers if out of date.
-		if ((Result == VK_ERROR_OUT_OF_DATE_KHR) || (Result == VK_SUBOPTIMAL_KHR)) {
-			// Rebuild pipeline.
-		}
+		// // Rebuild pipelines and command buffers if out of date.
+		// if ((Result == VK_ERROR_OUT_OF_DATE_KHR) || (Result == VK_SUBOPTIMAL_KHR)) {
+
+		// 	// Rebuild pipeline.
+		// 	if (this->Pipeline->CreateInfo->BindPoint == pipeline::type::RASTERIZER) {
+		// 		// Cast to rasterizer.
+		// 		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::dynamic_pointer_cast<pipeline::rasterizer>(this->Pipeline->CreateInfo);
+		// 		// Resize rasterizer.
+		// 		Rasterizer->resize(this->Framechain->Resolution);
+		// 		// Rebuild pipeline.
+		// 		this->Pipeline = this->Context->create_pipeline(Rasterizer);
+		// 	}
+
+		// 	// Destroy all existing commandbuffers that reference this subject.
+		// 	for (auto& Object : aStage->Object) {
+		// 		// clear();
+		// 		if (Object->Renderer.count(this) > 0) {
+		// 			Object->Renderer[this].clear();
+		// 		}
+		// 	}
+		// }
 
 		// Acquire predraw rendering operations.
 		this->RenderingOperations += this->Framechain->predraw();

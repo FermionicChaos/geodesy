@@ -10,7 +10,7 @@ namespace geodesy::core::gcl {
 	using namespace util;
 
 	pipeline::rasterizer::rasterizer() {
-		this->BindPoint 									= VK_PIPELINE_BIND_POINT_GRAPHICS;
+		this->BindPoint 									= type::RASTERIZER;
 		this->InputAssembly 								= {};
 		this->Tesselation 									= {};
 		this->Viewport 										= {};
