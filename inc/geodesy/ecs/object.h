@@ -90,15 +90,6 @@ namespace geodesy::ecs {
 		std::shared_ptr<core::gcl::buffer> 											UniformBuffer;
 		std::map<subject*, std::vector<std::vector<core::gfx::draw_call>>>			Renderer;
 
-		object(
-			std::shared_ptr<core::gcl::context> 	aContext, 
-			stage* 									aStage, 
-			std::string 							aName,
-			std::string 							aModelPath = "",
-			core::math::vec<float, 3> 				aPosition = { 0.0f, 0.0f, 0.0f }, 
-			core::math::vec<float, 2> 				aDirection = { 0.0f, 0.0f },
-			core::math::vec<float, 3> 				aScale = { 1.0f, 1.0f, 1.0f }
-		);
 		object(std::shared_ptr<core::gcl::context> aContext, stage* aStage, creator* aCreator);
 		~object();
 

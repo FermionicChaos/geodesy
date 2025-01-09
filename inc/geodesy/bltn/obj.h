@@ -8,7 +8,4 @@
 #include "obj/subject_window.h"
 #include "obj/camera3d.h"
 
-// Test Objects
-#include "obj/triangle.h"
-
 #endif // !GEODESY_BLTN_OBJ_H
