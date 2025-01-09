@@ -41,7 +41,7 @@ namespace geodesy::ecs {
 		~subject();
 
 		virtual bool is_subject() override;
-		virtual std::vector<std::vector<core::gfx::draw_call>> default_renderer(object* aObject);
+		virtual std::vector<std::vector<draw_call>> default_renderer(object* aObject);
 		virtual core::gcl::submission_batch render(stage* aStage);
 
 	};

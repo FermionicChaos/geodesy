@@ -15,8 +15,8 @@ namespace geodesy::bltn::obj {
 		this->SubjectSource = aSubjectWindowCreator->Subject;
 	}
 
-	std::vector<core::gfx::draw_call> subject_window::draw(ecs::subject* aSubjectTarget) {
-		std::vector<gfx::draw_call> DrawCallList;
+	std::vector<ecs::object::draw_call> subject_window::draw(ecs::subject* aSubjectTarget) {
+		std::vector<draw_call> DrawCallList;
 
 		// NOTE: A single draw call represents a single mesh instance in the model.
 		if (this->OverridenRenderer.count(aSubjectTarget) == 0) {
@@ -33,13 +33,13 @@ namespace geodesy::bltn::obj {
 		return DrawCallList;
 	}
 
-	std::vector<std::vector<std::vector<core::gfx::draw_call>>> subject_window::specialized_renderer(ecs::subject* aSubjectTarget) {
+	std::vector<std::vector<std::vector<ecs::object::draw_call>>> subject_window::specialized_renderer(ecs::subject* aSubjectTarget) {
 		// Only used to access window uniform buffer.
 		window* Window = dynamic_cast<window*>(aSubjectTarget);
 
 		std::vector<gfx::mesh::instance*> MeshInstance = this->Model->Hierarchy.gather_mesh_instances();
 
-		std::vector<std::vector<std::vector<gfx::draw_call>>> Renderer(aSubjectTarget->Framechain->Image.size(), std::vector<std::vector<gfx::draw_call>>(this->SubjectSource->Framechain->Image.size(), std::vector<gfx::draw_call>(MeshInstance.size())));
+		std::vector<std::vector<std::vector<draw_call>>> Renderer(aSubjectTarget->Framechain->Image.size(), std::vector<std::vector<draw_call>>(this->SubjectSource->Framechain->Image.size(), std::vector<draw_call>(MeshInstance.size())));
 
 		// This will create a draw call per target frame, per source frame, per mesh instance.
 		for (size_t i = 0; i < aSubjectTarget->Framechain->Image.size(); i++) {

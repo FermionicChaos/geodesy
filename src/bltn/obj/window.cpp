@@ -103,7 +103,7 @@ namespace geodesy::bltn::obj {
 		this->WindowUniformBuffer->map_memory(0, sizeof(window_uniform_data));
 	}
 
-	std::vector<std::vector<core::gfx::draw_call>> window::default_renderer(ecs::object* aObject) {
+	std::vector<std::vector<ecs::object::draw_call>> window::default_renderer(ecs::object* aObject) {
 		// Gather list of mesh instances throughout model hierarchy.
 		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy.gather_mesh_instances();
 

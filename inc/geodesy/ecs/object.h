@@ -18,6 +18,12 @@ namespace geodesy::ecs {
 	class object /* : public std::enable_shared_from_this<object> */ {
 	public:
 
+		enum motion {
+			STATIC,			// Object doesn't move in world space
+			DYNAMIC,		// Object moves, but based on physical forces applied.
+			ANIMATED,		// Object moves based on predetermined animation path data.
+		};
+
 		struct uniform_data {
 			alignas(16) core::math::vec<float, 3> Position;
 			alignas(16) core::math::mat<float, 4, 4> Orientation;
@@ -31,12 +37,6 @@ namespace geodesy::ecs {
 			);
 		};
 
-		enum motion {
-			STATIC,			// Object doesn't move in world space
-			DYNAMIC,		// Object moves, but based on physical forces applied.
-			ANIMATED,		// Object moves based on predetermined animation path data.
-		};
-
 		struct creator {
 			std::string 					Name;
 			std::string 					ModelPath;
@@ -48,6 +48,29 @@ namespace geodesy::ecs {
 			bool 							GravityEnabled;
 			bool 							CollisionEnabled;
 			creator();
+		};
+
+		// A draw call represents a singular draw call for a single mesh instance in
+		// the node hiearchy of the model. Distance from the camera is determined
+		struct draw_call {
+			float 												DistanceFromSubject;
+			core::gfx::material::transparency 					TransparencyMode;
+			std::shared_ptr<core::gcl::context> 				Context;
+			std::shared_ptr<core::gcl::framebuffer> 			Framebuffer;
+			std::shared_ptr<core::gcl::descriptor::array> 		DescriptorArray;
+			VkCommandBuffer 									DrawCommand;
+			draw_call();
+		};
+
+		struct renderer {
+
+			// Object & Subject must share the same device context.
+			object* 	Object;
+			subject* 	Subject;
+
+			~renderer() {}
+
+			// void update(double aDeltaTime);
 		};
 
 		// ! ----- Host Data ----- ! //
@@ -88,7 +111,7 @@ namespace geodesy::ecs {
 		std::shared_ptr<core::phys::mesh>											CollisionBox;
 		std::shared_ptr<core::gfx::model>											Model;
 		std::shared_ptr<core::gcl::buffer> 											UniformBuffer;
-		std::map<subject*, std::vector<std::vector<core::gfx::draw_call>>>			Renderer;
+		std::map<subject*, std::vector<std::vector<draw_call>>>						Renderer;
 
 		object(std::shared_ptr<core::gcl::context> aContext, stage* aStage, creator* aCreator);
 		~object();
@@ -97,7 +120,7 @@ namespace geodesy::ecs {
 
 		virtual void input(const core::hid::input& aInput);
 		virtual void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f });
-		virtual std::vector<core::gfx::draw_call> draw(subject* aSubject);
+		virtual std::vector<draw_call> draw(subject* aSubject);
 
 	protected:
 
@@ -105,7 +128,9 @@ namespace geodesy::ecs {
 		core::math::vec<float, 3> InputForce;
 
 	};
-	
+
+	std::vector<VkCommandBuffer> convert(std::vector<object::draw_call> aDrawCallList);
+
 }
 
 #endif // GEODESY_CORE_OBJECT_H

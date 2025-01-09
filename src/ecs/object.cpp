@@ -35,6 +35,12 @@ namespace geodesy::ecs {
 		this->CollisionEnabled 		= false;
 	}
 
+	object::draw_call::draw_call() {
+		DistanceFromSubject 	= 0.0f;
+		TransparencyMode 		= gfx::material::transparency::OPAQUE;
+		DrawCommand 			= VK_NULL_HANDLE;
+	}
+
 	object::object(std::shared_ptr<core::gcl::context> aContext, stage* aStage, creator* aCreator) {
 		this->Name 				= aCreator->Name;
 		this->Stage 			= aStage;
@@ -155,8 +161,8 @@ namespace geodesy::ecs {
 		}
 	}
 
-	std::vector<gfx::draw_call> object::draw(subject* aSubject) {
-		std::vector<gfx::draw_call> DrawCallList;
+	std::vector<object::draw_call> object::draw(subject* aSubject) {
+		std::vector<object::draw_call> DrawCallList;
 		
 		// If the subject is the same as the object, return the draw call list empty.
 		// A subject cannot draw itself.
@@ -172,6 +178,14 @@ namespace geodesy::ecs {
 
 		// Return a vector of the draw calls for the subject, and target draw index.
 		return DrawCallList;
+	}
+
+	std::vector<VkCommandBuffer> convert(std::vector<object::draw_call> aDrawCallList) {
+		std::vector<VkCommandBuffer> CommandBufferList(aDrawCallList.size());
+		for (size_t i = 0; i < aDrawCallList.size(); i++) {
+			CommandBufferList[i] = aDrawCallList[i].DrawCommand;
+		}
+		return CommandBufferList;
 	}
 
 }

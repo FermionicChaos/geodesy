@@ -30,13 +30,13 @@ namespace geodesy::bltn::obj {
 
 		subject_window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aSubjectWindowCreator);
 
-		std::vector<core::gfx::draw_call> draw(ecs::subject* aSubject) override;
+		std::vector<draw_call> draw(ecs::subject* aSubject) override;
 
 	private:
 
-		std::map<ecs::subject*, std::vector<std::vector<std::vector<core::gfx::draw_call>>>> OverridenRenderer;
+		std::map<ecs::subject*, std::vector<std::vector<std::vector<draw_call>>>> OverridenRenderer;
 
-		std::vector<std::vector<std::vector<core::gfx::draw_call>>> specialized_renderer(ecs::subject* aSubjectTarget);
+		std::vector<std::vector<std::vector<draw_call>>> specialized_renderer(ecs::subject* aSubjectTarget);
 
 	};
 

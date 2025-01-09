@@ -239,7 +239,7 @@ namespace geodesy::bltn::obj {
 		memcpy(this->CameraUniformBuffer->Ptr, &UniformData, sizeof(camera_uniform_data));
 	}
 
-	std::vector<std::vector<core::gfx::draw_call>> camera3d::default_renderer(object* aObject) {
+	std::vector<std::vector<ecs::object::draw_call>> camera3d::default_renderer(object* aObject) {
 		// Gather list of mesh instances throughout model hierarchy.
 		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy.gather_mesh_instances();
 

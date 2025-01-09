@@ -24,7 +24,7 @@ namespace geodesy::bltn::obj {
 		// Implement input
 		void input(const core::hid::input& aInput) override;
 		void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f }) override;
-		std::vector<std::vector<core::gfx::draw_call>> default_renderer(ecs::object* aObject) override;
+		std::vector<std::vector<draw_call>> default_renderer(ecs::object* aObject) override;
 
 	};	
 

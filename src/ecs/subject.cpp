@@ -30,8 +30,8 @@ namespace geodesy::ecs {
 		return true;
 	}
 
-	std::vector<std::vector<core::gfx::draw_call>> subject::default_renderer(object* aObject) {
-		std::vector<std::vector<core::gfx::draw_call>> DefaultRenderer;
+	std::vector<std::vector<object::draw_call>> subject::default_renderer(object* aObject) {
+		std::vector<std::vector<draw_call>> DefaultRenderer;
 		return DefaultRenderer;
 	}
 
@@ -69,7 +69,7 @@ namespace geodesy::ecs {
 		gcl::command_batch StageCommandBatch;
 		for (size_t i = 0; i < aStage->Object.size(); i++) {
 			// Draw object.
-			std::vector<gfx::draw_call> ObjectDrawCall = aStage->Object[i]->draw(this);
+			std::vector<draw_call> ObjectDrawCall = aStage->Object[i]->draw(this);
 			std::vector<VkCommandBuffer> ObjectDrawCommand(ObjectDrawCall.size());
 			for (size_t j = 0; j < ObjectDrawCall.size(); j++) {
 				ObjectDrawCommand[j] = ObjectDrawCall[j].DrawCommand;
