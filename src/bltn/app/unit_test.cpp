@@ -108,9 +108,9 @@ namespace geodesy::bltn {
 				//std::cout << "Thread Over Time: " << Engine->ThreadController.work_time() - TimeStep << std::endl;
 			}
 
-			if (timer::get_time() > 60.0f) {
-				break;
-			}
+			// if (timer::get_time() > 60.0f) {
+			// 	break;
+			// }
 
 		}
 
