@@ -117,6 +117,7 @@ namespace geodesy::bltn::obj {
 		system_window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aSystemWindowCreator);
 		~system_window();
 
+		core::gcl::submission_batch render(ecs::stage* aStage) override;
 		void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f }) override;
 
 	private:

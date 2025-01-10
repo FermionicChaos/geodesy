@@ -132,6 +132,11 @@ namespace geodesy::bltn::obj {
 				// Create new swap chain.
 				// TODO: Acquire new image resolution?
 				swapchain::property NewProperty = swapchain::property(CreateInfo, FrameRate);
+				// Erase other swapchain image resources.
+				for (size_t i = 0; i < Image.size(); i++) {
+					Image[i]["Color"]->Handle = VK_NULL_HANDLE;
+					Image[i]["Color"]->View = VK_NULL_HANDLE;
+				}
 				this->create_swapchain(Context, Surface, NewProperty, Handle);
 				// Also reset fence.
 				if (aNextFrameFence != VK_NULL_HANDLE) {
@@ -420,6 +425,76 @@ namespace geodesy::bltn::obj {
 	void system_window::update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce, core::math::vec<float, 3> aAppliedTorque) {
 		this->InputState.Mouse.update(aDeltaTime);
 		this->Time += aDeltaTime;
+	}
+
+	core::gcl::submission_batch system_window::render(ecs::stage* aStage) {
+		// The next frame operation will both present previously drawn frame and acquire next
+		// frame. 
+		VkResult Result = this->Framechain->next_frame(this->PresentFrameSemaphore, this->NextFrameSemaphore);
+
+		// Rebuild pipelines and command buffers if out of date.
+		if ((Result == VK_ERROR_OUT_OF_DATE_KHR) || (Result == VK_SUBOPTIMAL_KHR)) {
+
+			// Rebuild pipeline.
+			if (this->Pipeline->CreateInfo->BindPoint == pipeline::type::RASTERIZER) {
+				// Cast to rasterizer.
+				std::shared_ptr<pipeline::rasterizer> Rasterizer = std::dynamic_pointer_cast<pipeline::rasterizer>(this->Pipeline->CreateInfo);
+				// Resize rasterizer.
+				Rasterizer->resize(this->Framechain->Resolution);
+				// Rebuild pipeline.
+				this->Pipeline = this->Context->create_pipeline(Rasterizer);
+			}
+
+			// Destroy all existing commandbuffers that reference this subject.
+			for (auto& Object : aStage->Object) {
+				// clear();
+				if (Object->Renderer.count(this) > 0) {
+					Object->Renderer.erase(this);
+				}
+			}
+		}
+
+		// Acquire predraw rendering operations.
+		this->RenderingOperations += this->Framechain->predraw();
+
+		// Iterate through all objects in the stage.
+		gcl::command_batch StageCommandBatch;
+		for (size_t i = 0; i < aStage->Object.size(); i++) {
+			// Draw object.
+			std::vector<std::shared_ptr<object::draw_call>> ObjectDrawCall = aStage->Object[i]->draw(this);
+			std::vector<VkCommandBuffer> ObjectDrawCommand(ObjectDrawCall.size());
+			for (size_t j = 0; j < ObjectDrawCall.size(); j++) {
+				ObjectDrawCommand[j] = ObjectDrawCall[j]->DrawCommand;
+			}
+			// Group into single submission.
+			StageCommandBatch += ObjectDrawCommand;
+		}
+
+		// Aggregate all rendering operations to subject.
+		this->RenderingOperations += StageCommandBatch;
+
+		// Acquire image transition and present frame if exists.
+		this->RenderingOperations += this->Framechain->postdraw();
+
+		// Setup safety dependencies for default rendering system.
+		for (size_t i = 0; i < this->RenderingOperations.size() - 1; i++) {
+			VkPipelineStageFlags Stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			this->RenderingOperations[i + 1].depends_on(this->SemaphorePool, Stage, this->RenderingOperations[i]);
+		}
+
+		// ! Only applies to system_window.
+		if (this->NextFrameSemaphore != VK_NULL_HANDLE) {
+			// If system_window, make sure that next image semaphore is provided to rendering operations.
+			this->RenderingOperations.front().WaitStageList = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+			this->RenderingOperations.front().WaitSemaphoreList = { this->NextFrameSemaphore };
+		}
+		if  (this->PresentFrameSemaphore != VK_NULL_HANDLE) {
+			// If system_window, make sure that present semaphore is signaled after rendering operations.
+			this->RenderingOperations.back().SignalSemaphoreList = { this->PresentFrameSemaphore };
+		}
+
+		// Build submission reference object and return.
+		return build(this->RenderingOperations);
 	}
 
 	GLFWwindow* system_window::create_window_handle(window::creator* aSetting, int aWidth, int aHeight, const char* aTitle, GLFWmonitor* aMonitor, GLFWwindow* aWindow) {
