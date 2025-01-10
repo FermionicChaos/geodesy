@@ -50,7 +50,7 @@ namespace geodesy::bltn::obj {
 		ecs::object* 	aObject, 			// SubjectWindow
 		ecs::subject* 	aSubjectSource, 	// SubjectWindow source
 		ecs::subject* 	aSubjectTarget 		// Actual Render Target
-	) {
+	) : ecs::object::renderer(aObject, aSubjectTarget) {
 		// Gather Mesh instances of the object.
 		std::vector<gfx::mesh::instance*> MeshInstance = aObject->Model->Hierarchy.gather_mesh_instances();
 

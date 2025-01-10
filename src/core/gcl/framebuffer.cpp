@@ -5,6 +5,7 @@
 namespace geodesy::core::gcl {
 
 	framebuffer::framebuffer(std::shared_ptr<context> aContext, std::shared_ptr<pipeline> aPipeline, std::vector<std::shared_ptr<image>> aImageAttachements, math::vec<uint, 3> aResolution) {
+		this->Context = aContext;
 		this->ClearValue = std::vector<VkClearValue>(aImageAttachements.size());
 		for (size_t i = 0; i < aImageAttachements.size(); i++) {
 			this->ClearValue[i].color = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -28,6 +29,7 @@ namespace geodesy::core::gcl {
 	}
 
 	framebuffer::framebuffer(std::shared_ptr<context> aContext, std::shared_ptr<pipeline> aPipeline, std::map<std::string, std::shared_ptr<image>> aImage, std::vector<std::string> aAttachmentSelection, math::vec<uint, 3> aResolution) {
+		this->Context = aContext;
 		this->ClearValue = std::vector<VkClearValue>(aAttachmentSelection.size());
 		for (size_t i = 0; i < aAttachmentSelection.size(); i++) {
 			this->ClearValue[i].color = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -48,6 +50,12 @@ namespace geodesy::core::gcl {
 		FBCI.height				= aResolution[1];
 		FBCI.layers				= 1;
 		Result = vkCreateFramebuffer(aContext->Handle, &FBCI, NULL, &this->Handle);
+	}
+
+	framebuffer::~framebuffer() {
+		if (this->Handle != VK_NULL_HANDLE) {
+			vkDestroyFramebuffer(this->Context->Handle, this->Handle, NULL);
+		}
 	}
 
 }
