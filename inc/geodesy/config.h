@@ -25,6 +25,21 @@
 
 // Forward Declarations of Core Objects.
 namespace geodesy {
+
+	// Quality of life function.
+	template <typename T, typename... Args>
+	std::shared_ptr<T> make(Args&&... args) {
+    	return std::shared_ptr<T>(new T(std::forward<Args>(args)...));
+	}
+
+	// Recursive case for higher dimensions
+	template <typename T, typename... Sizes>
+	auto make_multi_vector(std::size_t size, Sizes... sizes) {
+	    return std::vector<decltype(make_multi_vector<T>(sizes...))>(
+	        size, make_multi_vector<T>(sizes...)
+	    );
+	}
+
 	class engine;
 	namespace core {
 		namespace gcl {

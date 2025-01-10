@@ -41,6 +41,10 @@ namespace geodesy::ecs {
 		DrawCommand 			= VK_NULL_HANDLE;
 	}
 
+	std::vector<std::shared_ptr<object::draw_call>> object::renderer::operator[](size_t aIndex) const {
+		return this->DrawCallList[aIndex];
+	}
+
 	object::object(std::shared_ptr<core::gcl::context> aContext, stage* aStage, creator* aCreator) {
 		this->Name 				= aCreator->Name;
 		this->Stage 			= aStage;
@@ -161,8 +165,8 @@ namespace geodesy::ecs {
 		}
 	}
 
-	std::vector<object::draw_call> object::draw(subject* aSubject) {
-		std::vector<object::draw_call> DrawCallList;
+	std::vector<std::shared_ptr<object::draw_call>> object::draw(subject* aSubject) {
+		std::vector<std::shared_ptr<object::draw_call>> DrawCallList;
 		
 		// If the subject is the same as the object, return the draw call list empty.
 		// A subject cannot draw itself.
@@ -174,7 +178,7 @@ namespace geodesy::ecs {
 		}
 
 		// Get draw calls from this object for the subject.
-		DrawCallList = this->Renderer[aSubject][aSubject->Framechain->DrawIndex];
+		DrawCallList = (*this->Renderer[aSubject])[aSubject->Framechain->DrawIndex];
 
 		// Return a vector of the draw calls for the subject, and target draw index.
 		return DrawCallList;

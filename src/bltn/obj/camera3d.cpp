@@ -47,68 +47,122 @@ namespace geodesy::bltn::obj {
 			this->Projection = math::perspective(math::radians(aFOV), AspectRatio, aNear, aFar);
 		}
 
-		class geometry_buffer : public framechain {
-		public:
-			geometry_buffer(std::shared_ptr<context> aContext, math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount);
-		};
+	}
 
-		geometry_buffer::geometry_buffer(
-			std::shared_ptr<context> aContext, 
-			math::vec<uint, 3> aResolution, 
-			double aFrameRate, 
-			size_t aFrameCount
-		) : framechain(
-			aContext, 
-			aFrameRate, 
-			aFrameCount
-		) {
-			// New API design?
-			image::create_info DepthCreateInfo;
-			DepthCreateInfo.Layout		= image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-			DepthCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
-			DepthCreateInfo.Usage		= image::usage::SAMPLED | image::usage::DEPTH_STENCIL_ATTACHMENT  | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
+	camera3d::geometry_buffer::geometry_buffer(
+		std::shared_ptr<context> 	aContext, 
+		math::vec<uint, 3> 			aResolution, 
+		double 						aFrameRate, 
+		size_t 						aFrameCount
+	) : framechain(
+		aContext, 
+		aFrameRate, 
+		aFrameCount
+	) {
+		// New API design?
+		image::create_info DepthCreateInfo;
+		DepthCreateInfo.Layout		= image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		DepthCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
+		DepthCreateInfo.Usage		= image::usage::SAMPLED | image::usage::DEPTH_STENCIL_ATTACHMENT  | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
 
-			image::create_info ColorCreateInfo;
-			ColorCreateInfo.Layout		= image::layout::SHADER_READ_ONLY_OPTIMAL;
-			ColorCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
-			ColorCreateInfo.Usage		= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
+		image::create_info ColorCreateInfo;
+		ColorCreateInfo.Layout		= image::layout::SHADER_READ_ONLY_OPTIMAL;
+		ColorCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
+		ColorCreateInfo.Usage		= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
 
-			image::format ColorFormat = image::format::R32G32B32A32_SFLOAT;
-			image::format DepthFormat = image::format::D32_SFLOAT;
+		image::format ColorFormat = image::format::R32G32B32A32_SFLOAT;
+		image::format DepthFormat = image::format::D32_SFLOAT;
 
-			this->Resolution = aResolution;
-			for (std::size_t i = 0; i < this->Image.size(); i++) {
-				// This is the finalized color output.
-				this->Image[i]["Color"] 		= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-				// Opaque Geometry Buffer, used for Opaque and Transparent mesh instances.
-				this->Image[i]["OGB.Color"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-				this->Image[i]["OGB.Position"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-				this->Image[i]["OGB.Normal"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-				this->Image[i]["OGB.Depth"] 	= aContext->create_image(DepthCreateInfo, DepthFormat, aResolution[0], aResolution[1]);
-				this->Image[i]["FinalColor"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			}
+		this->Resolution = aResolution;
+		for (std::size_t i = 0; i < this->Image.size(); i++) {
+			// This is the finalized color output.
+			this->Image[i]["Color"] 		= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			// Opaque Geometry Buffer, used for Opaque and Transparent mesh instances.
+			this->Image[i]["OGB.Color"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Position"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Normal"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Depth"] 	= aContext->create_image(DepthCreateInfo, DepthFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["FinalColor"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+		}
 
-			// Setup frame clearing commands.
-			this->PredrawFrameOperation = std::vector<command_batch>(this->Image.size());
-			this->PostdrawFrameOperation = std::vector<command_batch>(this->Image.size());
-			for (size_t i = 0; i < this->Image.size(); i++) {
-				// Creates Clearing command for images in frame chain.
-				VkCommandBuffer	ClearCommand = aContext->allocate_command_buffer(device::operation::GRAPHICS_AND_COMPUTE);
-				aContext->begin(ClearCommand);
-				// this->Image[i]["Color"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
-				this->Image[i]["OGB.Color"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
-				this->Image[i]["OGB.Position"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
-				this->Image[i]["OGB.Normal"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
-				this->Image[i]["OGB.Depth"]->clear_depth(ClearCommand, { 1.0f, 0 }, image::layout::DEPTH_ATTACHMENT_OPTIMAL);
-				// this->Image[i]["FinalColor"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
-				aContext->end(ClearCommand);
-				this->PredrawFrameOperation[i] += ClearCommand;
-			}
-
+		// Setup frame clearing commands.
+		this->PredrawFrameOperation = std::vector<command_batch>(this->Image.size());
+		this->PostdrawFrameOperation = std::vector<command_batch>(this->Image.size());
+		for (size_t i = 0; i < this->Image.size(); i++) {
+			// Creates Clearing command for images in frame chain.
+			VkCommandBuffer	ClearCommand = aContext->allocate_command_buffer(device::operation::GRAPHICS_AND_COMPUTE);
+			aContext->begin(ClearCommand);
+			// this->Image[i]["Color"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["OGB.Color"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["OGB.Position"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["OGB.Normal"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["OGB.Depth"]->clear_depth(ClearCommand, { 1.0f, 0 }, image::layout::DEPTH_ATTACHMENT_OPTIMAL);
+			// this->Image[i]["FinalColor"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			aContext->end(ClearCommand);
+			this->PredrawFrameOperation[i] += ClearCommand;
 		}
 
 	}
 
+	camera3d::deferred_draw_call::deferred_draw_call(
+		object* 						aObject, 
+		core::gfx::mesh::instance* 		aMeshInstance,
+		camera3d* 						aCamera3D,
+		size_t 							aFrameIndex
+	) {
+		VkResult Result = VK_SUCCESS;
+		std::shared_ptr<gcl::context> Context = aObject->Context;
+		// Get Mesh & Material Data from mesh instance.
+		std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[aMeshInstance->Index];
+		std::shared_ptr<material> Material = aObject->Model->Material[aMeshInstance->MaterialIndex];
+		// Load up desired images which draw call will render to.
+		std::vector<std::shared_ptr<image>> ImageOutputList = {
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Color"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Position"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Normal"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Depth"]
+		};
+		// Acquire Mesh Vertex Buffer, and Mesh Instance Vertex Weight Buffer.
+		std::vector<std::shared_ptr<buffer>> VertexBuffer = { Mesh->VertexBuffer, aMeshInstance->VertexWeightBuffer };
+		// Load up GPU interface data to interface resources with pipeline.
+		Framebuffer = Context->create_framebuffer(aCamera3D->Pipeline, ImageOutputList, aCamera3D->Framechain->Resolution);
+		DescriptorArray = Context->create_descriptor_array(aCamera3D->Pipeline);
+		DrawCommand = aCamera3D->CommandPool->allocate();
+
+		// Bind Object Uniform Buffers
+		DescriptorArray->bind(0, 0, 0, aCamera3D->CameraUniformBuffer);			// Camera Position, Orientation, Projection
+		DescriptorArray->bind(0, 1, 0, aObject->UniformBuffer);					// Object Position, Orientation, Scale
+		DescriptorArray->bind(0, 2, 0, aMeshInstance->UniformBuffer); 			// Mesh Instance Transform
+		DescriptorArray->bind(0, 3, 0, Material->UniformBuffer); 				// Material Properties
+
+		// Bind Material Textures.
+		DescriptorArray->bind(1, 0, 0, Material->Texture["Color"]);
+		DescriptorArray->bind(1, 1, 0, Material->Texture["Normal"]);
+		DescriptorArray->bind(1, 2, 0, Material->Texture["Height"]);
+		DescriptorArray->bind(1, 3, 0, Material->Texture["Emission"]);
+		DescriptorArray->bind(1, 4, 0, Material->Texture["Opacity"]);
+		DescriptorArray->bind(1, 5, 0, Material->Texture["AmbientOcclusion"]);
+		DescriptorArray->bind(1, 6, 0, Material->Texture["MetallicRoughness"]);
+
+		// Actual Draw Call.
+		Result = Context->begin(DrawCommand);
+		aCamera3D->Pipeline->draw(DrawCommand, Framebuffer, VertexBuffer, Mesh->IndexBuffer, DescriptorArray);
+		Result = Context->end(DrawCommand);
+	}
+
+	camera3d::deferred_renderer::deferred_renderer(object* aObject, camera3d* aCamera3D) {
+		// Gather list of mesh instances throughout model hierarchy.
+		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy.gather_mesh_instances();
+
+		this->DrawCallList = std::vector<std::vector<std::shared_ptr<draw_call>>>(aCamera3D->Framechain->Image.size(), std::vector<std::shared_ptr<draw_call>>(MeshInstance.size()));
+
+		// Generates draw calls for each frame in the frame chain and mesh instance.
+		for (size_t i = 0; i < aCamera3D->Framechain->Image.size(); i++) {
+			for (size_t j = 0; j < MeshInstance.size(); j++) {
+				DrawCallList[i][j] = geodesy::make<deferred_draw_call>(aObject, MeshInstance[j], aCamera3D, i);
+			}
+		}
+	}
 
 	camera3d::camera3d(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aCamera3DCreator) : ecs::subject(aContext, aStage, aCamera3DCreator) {
 		VkResult Result = VK_SUCCESS;
@@ -239,52 +293,8 @@ namespace geodesy::bltn::obj {
 		memcpy(this->CameraUniformBuffer->Ptr, &UniformData, sizeof(camera_uniform_data));
 	}
 
-	std::vector<std::vector<ecs::object::draw_call>> camera3d::default_renderer(object* aObject) {
-		// Gather list of mesh instances throughout model hierarchy.
-		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy.gather_mesh_instances();
-
-		std::vector<std::vector<draw_call>> Renderer(this->Framechain->Image.size(), std::vector<draw_call>(MeshInstance.size()));
-
-		for (size_t i = 0; i < this->Framechain->Image.size(); i++) {
-			for (size_t j = 0; j < MeshInstance.size(); j++) {
-				// Get references for readability.
-				VkResult Result = VK_SUCCESS;
-				std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[MeshInstance[j]->Index];
-				std::shared_ptr<material> Material = aObject->Model->Material[MeshInstance[j]->MaterialIndex];
-
-				std::vector<std::shared_ptr<image>> ImageOutputList = {
-					this->Framechain->Image[i]["OGB.Color"],
-					this->Framechain->Image[i]["OGB.Position"],
-					this->Framechain->Image[i]["OGB.Normal"],
-					this->Framechain->Image[i]["OGB.Depth"]
-				};
-				Renderer[i][j].Framebuffer = Context->create_framebuffer(this->Pipeline, ImageOutputList, this->Framechain->Resolution);
-				Renderer[i][j].DescriptorArray = Context->create_descriptor_array(this->Pipeline);
-				Renderer[i][j].DrawCommand = this->CommandPool->allocate();
-
-				// Bind Object Uniform Buffers
-				Renderer[i][j].DescriptorArray->bind(0, 0, 0, this->CameraUniformBuffer);			// Camera Position, Orientation, Projection
-				Renderer[i][j].DescriptorArray->bind(0, 1, 0, aObject->UniformBuffer);				// Object Position, Orientation, Scale
-				Renderer[i][j].DescriptorArray->bind(0, 2, 0, MeshInstance[j]->UniformBuffer); 		// Mesh Instance Transform
-				Renderer[i][j].DescriptorArray->bind(0, 3, 0, Material->UniformBuffer); 			// Material Properties
-
-				// Bind Material Textures.
-				Renderer[i][j].DescriptorArray->bind(1, 0, 0, Material->Texture["Color"]);
-				Renderer[i][j].DescriptorArray->bind(1, 1, 0, Material->Texture["Normal"]);
-				Renderer[i][j].DescriptorArray->bind(1, 2, 0, Material->Texture["Height"]);
-				Renderer[i][j].DescriptorArray->bind(1, 3, 0, Material->Texture["Emission"]);
-				Renderer[i][j].DescriptorArray->bind(1, 4, 0, Material->Texture["Opacity"]);
-				Renderer[i][j].DescriptorArray->bind(1, 5, 0, Material->Texture["AmbientOcclusion"]);
-				Renderer[i][j].DescriptorArray->bind(1, 6, 0, Material->Texture["MetallicRoughness"]);
-
-				Result = Context->begin(Renderer[i][j].DrawCommand);
-				std::vector<std::shared_ptr<buffer>> VertexBuffer = { Mesh->VertexBuffer, MeshInstance[j]->VertexWeightBuffer };
-				this->Pipeline->draw(Renderer[i][j].DrawCommand, Renderer[i][j].Framebuffer, VertexBuffer, Mesh->IndexBuffer, Renderer[i][j].DescriptorArray);
-				Result = Context->end(Renderer[i][j].DrawCommand);
-			}
-		}
-		
-		return Renderer;
+	std::shared_ptr<ecs::object::renderer> camera3d::default_renderer(object* aObject) {
+		return std::dynamic_pointer_cast<ecs::object::renderer>(std::make_shared<deferred_renderer>(aObject, this));
 	}
 
 

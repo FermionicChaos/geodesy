@@ -4,6 +4,8 @@
 
 #include <geodesy/engine.h>
 
+#include "window.h"
+
 /*
 subject_window itself is a misnomer class. It is not a subject (render target) itself, it is merely a class
 that forwards the outputs from other subjects (render targets). It is a window that cannot be drawn to. It is a
@@ -20,25 +22,39 @@ namespace geodesy::bltn::obj {
 	class subject_window : public ecs::object {
 	public:
 
+		struct forward_draw_call : ecs::object::draw_call {
+			forward_draw_call(
+				object* 							aObject, 
+				core::gfx::mesh::instance* 			aMeshInstance,
+				ecs::subject* 						aSubjectSource,
+				size_t 								aSourceFrameIndex,
+				window* 							aSubjectTarget,
+				size_t 								aTargetFrameIndex
+			);
+		};
+
+		struct forward_renderer : ecs::object::renderer {
+			std::vector<std::vector<std::vector<std::shared_ptr<draw_call>>>> OverridenDrawCallList;
+			forward_renderer(
+				ecs::object* 						aObject, 
+				ecs::subject* 						aSubjectSource,
+				ecs::subject* 						aSubjectTarget
+			);
+		};
+
 		struct creator : object::creator {
-			std::shared_ptr<ecs::subject> 	Subject;
+			std::shared_ptr<ecs::subject> 			Subject;
 			creator();
 		};
 
-		core::math::vec<float, 2> Size;
-		std::shared_ptr<ecs::subject> SubjectSource; 		// ! Change to std::weak_ptr
+		core::math::vec<float, 2> 			Size;
+		std::shared_ptr<ecs::subject> 		SubjectSource; 		// ! Change to std::weak_ptr
 
 		subject_window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aSubjectWindowCreator);
 
-		std::vector<draw_call> draw(ecs::subject* aSubject) override;
+		std::vector<std::shared_ptr<draw_call>> draw(ecs::subject* aSubject) override;
 
-	private:
-
-		std::map<ecs::subject*, std::vector<std::vector<std::vector<draw_call>>>> OverridenRenderer;
-
-		std::vector<std::vector<std::vector<draw_call>>> specialized_renderer(ecs::subject* aSubjectTarget);
-
-	};
+	};	
 
 }
 

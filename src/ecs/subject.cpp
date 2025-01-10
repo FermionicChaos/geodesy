@@ -30,8 +30,8 @@ namespace geodesy::ecs {
 		return true;
 	}
 
-	std::vector<std::vector<object::draw_call>> subject::default_renderer(object* aObject) {
-		std::vector<std::vector<draw_call>> DefaultRenderer;
+	std::shared_ptr<ecs::object::renderer> subject::default_renderer(object* aObject) {
+		std::shared_ptr<renderer> DefaultRenderer;
 		return DefaultRenderer;
 	}
 
@@ -69,10 +69,10 @@ namespace geodesy::ecs {
 		gcl::command_batch StageCommandBatch;
 		for (size_t i = 0; i < aStage->Object.size(); i++) {
 			// Draw object.
-			std::vector<draw_call> ObjectDrawCall = aStage->Object[i]->draw(this);
+			std::vector<std::shared_ptr<object::draw_call>> ObjectDrawCall = aStage->Object[i]->draw(this);
 			std::vector<VkCommandBuffer> ObjectDrawCommand(ObjectDrawCall.size());
 			for (size_t j = 0; j < ObjectDrawCall.size(); j++) {
-				ObjectDrawCommand[j] = ObjectDrawCall[j].DrawCommand;
+				ObjectDrawCommand[j] = ObjectDrawCall[j]->DrawCommand;
 			}
 			// Group into single submission.
 			StageCommandBatch += ObjectDrawCommand;

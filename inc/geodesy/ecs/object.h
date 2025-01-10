@@ -15,8 +15,13 @@
 
 namespace geodesy::ecs {
 	
-	class object /* : public std::enable_shared_from_this<object> */ {
+	class object {
 	public:
+
+		// Uniform Buffer Data
+		// Derived Framechain Info
+		// Derived Draw Call & Renderer Specification.
+		// Creation Info
 
 		enum motion {
 			STATIC,			// Object doesn't move in world space
@@ -25,9 +30,9 @@ namespace geodesy::ecs {
 		};
 
 		struct uniform_data {
-			alignas(16) core::math::vec<float, 3> Position;
-			alignas(16) core::math::mat<float, 4, 4> Orientation;
-			alignas(16) core::math::vec<float, 3> Scale;
+			alignas(16) core::math::vec<float, 3> 					Position;
+			alignas(16) core::math::mat<float, 4, 4> 				Orientation;
+			alignas(16) core::math::vec<float, 3> 					Scale;
 			uniform_data(
 				core::math::vec<float, 3> aPosition, 
 				core::math::vec<float, 3> aDirRight, 
@@ -35,6 +40,33 @@ namespace geodesy::ecs {
 				core::math::vec<float, 3> aDirForward,
 				core::math::vec<float, 3> aScale
 			);
+		};
+
+		// A draw call represents a singular draw call for a single mesh instance in
+		// the node hiearchy of the model. Distance from the camera is determined
+		struct draw_call {
+			float 													DistanceFromSubject;
+			core::gfx::material::transparency 						TransparencyMode;
+			std::shared_ptr<core::gcl::context> 					Context;
+			std::shared_ptr<core::gcl::framebuffer> 				Framebuffer;
+			std::shared_ptr<core::gcl::descriptor::array> 			DescriptorArray;
+			VkCommandBuffer 										DrawCommand;
+			draw_call();
+		};
+
+		struct renderer {
+
+			// Object & Subject must share the same device context.
+			object* 												Object;
+			subject* 												Subject;
+			std::vector<std::vector<std::shared_ptr<draw_call>>> 	DrawCallList;
+
+			renderer() {}
+			virtual ~renderer() = default;
+
+			std::vector<std::shared_ptr<draw_call>> operator[](size_t aIndex) const;
+
+			// void update(double aDeltaTime);
 		};
 
 		struct creator {
@@ -48,29 +80,6 @@ namespace geodesy::ecs {
 			bool 							GravityEnabled;
 			bool 							CollisionEnabled;
 			creator();
-		};
-
-		// A draw call represents a singular draw call for a single mesh instance in
-		// the node hiearchy of the model. Distance from the camera is determined
-		struct draw_call {
-			float 												DistanceFromSubject;
-			core::gfx::material::transparency 					TransparencyMode;
-			std::shared_ptr<core::gcl::context> 				Context;
-			std::shared_ptr<core::gcl::framebuffer> 			Framebuffer;
-			std::shared_ptr<core::gcl::descriptor::array> 		DescriptorArray;
-			VkCommandBuffer 									DrawCommand;
-			draw_call();
-		};
-
-		struct renderer {
-
-			// Object & Subject must share the same device context.
-			object* 	Object;
-			subject* 	Subject;
-
-			~renderer() {}
-
-			// void update(double aDeltaTime);
 		};
 
 		// ! ----- Host Data ----- ! //
@@ -111,7 +120,7 @@ namespace geodesy::ecs {
 		std::shared_ptr<core::phys::mesh>											CollisionBox;
 		std::shared_ptr<core::gfx::model>											Model;
 		std::shared_ptr<core::gcl::buffer> 											UniformBuffer;
-		std::map<subject*, std::vector<std::vector<draw_call>>>						Renderer;
+		std::map<subject*, std::shared_ptr<renderer>>								Renderer;
 
 		object(std::shared_ptr<core::gcl::context> aContext, stage* aStage, creator* aCreator);
 		~object();
@@ -120,7 +129,7 @@ namespace geodesy::ecs {
 
 		virtual void input(const core::hid::input& aInput);
 		virtual void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f });
-		virtual std::vector<draw_call> draw(subject* aSubject);
+		virtual std::vector<std::shared_ptr<draw_call>> draw(subject* aSubject);
 
 	protected:
 
