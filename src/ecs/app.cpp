@@ -1,4 +1,4 @@
-#include <geodesy/ecs/app.h>
+#include <geodesy/engine.h>
 
 #include <omp.h>
 
@@ -13,6 +13,15 @@ namespace geodesy::ecs {
 		this->TimeStep = 1.0 / 30.0;
 		this->Time = 0.0;
 		omp_set_num_threads(omp_get_max_threads());
+	}
+
+	app::~app() {
+		this->Engine->wait_on_device_context();
+		for (auto& Stg : this->Stage) {
+			for (auto& Obj : Stg->Object) {
+				Obj->Renderer.clear();
+			}
+		}
 	}
 
 	void app::init() {

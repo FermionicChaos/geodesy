@@ -63,7 +63,7 @@ namespace geodesy::bltn::obj {
 		Result = Context->end(DrawCommand);
 	}
 
-	window::window_renderer::window_renderer(ecs::object* aObject, window* aWindow) {
+	window::window_renderer::window_renderer(ecs::object* aObject, window* aWindow) : ecs::object::renderer(aObject, aWindow) {
 		// Gather list of mesh instances throughout model hierarchy.
 		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy.gather_mesh_instances();
 

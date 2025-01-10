@@ -40,20 +40,15 @@ int main(int aCmdArgCount, char* aCmdArgList[]) {
 	// Load selected extensions so engine can render to system windows.
 	std::vector<const char*> ExtensionList = system_window::engine_extensions();
 
-	try {
-
-		// Initialize Engine.
+	{
 		geodesy::engine Engine(CommandLineArguments, LayerList, ExtensionList);
+		{
+				// Initialize User App
+				bltn::unit_test UnitTest(&Engine);
 
-		// Initialize User App
-		bltn::unit_test UnitTest(&Engine);
-
-		// Run User App
-		Engine.run(&UnitTest);
-		
-	} catch (geodesy::core::util::log EngineLog) {
-		//std::cout << EngineLog << std::endl;
-		return -1;
+				// Run User App
+				Engine.run(&UnitTest);
+		}
 	}
 
 	// Terminate all third party libraries.

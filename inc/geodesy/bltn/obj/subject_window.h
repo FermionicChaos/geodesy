@@ -40,6 +40,7 @@ namespace geodesy::bltn::obj {
 				ecs::subject* 						aSubjectSource,
 				ecs::subject* 						aSubjectTarget
 			);
+			~forward_renderer() override;
 		};
 
 		struct creator : object::creator {

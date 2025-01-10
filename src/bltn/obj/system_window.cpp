@@ -546,7 +546,7 @@ namespace geodesy::bltn::obj {
 	}
 
 	void system_window::destroy_window_handle(GLFWwindow* aWindowHandle) {
-
+		glfwDestroyWindow(aWindowHandle);
 	}
 
 	// ------------------------------ callback methods ----------------------------- //

@@ -41,6 +41,24 @@ namespace geodesy::ecs {
 		DrawCommand 			= VK_NULL_HANDLE;
 	}
 
+	object::renderer::renderer() {}
+
+	object::renderer::renderer(object* aObject, subject* aSubject) {
+		this->Object = aObject;
+		this->Subject = aSubject;
+	}
+
+	object::renderer::~renderer() {
+		// Clear out all command buffers.
+		for (size_t i = 0; i < this->DrawCallList.size(); i++) {
+			for (size_t j = 0; j < this->DrawCallList[i].size(); j++) {
+				this->Subject->CommandPool->release(this->DrawCallList[i][j]->DrawCommand);
+			}
+		}
+		// Clear out all GPU interface resources (framebuffers, descriptor arrays, etc).
+		this->DrawCallList.clear();
+	}
+
 	std::vector<std::shared_ptr<object::draw_call>> object::renderer::operator[](size_t aIndex) const {
 		return this->DrawCallList[aIndex];
 	}

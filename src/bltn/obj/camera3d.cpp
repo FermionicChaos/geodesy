@@ -150,7 +150,7 @@ namespace geodesy::bltn::obj {
 		Result = Context->end(DrawCommand);
 	}
 
-	camera3d::deferred_renderer::deferred_renderer(object* aObject, camera3d* aCamera3D) {
+	camera3d::deferred_renderer::deferred_renderer(object* aObject, camera3d* aCamera3D) : ecs::object::renderer(aObject, aCamera3D) {
 		// Gather list of mesh instances throughout model hierarchy.
 		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy.gather_mesh_instances();
 

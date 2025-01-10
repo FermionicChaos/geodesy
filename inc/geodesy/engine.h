@@ -107,6 +107,7 @@ namespace geodesy {
 
 		std::shared_ptr<core::gcl::context> create_device_context(std::shared_ptr<core::gcl::device> aDevice, std::vector<uint> aOperationBitfieldList, std::vector<const char*> aLayerList = {}, std::vector<const char*> aExtensionList = {});
 		void destroy_device_context(std::shared_ptr<core::gcl::context> aDeviceContext);
+		VkResult wait_on_device_context(std::vector<std::shared_ptr<core::gcl::context>> aDeviceContextList = {});
 
 		void run(ecs::app* aApp);
 		VkResult update_resources(ecs::app* aApp);

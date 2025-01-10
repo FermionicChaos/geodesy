@@ -167,6 +167,21 @@ namespace geodesy {
 		// Should I delete all contexts everywhere, or allow resoure deallocation until?
 	}
 
+	VkResult engine::wait_on_device_context(std::vector<std::shared_ptr<core::gcl::context>> aDeviceContextList) {
+		VkResult Result = VK_SUCCESS;
+		if (aDeviceContextList.size() == 0) {
+			for (auto& Ctx : Context) {
+				Result = vkDeviceWaitIdle(Ctx->Handle);
+			}
+		}
+		else {
+			for (auto& Ctx : aDeviceContextList) {
+				Result = vkDeviceWaitIdle(Ctx->Handle);
+			}
+		}
+		return Result;
+	}
+
 	void engine::run(ecs::app* aApp) {
 
 		aApp->init();

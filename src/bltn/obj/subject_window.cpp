@@ -74,6 +74,19 @@ namespace geodesy::bltn::obj {
 		}
 	}
 
+	subject_window::forward_renderer::~forward_renderer() {
+		// Clear out all command buffers.
+		for (size_t i = 0; i < this->OverridenDrawCallList.size(); i++) {
+			for (size_t j = 0; j < this->OverridenDrawCallList[i].size(); j++) {
+				for (size_t k = 0; k < this->OverridenDrawCallList[i][j].size(); k++) {
+					this->Subject->CommandPool->release(this->OverridenDrawCallList[i][j][k]->DrawCommand);
+				}
+			}
+		}
+		// Clear out all GPU interface resources (framebuffers, descriptor arrays, etc).
+		this->OverridenDrawCallList.clear();
+	}
+
 	subject_window::creator::creator() {
 		this->Subject = nullptr;
 	}

@@ -117,6 +117,13 @@ namespace geodesy::core::gcl {
 		for (VkSemaphore S : Semaphore) {
 			vkDestroySemaphore(Handle, S, NULL);
 		}
+		// Destroy command buffers.
+		for (auto& [Operation, CommandBufferSet] : CommandBuffer) {
+			for (VkCommandBuffer CB : CommandBufferSet) {
+				vkFreeCommandBuffers(Handle, CommandPool[Operation], 1, &CB);
+			}
+			vkDestroyCommandPool(Handle, CommandPool[Operation], NULL);
+		}
 		vkDestroyDevice(Handle, NULL);
 	}
 
@@ -159,7 +166,9 @@ namespace geodesy::core::gcl {
 		for (VkCommandBuffer CommandBuffer : aCommandBuffer) {
 			this->CommandBuffer[aOperation].erase(CommandBuffer);
 		}
-		vkFreeCommandBuffers(this->Handle, this->CommandPool[aOperation], aCommandBuffer.size(), aCommandBuffer.data());
+		if (aCommandBuffer.size() > 0) {
+			vkFreeCommandBuffers(this->Handle, this->CommandPool[aOperation], aCommandBuffer.size(), aCommandBuffer.data());
+		}
 		aCommandBuffer.clear();
 	}
 

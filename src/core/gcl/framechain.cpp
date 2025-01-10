@@ -14,6 +14,12 @@ namespace geodesy::core::gcl {
 	}
 
 	framechain::~framechain() {
+		for (size_t i = 0; i < this->PredrawFrameOperation.size(); i++) {
+			this->Context->release_command_buffer(device::operation::GRAPHICS_AND_COMPUTE, this->PredrawFrameOperation[i].CommandBufferList);
+		}
+		for (size_t i = 0; i < this->PostdrawFrameOperation.size(); i++) {
+			this->Context->release_command_buffer(device::operation::GRAPHICS_AND_COMPUTE, this->PostdrawFrameOperation[i].CommandBufferList);
+		}
 	}
 
 	std::map<std::string, std::shared_ptr<image>> framechain::read_frame() {

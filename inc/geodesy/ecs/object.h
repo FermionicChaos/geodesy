@@ -61,8 +61,9 @@ namespace geodesy::ecs {
 			subject* 												Subject;
 			std::vector<std::vector<std::shared_ptr<draw_call>>> 	DrawCallList;
 
-			renderer() {}
-			virtual ~renderer() = default;
+			renderer();
+			renderer(object* aObject, subject* aSubject);
+			virtual ~renderer();
 
 			std::vector<std::shared_ptr<draw_call>> operator[](size_t aIndex) const;
 
