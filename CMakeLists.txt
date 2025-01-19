@@ -66,6 +66,23 @@ set(GLFW_BUILD_TESTS OFF)
 set(GLFW_VULKAN_STATIC ON)
 FetchContent_MakeAvailable(glfw)
 
+# ----- OpenXR ----- #
+FetchContent_Declare(
+    openxr
+    GIT_REPOSITORY      https://github.com/KhronosGroup/OpenXR-SDK.git
+    GIT_TAG             release-1.1.43
+)
+# set(BUILD_API_LAYERS OFF)
+# set(BUILD_API_TESTS OFF)
+# set(BUILD_LOADER ON)
+# set(BUILD_TESTS OFF)
+# set(BUILD_WITH_INSTALL_NAME ON)
+# set(INSTALL_LOADER ON)
+# set(INSTALL_TESTS OFF)
+# set(USE_LOADER OFF)
+FetchContent_MakeAvailable(openxr)
+
+
 # ----- PortAudio ----- #
 # FetchContent_Declare(
 #     portaudio
@@ -155,11 +172,12 @@ target_include_directories(${GEODESY_LIBRARY} PUBLIC ${Vulkan_INCLUDE_DIRS}/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inc/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glfw-src/include/)
-target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glfw-build/src/)
+target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/openxr-src/include/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/stb-src/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/assimp-src/include/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/freetype-src/include/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/imgui-src/)
+target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glfw-build/src/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/freetype-build/include/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/assimp-build/include/)
 
@@ -175,6 +193,7 @@ endif()
 
 # Link Third Party Libraries
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC glfw)
+target_link_libraries(${GEODESY_LIBRARY} PUBLIC openxr_loader)
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC glslang)
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC SPIRV)
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC assimp)

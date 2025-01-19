@@ -11,7 +11,6 @@
 #include "shader.h"
 #include "descriptor.h"
 #include "pipeline.h"
-#include "swapchain.h"
 
 namespace geodesy::core::gcl {
 

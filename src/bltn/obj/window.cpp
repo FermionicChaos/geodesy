@@ -27,6 +27,56 @@ namespace geodesy::bltn::obj {
 
 	}
 
+	window::window_draw_call::window_draw_call(
+		object* 								aObject, 
+		core::gfx::mesh::instance* 				aMeshInstance,
+		window* 								aWindow,
+		size_t 									aFrameIndex
+	) {
+		// Get references for readability.
+		VkResult Result = VK_SUCCESS;
+		std::shared_ptr<gcl::context> Context = aObject->Context;
+		std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[aMeshInstance->Index];
+		std::shared_ptr<material> Material = aObject->Model->Material[aMeshInstance->MaterialIndex];
+
+		// Get image outputs and vertex inputs.
+		std::vector<std::shared_ptr<image>> ImageOutputList = {
+			aWindow->Framechain->Image[aFrameIndex]["Color"]
+		};
+		std::vector<std::shared_ptr<buffer>> VertexBuffer = { Mesh->VertexBuffer, aMeshInstance->VertexWeightBuffer };
+
+		// Allocate GPU resources to interface with pipeline.
+		Framebuffer 		= Context->create_framebuffer(aWindow->Pipeline, ImageOutputList, aWindow->Framechain->Resolution);
+		DescriptorArray 	= Context->create_descriptor_array(aWindow->Pipeline);
+		DrawCommand 		= aWindow->CommandPool->allocate();
+
+		// Bind Object Uniform Buffers
+		DescriptorArray->bind(0, 0, 0, aWindow->WindowUniformBuffer);		// Window Size, etc
+		DescriptorArray->bind(0, 1, 0, aObject->UniformBuffer);				// Object Position, Orientation, Scale
+		DescriptorArray->bind(0, 2, 0, Material->UniformBuffer); 			// Material Properties
+
+		// Bind Material Textures.
+		DescriptorArray->bind(1, 0, 0, Material->Texture["Color"]);
+
+		Result = Context->begin(DrawCommand);
+		aWindow->Pipeline->draw(DrawCommand, Framebuffer, VertexBuffer, Mesh->IndexBuffer, DescriptorArray);
+		Result = Context->end(DrawCommand);
+	}
+
+	window::window_renderer::window_renderer(ecs::object* aObject, window* aWindow) : ecs::object::renderer(aObject, aWindow) {
+		// Gather list of mesh instances throughout model hierarchy.
+		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy.gather_mesh_instances();
+
+		std::vector<std::vector<draw_call>> Renderer(aWindow->Framechain->Image.size(), std::vector<draw_call>(MeshInstance.size()));
+
+		// Generate draw calls standard per frame and mesh instance.
+		for (size_t i = 0; i < aWindow->Framechain->Image.size(); i++) {
+			for (size_t j = 0; j < MeshInstance.size(); j++) {
+				DrawCallList[i][j] = geodesy::make<window_draw_call>(aObject, MeshInstance[j], aWindow, i);
+			}
+		}
+	}
+
 	window::creator::creator() {
 		ModelPath 		= "assets/models/quad.obj";
 		PixelFormat		= image::format::B8G8R8A8_UNORM;
@@ -103,42 +153,8 @@ namespace geodesy::bltn::obj {
 		this->WindowUniformBuffer->map_memory(0, sizeof(window_uniform_data));
 	}
 
-	std::vector<std::vector<core::gfx::draw_call>> window::default_renderer(ecs::object* aObject) {
-		// Gather list of mesh instances throughout model hierarchy.
-		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy.gather_mesh_instances();
-
-		std::vector<std::vector<draw_call>> Renderer(this->Framechain->Image.size(), std::vector<draw_call>(MeshInstance.size()));
-
-		for (size_t i = 0; i < this->Framechain->Image.size(); i++) {
-			for (size_t j = 0; j < MeshInstance.size(); j++) {
-				// Get references for readability.
-				VkResult Result = VK_SUCCESS;
-				std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[MeshInstance[j]->Index];
-				std::shared_ptr<material> Material = aObject->Model->Material[MeshInstance[j]->MaterialIndex];
-
-				std::vector<std::shared_ptr<image>> ImageOutputList = {
-					this->Framechain->Image[i]["Color"]
-				};
-				Renderer[i][j].Framebuffer = Context->create_framebuffer(this->Pipeline, ImageOutputList, this->Framechain->Resolution);
-				Renderer[i][j].DescriptorArray = Context->create_descriptor_array(this->Pipeline);
-				Renderer[i][j].DrawCommand = this->CommandPool->allocate();
-
-				// Bind Object Uniform Buffers
-				Renderer[i][j].DescriptorArray->bind(0, 0, 0, this->WindowUniformBuffer);			// Window Size, etc
-				Renderer[i][j].DescriptorArray->bind(0, 1, 0, aObject->UniformBuffer);				// Object Position, Orientation, Scale
-				Renderer[i][j].DescriptorArray->bind(0, 2, 0, Material->UniformBuffer); 			// Material Properties
-
-				// Bind Material Textures.
-				Renderer[i][j].DescriptorArray->bind(1, 0, 0, Material->Texture["Color"]);
-
-				Result = Context->begin(Renderer[i][j].DrawCommand);
-				std::vector<std::shared_ptr<buffer>> VertexBuffer = { Mesh->VertexBuffer, MeshInstance[j]->VertexWeightBuffer };
-				this->Pipeline->draw(Renderer[i][j].DrawCommand, Renderer[i][j].Framebuffer, VertexBuffer, Mesh->IndexBuffer, Renderer[i][j].DescriptorArray);
-				Result = Context->end(Renderer[i][j].DrawCommand);
-			}
-		}
-		
-		return Renderer;
+	std::shared_ptr<ecs::object::renderer> window::default_renderer(ecs::object* aObject) {
+		return std::dynamic_pointer_cast<ecs::object::renderer>(std::make_shared<window_renderer>(aObject, this));
 	}
 	
 }

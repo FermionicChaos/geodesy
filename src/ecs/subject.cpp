@@ -18,6 +18,8 @@ namespace geodesy::ecs {
 		this->CommandPool = std::make_shared<gcl::command_pool>(aContext, gcl::device::operation::GRAPHICS_AND_COMPUTE);
 		this->SemaphorePool = std::make_shared<gcl::semaphore_pool>(aContext, 100); // ^Can be changed later
 		// this->Timer;
+		this->NextFrameSemaphore = VK_NULL_HANDLE;
+		this->PresentFrameSemaphore = VK_NULL_HANDLE;
 	}
 
 	subject::~subject() {
@@ -28,23 +30,27 @@ namespace geodesy::ecs {
 		return true;
 	}
 
-	std::vector<std::vector<core::gfx::draw_call>> subject::default_renderer(object* aObject) {
-		std::vector<std::vector<core::gfx::draw_call>> DefaultRenderer;
+	std::shared_ptr<ecs::object::renderer> subject::default_renderer(object* aObject) {
+		std::shared_ptr<renderer> DefaultRenderer;
 		return DefaultRenderer;
 	}
 
 	submission_batch subject::render(stage* aStage) {
-		// Acquire next image from swapchain.
-		this->RenderingOperations += this->Framechain->next_frame();
+		// The next frame operation will both present previously drawn frame and acquire next
+		// frame. 
+		VkResult Result = this->Framechain->next_frame(this->PresentFrameSemaphore, this->NextFrameSemaphore);
+
+		// Acquire predraw rendering operations.
+		this->RenderingOperations += this->Framechain->predraw();
 
 		// Iterate through all objects in the stage.
 		gcl::command_batch StageCommandBatch;
 		for (size_t i = 0; i < aStage->Object.size(); i++) {
 			// Draw object.
-			std::vector<gfx::draw_call> ObjectDrawCall = aStage->Object[i]->draw(this);
+			std::vector<std::shared_ptr<object::draw_call>> ObjectDrawCall = aStage->Object[i]->draw(this);
 			std::vector<VkCommandBuffer> ObjectDrawCommand(ObjectDrawCall.size());
 			for (size_t j = 0; j < ObjectDrawCall.size(); j++) {
-				ObjectDrawCommand[j] = ObjectDrawCall[j].DrawCommand;
+				ObjectDrawCommand[j] = ObjectDrawCall[j]->DrawCommand;
 			}
 			// Group into single submission.
 			StageCommandBatch += ObjectDrawCommand;
@@ -54,7 +60,7 @@ namespace geodesy::ecs {
 		this->RenderingOperations += StageCommandBatch;
 
 		// Acquire image transition and present frame if exists.
-		this->RenderingOperations += this->Framechain->present_frame();
+		this->RenderingOperations += this->Framechain->postdraw();
 
 		// Setup safety dependencies for default rendering system.
 		for (size_t i = 0; i < this->RenderingOperations.size() - 1; i++) {

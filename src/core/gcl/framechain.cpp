@@ -11,20 +11,14 @@ namespace geodesy::core::gcl {
 		this->Timer = 1.0 / aFrameRate;
 		this->Context = aContext;
 		this->Image = std::vector<std::map<std::string, std::shared_ptr<image>>>(aFrameCount);
-
-		// Setup next image semaphore.
-		std::vector<VkSemaphore> NextImageSemaphoreList = aContext->create_semaphore(Image.size(), 0);
-		for (size_t i = 0; i < NextImageSemaphoreList.size(); i++) {
-			this->NextImageSemaphore.push(NextImageSemaphoreList[i]);
-		}
 	}
 
 	framechain::~framechain() {
-		// Destroy Semaphores.
-		while (!this->NextImageSemaphore.empty()) {
-			VkSemaphore Semaphore = this->NextImageSemaphore.front();
-			this->NextImageSemaphore.pop();
-			this->Context->destroy_semaphore(Semaphore);
+		for (size_t i = 0; i < this->PredrawFrameOperation.size(); i++) {
+			this->Context->release_command_buffer(device::operation::GRAPHICS_AND_COMPUTE, this->PredrawFrameOperation[i].CommandBufferList);
+		}
+		for (size_t i = 0; i < this->PostdrawFrameOperation.size(); i++) {
+			this->Context->release_command_buffer(device::operation::GRAPHICS_AND_COMPUTE, this->PostdrawFrameOperation[i].CommandBufferList);
 		}
 	}
 
@@ -48,14 +42,25 @@ namespace geodesy::core::gcl {
 		return VK_SUCCESS;
 	}
 
-	command_batch framechain::next_frame() {
+	VkResult framechain::next_frame(VkSemaphore& aPresentFrameSemaphore, VkSemaphore& aNextFrameSemaphore, VkFence aNextFrameFence) {
+		// Make read index the previous frame that was drawn to.
 		ReadIndex = DrawIndex;
+		// Generate next draw index.
 		DrawIndex = ((DrawIndex == (Image.size() - 1)) ? 0 : (DrawIndex + 1));
-		return PredrawFrameOperation[DrawIndex];
+		// Set present semaphore to null handle, unless system_window.
+		aPresentFrameSemaphore = VK_NULL_HANDLE;
+		// Set next frame semaphore to null handle, unless system_window.
+		aNextFrameSemaphore = VK_NULL_HANDLE;
+		// Return null handle if not system_window.
+		return VK_SUCCESS;
 	}
 
-	std::vector<command_batch> framechain::present_frame() {
-		return { PostdrawFrameOperation[DrawIndex]};
+	std::vector<command_batch> framechain::predraw() {
+		return { PredrawFrameOperation[DrawIndex] };
+	}
+
+	std::vector<command_batch> framechain::postdraw() {
+		return { PostdrawFrameOperation[DrawIndex] };
 	}
 
 }

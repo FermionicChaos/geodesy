@@ -9,6 +9,27 @@ namespace geodesy::bltn::obj {
 	class camera3d : public ecs::subject {
 	public:
 
+		class geometry_buffer : public core::gcl::framechain {
+		public:
+			geometry_buffer(std::shared_ptr<core::gcl::context> aContext, core::math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount);
+		};
+
+		struct deferred_draw_call : object::draw_call {
+			deferred_draw_call(
+				object* 								aObject, 
+				core::gfx::mesh::instance* 				aMeshInstance,
+				camera3d* 								aCamera3D,
+				size_t 									aFrameIndex
+			);
+		};
+
+		struct deferred_renderer : object::renderer {
+			deferred_renderer(
+				object* aObject, 
+				camera3d* aCamera3D
+			);
+		};
+
 		struct creator : subject::creator {
 			float FOV;
 			float Near;
@@ -24,9 +45,9 @@ namespace geodesy::bltn::obj {
 		// Implement input
 		void input(const core::hid::input& aInput) override;
 		void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f }) override;
-		std::vector<std::vector<core::gfx::draw_call>> default_renderer(ecs::object* aObject) override;
+		std::shared_ptr<renderer> default_renderer(ecs::object* aObject) override;
 
-	};	
+	};
 
 }
 

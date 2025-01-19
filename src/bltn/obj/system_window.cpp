@@ -2,6 +2,7 @@
 
 #include <GLFW/glfw3.h>
 
+#include <algorithm>
 #include <iostream>
 
 /* --------------- Platform Dependent Libraries --------------- */
@@ -28,6 +29,247 @@ namespace geodesy::bltn::obj {
 	// std::atomic<GLFWwindow*> system_window::ReturnWindow					= NULL;
 	// std::atomic<GLFWwindow*> system_window::DestroyWindow					= NULL;
 
+	system_window::swapchain::property::property() {
+		this->FrameCount		= 3;
+		this->FrameRate			= 60.0f;
+		this->PixelFormat		= image::format::B8G8R8A8_UNORM; // HDR is image::format::R16G16B16A16_SFLOAT
+		this->ColorSpace		= swapchain::colorspace::SRGB_NONLINEAR;
+		this->ImageUsage		= image::usage::COLOR_ATTACHMENT;
+		this->CompositeAlpha	= swapchain::composite::ALPHA_OPAQUE;
+		this->PresentMode		= swapchain::present_mode::FIFO;
+		this->Clipped			= false;
+    }
+
+	system_window::swapchain::property::property(VkSwapchainCreateInfoKHR aCreateInfo, float aFrameRate) {
+		this->FrameCount 		= aCreateInfo.minImageCount;
+		this->FrameRate 		= aFrameRate;
+		this->PixelFormat 		= (image::format)aCreateInfo.imageFormat;
+		this->ColorSpace 		= (swapchain::colorspace)aCreateInfo.imageColorSpace;
+		this->ImageUsage 		= (image::usage)aCreateInfo.imageUsage;
+		this->CompositeAlpha 	= (swapchain::composite)aCreateInfo.compositeAlpha;
+		this->PresentMode 		= (swapchain::present_mode)aCreateInfo.presentMode;
+		this->Clipped 			= aCreateInfo.clipped;		
+	}
+
+	system_window::swapchain::swapchain(std::shared_ptr<context> aContext, VkSurfaceKHR aSurface, const property& aProperty) : framechain(aContext, aProperty.FrameRate, aProperty.FrameCount) {
+		// TODO: Maybe change later to take in class?
+		VkResult Result = this->create_swapchain(aContext, aSurface, aProperty, VK_NULL_HANDLE);
+
+		// Setup next image semaphore.
+		std::vector<VkSemaphore> NextImageSemaphoreList = aContext->create_semaphore(Image.size(), 0);
+		for (size_t i = 0; i < NextImageSemaphoreList.size(); i++) {
+			this->NextFrameSemaphoreList.push(NextImageSemaphoreList[i]);
+		}
+		this->PresentFrameSemaphoreList = aContext->create_semaphore(Image.size(), 0);
+    }
+
+    system_window::swapchain::~swapchain() {
+		this->clear();
+		// Destroy Semaphores.
+		while (!this->NextFrameSemaphoreList.empty()) {
+			VkSemaphore Semaphore = this->NextFrameSemaphoreList.front();
+			this->NextFrameSemaphoreList.pop();
+			this->Context->destroy_semaphore(Semaphore);
+		}
+		this->Context->destroy_semaphore(this->PresentFrameSemaphoreList);
+    }
+
+	VkImageCreateInfo system_window::swapchain::image_create_info() const {
+		VkImageCreateInfo ImageCreateInfo{};
+		ImageCreateInfo.sType					= VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+		ImageCreateInfo.pNext					= NULL;
+		ImageCreateInfo.flags					= 0;
+		ImageCreateInfo.imageType				= VK_IMAGE_TYPE_2D;
+		ImageCreateInfo.format					= CreateInfo.imageFormat;
+		ImageCreateInfo.extent					= { CreateInfo.imageExtent.width, CreateInfo.imageExtent.height, 1u };
+		ImageCreateInfo.mipLevels				= 1;
+		ImageCreateInfo.arrayLayers				= CreateInfo.imageArrayLayers;
+		ImageCreateInfo.samples					= (VkSampleCountFlagBits)image::sample::COUNT_1;
+		ImageCreateInfo.tiling					= (VkImageTiling)image::tiling::OPTIMAL;
+		ImageCreateInfo.usage					= CreateInfo.imageUsage;
+		ImageCreateInfo.sharingMode				= CreateInfo.imageSharingMode;
+		ImageCreateInfo.queueFamilyIndexCount	= 0;
+		ImageCreateInfo.pQueueFamilyIndices		= NULL;
+		ImageCreateInfo.initialLayout			= (VkImageLayout)image::LAYOUT_UNDEFINED;
+		return ImageCreateInfo;
+	}
+
+	VkResult system_window::swapchain::next_frame(VkSemaphore& aPresentFrameSemaphore, VkSemaphore& aNextFrameSemaphore, VkFence aNextFrameFence) {
+		VkResult ReturnValue = VK_SUCCESS;
+
+		// Before acquiring next image, present current image.
+		if (aPresentFrameSemaphore != VK_NULL_HANDLE){
+			VkPresentInfoKHR PresentInfo{};
+			PresentInfo.sType				= VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+			PresentInfo.pNext				= NULL;
+			PresentInfo.waitSemaphoreCount	= 1;
+			PresentInfo.pWaitSemaphores		= &aPresentFrameSemaphore;
+			PresentInfo.swapchainCount		= 1;
+			PresentInfo.pSwapchains			= &Handle;
+			PresentInfo.pImageIndices		= &DrawIndex;
+			// Present image to screen.
+			ReturnValue = vkQueuePresentKHR(Context->Queue[device::operation::PRESENT], &PresentInfo);
+		}
+
+		// Use next semaphore in queue.
+		aNextFrameSemaphore = this->NextFrameSemaphoreList.front();
+		this->NextFrameSemaphoreList.pop();
+		this->NextFrameSemaphoreList.push(aNextFrameSemaphore);
+
+		ReadIndex = DrawIndex;
+		while (true) {
+			VkResult Result = VK_SUCCESS;
+			
+			// Acquire next image from swapchain.
+			Result = vkAcquireNextImageKHR(Context->Handle, Handle, UINT64_MAX, aNextFrameSemaphore, aNextFrameFence, &DrawIndex);
+
+			// If image succussfully acquired, break loop.
+			if (Result == VK_SUCCESS) break;
+
+			// Check if window has resized.
+			if ((Result == VK_ERROR_OUT_OF_DATE_KHR) || (Result == VK_SUBOPTIMAL_KHR)) {
+				ReturnValue = Result;
+				// Create new swap chain.
+				// TODO: Acquire new image resolution?
+				swapchain::property NewProperty = swapchain::property(CreateInfo, FrameRate);
+				// Erase other swapchain image resources.
+				for (size_t i = 0; i < Image.size(); i++) {
+					Image[i]["Color"]->Handle = VK_NULL_HANDLE;
+					Image[i]["Color"]->View = VK_NULL_HANDLE;
+				}
+				this->create_swapchain(Context, Surface, NewProperty, Handle);
+				// Also reset fence.
+				if (aNextFrameFence != VK_NULL_HANDLE) {
+					Result = this->Context->wait_and_reset(aNextFrameFence);
+				}
+			}
+			else {
+				ReturnValue = Result;
+			}
+		}
+
+		// Get new present semaphore.
+		aPresentFrameSemaphore = this->PresentFrameSemaphoreList[DrawIndex];
+
+		return ReturnValue;
+	}
+
+	VkResult system_window::swapchain::create_swapchain(std::shared_ptr<context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain) {
+		VkResult Result = VK_SUCCESS;
+
+        std::shared_ptr<gcl::device> aDevice                = aContext->Device;
+		VkSurfaceCapabilitiesKHR SurfaceCapabilities		= aDevice->get_surface_capabilities(aSurface);
+		std::vector<VkSurfaceFormatKHR> SurfaceFormat	    = aDevice->get_surface_format(aSurface);
+		std::vector<VkPresentModeKHR> PresentMode		    = aDevice->get_surface_present_mode(aSurface);
+
+        bool SurfaceFormatSupported = false;
+		for (size_t i = 0; i < SurfaceFormat.size(); i++) {
+			if ((SurfaceFormat[i].format == (VkFormat)aProperty.PixelFormat) && (SurfaceFormat[i].colorSpace == (VkColorSpaceKHR)aProperty.ColorSpace)) {
+				SurfaceFormatSupported = true;
+				break;
+			}
+		}
+
+		bool PresentModeSupported = false;
+		for (size_t i = 0; i < PresentMode.size(); i++) {
+			if (PresentMode[i] == (VkPresentModeKHR)aProperty.PresentMode) {
+				PresentModeSupported = true;
+				break;
+			}
+		}
+
+        bool TransformSupported = true;
+		// TODO: Test for transform support.
+
+        bool CompositeAlphaSupported = false;
+		CompositeAlphaSupported = ((aProperty.CompositeAlpha & SurfaceCapabilities.supportedCompositeAlpha) == aProperty.CompositeAlpha);
+
+		bool ImageUsageSupported = false;
+		ImageUsageSupported = ((aProperty.ImageUsage & SurfaceCapabilities.supportedUsageFlags) == aProperty.ImageUsage);
+
+		// Check is options are supported by device and surface.
+		if ((!SurfaceFormatSupported) || (!PresentModeSupported) || (!TransformSupported) || (!CompositeAlphaSupported) || (!ImageUsageSupported))
+            throw std::runtime_error("Swapchain Creation Failed: Unsupported Options.");
+        
+        Context                             = aContext;
+		Surface 							= aSurface;
+        CreateInfo                          = {};
+    	CreateInfo.sType					= VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+		CreateInfo.pNext					= NULL;
+		CreateInfo.flags					= 0;
+		CreateInfo.surface					= aSurface;
+		CreateInfo.minImageCount			= std::clamp(aProperty.FrameCount, SurfaceCapabilities.minImageCount, SurfaceCapabilities.maxImageCount);
+		CreateInfo.imageFormat				= (VkFormat)aProperty.PixelFormat;
+		CreateInfo.imageColorSpace			= (VkColorSpaceKHR)aProperty.ColorSpace;
+		CreateInfo.imageExtent				= SurfaceCapabilities.currentExtent;
+		CreateInfo.imageArrayLayers			= 1;
+		CreateInfo.imageUsage				= aProperty.ImageUsage;
+		CreateInfo.imageSharingMode			= VK_SHARING_MODE_EXCLUSIVE;
+		CreateInfo.queueFamilyIndexCount	= 0;
+		CreateInfo.pQueueFamilyIndices		= NULL;
+		CreateInfo.preTransform				= SurfaceCapabilities.currentTransform;
+		CreateInfo.compositeAlpha			= (VkCompositeAlphaFlagBitsKHR)aProperty.CompositeAlpha;
+		CreateInfo.presentMode				= (VkPresentModeKHR)aProperty.PresentMode;
+		CreateInfo.clipped					= aProperty.Clipped;
+		CreateInfo.oldSwapchain				= aOldSwapchain;
+
+		this->Resolution = { CreateInfo.imageExtent.width, CreateInfo.imageExtent.height, 1u };
+
+        Result = vkCreateSwapchainKHR(aContext->Handle, &CreateInfo, NULL, &this->Handle);
+
+        if (Result == VK_SUCCESS) {
+            // Get swapchain images.
+			uint32_t ImageCount = 0;
+			Result = vkGetSwapchainImagesKHR(aContext->Handle, this->Handle, &ImageCount, NULL);
+			std::vector<VkImage> ImageList(ImageCount);
+			// Initialize with default constructed frame objects.
+			Result = vkGetSwapchainImagesKHR(aContext->Handle, this->Handle, &ImageCount, ImageList.data());
+			for (std::size_t i = 0; i < ImageList.size(); i++) {
+				this->Image[i]["Color"] = std::make_shared<image>();
+				this->Image[i]["Color"]->Context = aContext;
+				this->Image[i]["Color"]->CreateInfo = this->image_create_info();
+				this->Image[i]["Color"]->Handle = ImageList[i];
+				this->Image[i]["Color"]->transition(image::layout::LAYOUT_UNDEFINED, image::layout::PRESENT_SRC_KHR);
+				this->Image[i]["Color"]->View = this->Image[i]["Color"]->view();
+			}
+        }
+
+		// Setup transition commands.
+		// TODO: Free command buffers later.
+		PredrawFrameOperation = std::vector<command_batch>(Image.size());
+		PostdrawFrameOperation = std::vector<command_batch>(Image.size());
+		for (size_t i = 0; i < Image.size(); i++) {
+			// Prepare Predraw transition commands.
+			VkCommandBuffer PredrawFrameTransitionCmd = aContext->allocate_command_buffer(device::operation::GRAPHICS_AND_COMPUTE);
+			aContext->begin(PredrawFrameTransitionCmd);
+			// Transition image from present to shader read only optimal.
+			Image[i]["Color"]->transition(PredrawFrameTransitionCmd, image::layout::PRESENT_SRC_KHR, image::layout::SHADER_READ_ONLY_OPTIMAL);
+			// Clear swapchain image.
+			Image[i]["Color"]->clear(PredrawFrameTransitionCmd, { 0.0f, 0.0f, 0.0f, 1.0f });
+			aContext->end(PredrawFrameTransitionCmd);
+			PredrawFrameOperation[i] += PredrawFrameTransitionCmd;
+
+			// Prepare Postdraw transition commands.
+			VkCommandBuffer PostdrawFrameTransitionCmd = aContext->allocate_command_buffer(device::operation::GRAPHICS_AND_COMPUTE);
+			aContext->begin(PostdrawFrameTransitionCmd);
+			Image[i]["Color"]->transition(PostdrawFrameTransitionCmd, image::layout::SHADER_READ_ONLY_OPTIMAL, image::layout::PRESENT_SRC_KHR);
+			aContext->end(PostdrawFrameTransitionCmd);
+			PostdrawFrameOperation[i] += PostdrawFrameTransitionCmd;
+		}
+
+		return Result;
+	}
+
+	void system_window::swapchain::clear() {
+		for (size_t i = 0; i < this->Image.size(); i++) {
+			if (this->Image[i]["Color"]->View != VK_NULL_HANDLE) {
+				vkDestroyImageView(this->Context->Handle, this->Image[i]["Color"]->View, NULL);
+				this->Image[i]["Color"]->View = VK_NULL_HANDLE;
+			}
+			this->Image[i]["Color"]->Handle = VK_NULL_HANDLE;
+		}
+        vkDestroySwapchainKHR(this->Context->Handle, this->Handle, NULL);
+	}
 
 	bool system_window::initialize() {
 		return (glfwInit() == GLFW_TRUE);
@@ -130,9 +372,9 @@ namespace geodesy::bltn::obj {
 
 	system_window::creator::creator() {		
 		this->Display			= nullptr;
-		this->ColorSpace		= core::gcl::swapchain::colorspace::SRGB_NONLINEAR;
-		this->CompositeAlpha	= core::gcl::swapchain::composite::ALPHA_OPAQUE;
-		this->PresentMode		= core::gcl::swapchain::present_mode::FIFO;
+		this->ColorSpace		= swapchain::colorspace::SRGB_NONLINEAR;
+		this->CompositeAlpha	= swapchain::composite::ALPHA_OPAQUE;
+		this->PresentMode		= swapchain::present_mode::FIFO;
 		this->Clipped			= true;
 	}
 
@@ -156,7 +398,7 @@ namespace geodesy::bltn::obj {
 
 		// Create Swapchain from Vulkan Surface.
 		if (Result == VK_SUCCESS) {
-			core::gcl::swapchain::property SwapchainProperty;
+			swapchain::property SwapchainProperty;
 			SwapchainProperty.FrameCount		= aSystemWindowCreator->FrameCount;
 			SwapchainProperty.FrameRate			= aSystemWindowCreator->FrameRate;
 			SwapchainProperty.PixelFormat		= aSystemWindowCreator->PixelFormat;
@@ -165,7 +407,7 @@ namespace geodesy::bltn::obj {
 			SwapchainProperty.CompositeAlpha	= aSystemWindowCreator->CompositeAlpha;
 			SwapchainProperty.PresentMode		= aSystemWindowCreator->PresentMode;
 			SwapchainProperty.Clipped			= aSystemWindowCreator->Clipped;
-			std::shared_ptr<core::gcl::swapchain> Swapchain(new swapchain(aContext, this->SurfaceHandle, SwapchainProperty));
+			std::shared_ptr<swapchain> Swapchain(new swapchain(aContext, this->SurfaceHandle, SwapchainProperty));
 			this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(Swapchain);
 		}
 
@@ -183,6 +425,76 @@ namespace geodesy::bltn::obj {
 	void system_window::update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce, core::math::vec<float, 3> aAppliedTorque) {
 		this->InputState.Mouse.update(aDeltaTime);
 		this->Time += aDeltaTime;
+	}
+
+	core::gcl::submission_batch system_window::render(ecs::stage* aStage) {
+		// The next frame operation will both present previously drawn frame and acquire next
+		// frame. 
+		VkResult Result = this->Framechain->next_frame(this->PresentFrameSemaphore, this->NextFrameSemaphore);
+
+		// Rebuild pipelines and command buffers if out of date.
+		if ((Result == VK_ERROR_OUT_OF_DATE_KHR) || (Result == VK_SUBOPTIMAL_KHR)) {
+
+			// Rebuild pipeline.
+			if (this->Pipeline->CreateInfo->BindPoint == pipeline::type::RASTERIZER) {
+				// Cast to rasterizer.
+				std::shared_ptr<pipeline::rasterizer> Rasterizer = std::dynamic_pointer_cast<pipeline::rasterizer>(this->Pipeline->CreateInfo);
+				// Resize rasterizer.
+				Rasterizer->resize(this->Framechain->Resolution);
+				// Rebuild pipeline.
+				this->Pipeline = this->Context->create_pipeline(Rasterizer);
+			}
+
+			// Destroy all existing commandbuffers that reference this subject.
+			for (auto& Object : aStage->Object) {
+				// clear();
+				if (Object->Renderer.count(this) > 0) {
+					Object->Renderer.erase(this);
+				}
+			}
+		}
+
+		// Acquire predraw rendering operations.
+		this->RenderingOperations += this->Framechain->predraw();
+
+		// Iterate through all objects in the stage.
+		gcl::command_batch StageCommandBatch;
+		for (size_t i = 0; i < aStage->Object.size(); i++) {
+			// Draw object.
+			std::vector<std::shared_ptr<object::draw_call>> ObjectDrawCall = aStage->Object[i]->draw(this);
+			std::vector<VkCommandBuffer> ObjectDrawCommand(ObjectDrawCall.size());
+			for (size_t j = 0; j < ObjectDrawCall.size(); j++) {
+				ObjectDrawCommand[j] = ObjectDrawCall[j]->DrawCommand;
+			}
+			// Group into single submission.
+			StageCommandBatch += ObjectDrawCommand;
+		}
+
+		// Aggregate all rendering operations to subject.
+		this->RenderingOperations += StageCommandBatch;
+
+		// Acquire image transition and present frame if exists.
+		this->RenderingOperations += this->Framechain->postdraw();
+
+		// Setup safety dependencies for default rendering system.
+		for (size_t i = 0; i < this->RenderingOperations.size() - 1; i++) {
+			VkPipelineStageFlags Stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			this->RenderingOperations[i + 1].depends_on(this->SemaphorePool, Stage, this->RenderingOperations[i]);
+		}
+
+		// ! Only applies to system_window.
+		if (this->NextFrameSemaphore != VK_NULL_HANDLE) {
+			// If system_window, make sure that next image semaphore is provided to rendering operations.
+			this->RenderingOperations.front().WaitStageList = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+			this->RenderingOperations.front().WaitSemaphoreList = { this->NextFrameSemaphore };
+		}
+		if  (this->PresentFrameSemaphore != VK_NULL_HANDLE) {
+			// If system_window, make sure that present semaphore is signaled after rendering operations.
+			this->RenderingOperations.back().SignalSemaphoreList = { this->PresentFrameSemaphore };
+		}
+
+		// Build submission reference object and return.
+		return build(this->RenderingOperations);
 	}
 
 	GLFWwindow* system_window::create_window_handle(window::creator* aSetting, int aWidth, int aHeight, const char* aTitle, GLFWmonitor* aMonitor, GLFWwindow* aWindow) {
@@ -234,7 +546,7 @@ namespace geodesy::bltn::obj {
 	}
 
 	void system_window::destroy_window_handle(GLFWwindow* aWindowHandle) {
-
+		glfwDestroyWindow(aWindowHandle);
 	}
 
 	// ------------------------------ callback methods ----------------------------- //

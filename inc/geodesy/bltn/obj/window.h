@@ -9,6 +9,19 @@ namespace geodesy::bltn::obj {
 	class window : public ecs::subject {
 	public:
 
+		struct window_draw_call : object::draw_call {
+			window_draw_call(
+				object* 								aObject, 
+				core::gfx::mesh::instance* 				aMeshInstance,
+				window* 								aWindow,
+				size_t 									aFrameIndex
+			);
+		};
+
+		struct window_renderer : ecs::object::renderer {
+			window_renderer(ecs::object* aObject, window* aWindow);
+		};
+
 		struct creator : subject::creator {
 			core::gcl::image::format 	PixelFormat;
 			bool 						Resizable;		
@@ -33,7 +46,7 @@ namespace geodesy::bltn::obj {
 
 		window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aWindowCreator);
 
-		std::vector<std::vector<core::gfx::draw_call>> default_renderer(ecs::object* aObject) override;
+		std::shared_ptr<renderer> default_renderer(ecs::object* aObject) override;
 		
 	};
 

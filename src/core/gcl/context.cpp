@@ -1,8 +1,6 @@
 #include <geodesy/engine.h>
 #include <geodesy/core/gcl/context.h>
 
-#include <geodesy/bltn/obj/system_window.h>
-
 namespace geodesy::core::gcl {
 
 	using namespace util;
@@ -34,8 +32,8 @@ namespace geodesy::core::gcl {
 			std::vector<int>							UQFI;
 			std::vector<std::vector<float>> 	 		QP;
 			std::vector<VkDeviceQueueCreateInfo> 		QCI;
-			std::vector<const char*>					Layer;
-			std::vector<const char*>					Extension = bltn::obj::system_window::context_extensions();// = aExtensionList;
+			std::vector<const char*>					Layer = aLayerList;
+			std::vector<const char*>					Extension = aExtensionList;
 			VkPhysicalDeviceDynamicRenderingFeatures 	DRF{};
 			VkDeviceCreateInfo 					 		CI{};
 
@@ -119,6 +117,13 @@ namespace geodesy::core::gcl {
 		for (VkSemaphore S : Semaphore) {
 			vkDestroySemaphore(Handle, S, NULL);
 		}
+		// Destroy command buffers.
+		for (auto& [Operation, CommandBufferSet] : CommandBuffer) {
+			for (VkCommandBuffer CB : CommandBufferSet) {
+				vkFreeCommandBuffers(Handle, CommandPool[Operation], 1, &CB);
+			}
+			vkDestroyCommandPool(Handle, CommandPool[Operation], NULL);
+		}
 		vkDestroyDevice(Handle, NULL);
 	}
 
@@ -161,7 +166,9 @@ namespace geodesy::core::gcl {
 		for (VkCommandBuffer CommandBuffer : aCommandBuffer) {
 			this->CommandBuffer[aOperation].erase(CommandBuffer);
 		}
-		vkFreeCommandBuffers(this->Handle, this->CommandPool[aOperation], aCommandBuffer.size(), aCommandBuffer.data());
+		if (aCommandBuffer.size() > 0) {
+			vkFreeCommandBuffers(this->Handle, this->CommandPool[aOperation], aCommandBuffer.size(), aCommandBuffer.data());
+		}
 		aCommandBuffer.clear();
 	}
 

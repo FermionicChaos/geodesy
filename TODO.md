@@ -4,3 +4,4 @@
 - Weird bug where screen freezes over losing window focus.
 - Handle Swapchain recreation.
 - Rendering: Fix Parallax Map Implementation
+- Is it possible to both present and acquire next from in next_frame() call?

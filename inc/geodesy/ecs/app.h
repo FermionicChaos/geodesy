@@ -33,6 +33,7 @@ namespace geodesy::ecs {
 		std::map<std::string, std::shared_ptr<stage>> 		StageLookup;
 		
 		app(engine* aEngine, std::string aName, core::math::vec<uint, 3> aVersion);
+		~app();
 
 		template<typename T, typename... Args>
 		std::shared_ptr<T> create_stage(std::shared_ptr<core::gcl::context> aContext, std::string aName, Args&&... aArgs) {

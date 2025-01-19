@@ -35,84 +35,32 @@ namespace geodesy::ecs {
 		this->CollisionEnabled 		= false;
 	}
 
-	object::object(
-		std::shared_ptr<core::gcl::context> 	aContext, 
-		stage* 									aStage, 
-		std::string 							aName, 
-		std::string 							aModelPath,
-		math::vec<float, 3> 					aPosition, 
-		math::vec<float, 2> 					aDirection,
-		math::vec<float, 3> 					aScale
-	) {
-		this->Name 						= aName;
-		this->Stage 					= aStage;
-		this->Engine 					= aContext->Device->Engine;
-		this->Time						= 0.0f;
-		this->DeltaTime					= 0.0f;
-		this->Mass						= 1.0f;
-		this->Position					= aPosition;
-		this->Theta 					= math::radians(aDirection[0] + 90.0f);
-		this->Phi 						= math::radians(aDirection[1] + 90.0f);
-		this->DirectionRight			= {  std::sin(Phi), 					-std::cos(Phi), 					0.0f 			};
-		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
-		this->DirectionFront			= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
-		this->Scale						= aScale;
-		this->LinearMomentum			= { 0.0f, 0.0f, 0.0f };
-		this->AngularMomentum			= { 0.0f, 0.0f, 0.0f };
+	object::draw_call::draw_call() {
+		DistanceFromSubject 	= 0.0f;
+		TransparencyMode 		= gfx::material::transparency::OPAQUE;
+		DrawCommand 			= VK_NULL_HANDLE;
+	}
 
-		this->Motion 					= motion::STATIC;
-		this->Gravity 					= false;
-		this->Collision 				= false;
+	object::renderer::renderer() {}
 
-		// Initialize GPU stuff.
-		this->Context 					= aContext;
+	object::renderer::renderer(object* aObject, subject* aSubject) {
+		this->Object = aObject;
+		this->Subject = aSubject;
+	}
 
-		// Create Object Model from GPU Device Context.
-		if (aModelPath != "") {
-			// Load Host Model into memory.
-			std::shared_ptr<io::file> ModelFile = Engine->FileManager.open(aModelPath);
-
-			// Check if Model File is valid.
-			if (ModelFile.get() != nullptr) {
-				// Save Model File Instance to Object to persist lifetime of resource.
-				this->Asset.push_back(ModelFile);
-
-				// Pointer cast into model type.
-				std::shared_ptr<gfx::model> HostModel = std::dynamic_pointer_cast<gfx::model>(ModelFile);
-
-				// Create Device Model from Host Model.
-				image::create_info MaterialTextureInfo;
-				MaterialTextureInfo.Layout 		= image::layout::SHADER_READ_ONLY_OPTIMAL;
-				MaterialTextureInfo.Memory 		= device::memory::DEVICE_LOCAL;
-				MaterialTextureInfo.Usage	 	= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
-
-				// TODO: Do a Device Context Registry to check which host models have been loaded
-				// into device memory, and recycle them if they have been loaded already.
-				this->Model = std::shared_ptr<gfx::model>(new gfx::model(aContext, HostModel, MaterialTextureInfo));
-
-				// If model has animations, then create animation data.
-				if (this->Model->Animation.size() > 0) {
-					// Include Bind Pose as the first Weight.
-					this->AnimationWeights = std::vector<float>(this->Model->Animation.size() + 1, 0.0f);
-					this->AnimationWeights[0] = 1.0f;
-				}
+	object::renderer::~renderer() {
+		// Clear out all command buffers.
+		for (size_t i = 0; i < this->DrawCallList.size(); i++) {
+			for (size_t j = 0; j < this->DrawCallList[i].size(); j++) {
+				this->Subject->CommandPool->release(this->DrawCallList[i][j]->DrawCommand);
 			}
 		}
+		// Clear out all GPU interface resources (framebuffers, descriptor arrays, etc).
+		this->DrawCallList.clear();
+	}
 
-		// Object Uniform Buffer Creation from GPU Device Context.
-		buffer::create_info UBCI;
-		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
-		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
-
-		uniform_data UniformData = uniform_data(
-			this->Position, 
-			this->DirectionRight, 
-			this->DirectionUp, 
-			this->DirectionFront,
-			this->Scale
-		);
-		this->UniformBuffer = aContext->create_buffer(UBCI, sizeof(uniform_data), &UniformData);
-		this->UniformBuffer->map_memory(0, sizeof(uniform_data));
+	std::vector<std::shared_ptr<object::draw_call>> object::renderer::operator[](size_t aIndex) const {
+		return this->DrawCallList[aIndex];
 	}
 
 	object::object(std::shared_ptr<core::gcl::context> aContext, stage* aStage, creator* aCreator) {
@@ -167,6 +115,8 @@ namespace geodesy::ecs {
 					this->AnimationWeights = std::vector<float>(this->Model->Animation.size() + 1, 0.0f);
 					this->AnimationWeights[0] = 1.0f;
 				}
+
+				this->AnimationWeights = aCreator->AnimationWeights;
 			}
 		}
 
@@ -233,8 +183,8 @@ namespace geodesy::ecs {
 		}
 	}
 
-	std::vector<gfx::draw_call> object::draw(subject* aSubject) {
-		std::vector<gfx::draw_call> DrawCallList;
+	std::vector<std::shared_ptr<object::draw_call>> object::draw(subject* aSubject) {
+		std::vector<std::shared_ptr<object::draw_call>> DrawCallList;
 		
 		// If the subject is the same as the object, return the draw call list empty.
 		// A subject cannot draw itself.
@@ -246,10 +196,18 @@ namespace geodesy::ecs {
 		}
 
 		// Get draw calls from this object for the subject.
-		DrawCallList = this->Renderer[aSubject][aSubject->Framechain->DrawIndex];
+		DrawCallList = (*this->Renderer[aSubject])[aSubject->Framechain->DrawIndex];
 
 		// Return a vector of the draw calls for the subject, and target draw index.
 		return DrawCallList;
+	}
+
+	std::vector<VkCommandBuffer> convert(std::vector<object::draw_call> aDrawCallList) {
+		std::vector<VkCommandBuffer> CommandBufferList(aDrawCallList.size());
+		for (size_t i = 0; i < aDrawCallList.size(); i++) {
+			CommandBufferList[i] = aDrawCallList[i].DrawCommand;
+		}
+		return CommandBufferList;
 	}
 
 }

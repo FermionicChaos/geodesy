@@ -8,6 +8,5 @@
 #include "gfx/animation.h"
 #include "gfx/node.h"
 #include "gfx/model.h"
-#include "gfx/renderer.h"
 
 #endif // !GEODESY_CORE_GFX_H
