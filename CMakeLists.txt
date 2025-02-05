@@ -198,6 +198,20 @@ target_link_libraries(${GEODESY_LIBRARY} PUBLIC glslang)
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC SPIRV)
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC assimp)
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC freetype)
+# Platform specific linking
+if(WIN32)
+    # Windows specific socket library (Winsock2)
+    target_link_libraries(${GEODESY_LIBRARY} PUBLIC wsock32 ws2_32)
+
+    # # Define Windows-specific preprocessor macro
+    target_compile_definitions(${GEODESY_LIBRARY} PUBLIC WIN32_LEAN_AND_MEAN)
+    target_compile_definitions(${GEODESY_LIBRARY} PUBLIC _WIN32_WINNT=0x0600)
+else()
+    # Unix/Linux doesn't need explicit linking for socket libraries
+    # But we might need to link against other libraries
+    # find_package(Threads REQUIRED)
+    # target_link_libraries(${PROJECT_NAME} PRIVATE Threads::Threads)
+endif()
 
 # ----------------------- Geodesy Unit Test ----------------------- #
 # When creating your own project off of the Geodesy Library, use this
