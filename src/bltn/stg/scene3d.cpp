@@ -15,7 +15,7 @@ namespace geodesy::bltn::stg {
 		CameraCreateInfo.FrameCount 		= 4;
 		CameraCreateInfo.FOV 				= 70.0f;
 		CameraCreateInfo.Near 				= 0.1f;
-		CameraCreateInfo.Far 				= 1000.0f;
+		CameraCreateInfo.Far 				= 2000.0f;
 
 		// Create Temp Array of objects to be created..
 		std::vector<ecs::object::creator> ObjectList;

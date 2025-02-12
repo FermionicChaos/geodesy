@@ -123,23 +123,15 @@ void main() {
 	// Calculate UV coordinates after applying the height map.
 	vec2 UV = TextureCoordinate.xy; //bisection_parallax(TextureCoordinate.xy, TBN);
 
-	// Determine Modified World Space Normals of surface applying material properties.
-    // Acquire the surface normals of the normal map with the modified UV coordinates.
-    vec3 TangentSurfaceNormal = texture(SurfaceNormalMap, UV).rgb;
-    // Convert normal from [0, 1] range to [-1, 1]
-    TangentSurfaceNormal = normalize(TangentSurfaceNormal * 2.0 - 1.0);
-	// Convert tangent surface normals to world space.
-	PixelNormal = vec4(normalize(TBN * TangentSurfaceNormal), 1.0);
+	// Get Texture Normal, z should be 1.0 if directly normal to surface.
+	vec3 TextureNormal = normalize(2.0 * texture(SurfaceNormalMap, UV).rgb - 1.0);
+	PixelNormal = mix(vec4(WorldNormal, 1.0), vec4(normalize(TBN * TextureNormal), 1.0), 0.0);
 
 	// Determine World Space Position of the pixel. Maybe modify later to do based on interpolaed surface normal?
 	PixelPosition = vec4(WorldPosition, 1.0) + PixelNormal * texture(SurfaceHeightMap, UV).r;
 
-	// Simple Tranmsmission of the surface color.
-	vec4 TextureColor = texture(SurfaceColor, UV);
-	vec4 VertexColor = InterpolatedVertexColor;
-	vec4 MaterialColor = vec4(Material.Color, Material.Opacity);
-
-	PixelColor = mix(TextureColor, VertexColor, Material.VertexColorWeight);
-	PixelColor = mix(PixelColor, MaterialColor, Material.MaterialColorWeight);
+	// Calculates Albedo based on weights of the texture, vertex color, and material color.
+	float TextureColorWeight = 1.0f;
+	PixelColor = texture(SurfaceColor, UV)*TextureColorWeight + InterpolatedVertexColor*Material.VertexColorWeight + vec4(Material.Color, Material.Opacity)*Material.MaterialColorWeight;
 
 }
