@@ -58,7 +58,7 @@ namespace geodesy::bltn::stg {
 		CesiumMilkTruck.Position 			= { 0.0f, 30.0f, 0.0f };
 		CesiumMilkTruck.Direction 			= { -90.0f, 0.0f };
 		CesiumMilkTruck.Scale 				= { 5.0f, 5.0f, 5.0f };
-		CesiumMilkTruck.AnimationWeights 	= { 1.0f, 0.0f };
+		CesiumMilkTruck.AnimationWeights 	= { 0.0f, 1.0f };
 		ObjectList.push_back(CesiumMilkTruck);
 
 		ecs::object::creator Pigwithanimation;
@@ -76,7 +76,7 @@ namespace geodesy::bltn::stg {
 		BrainStem.Position 					= { 40.0f, 30.0f, 0.0f };
 		BrainStem.Direction 				= { -90.0f, 0.0f };
 		BrainStem.Scale 					= { 10.0f, 10.0f, 10.0f };
-		BrainStem.AnimationWeights 			= { 1.0f, 0.0f };
+		BrainStem.AnimationWeights 			= { 0.0f, 1.0f };
 		ObjectList.push_back(BrainStem);
 
 		ecs::object::creator CesiumMan;
@@ -85,7 +85,7 @@ namespace geodesy::bltn::stg {
 		CesiumMan.Position 					= { -20.0f, 0.0f, 0.0f };
 		CesiumMan.Direction 				= { -90.0f, 0.0f };
 		CesiumMan.Scale 					= { 10.0f, 10.0f, 10.0f };
-		CesiumMan.AnimationWeights 			= { 1.0f, 0.0f };
+		CesiumMan.AnimationWeights 			= { 0.0f, 1.0f };
 		ObjectList.push_back(CesiumMan);
 
 		ecs::object::creator ParallaxPlane;

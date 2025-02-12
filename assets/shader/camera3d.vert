@@ -47,21 +47,25 @@ void main() {
 	vec4 b = vec4(VertexBitangent, 1.0);
 
     mat4 mt = mat4(0.0f);
+    mat4 nt = mat4(0.0f);
     if (VertexBoneID[0] < MAX_BONE_COUNT) {
         for (int i = 0; i < 4; i++) {
             if (VertexBoneID[i] < MAX_BONE_COUNT) {
-                mt += Mesh.BoneTransform[VertexBoneID[i]] * Mesh.OffsetTransform[VertexBoneID[i]] * VertexBoneWeight[i];
+                mat4 B = Mesh.BoneTransform[VertexBoneID[i]] * Mesh.OffsetTransform[VertexBoneID[i]];
+                mt += B * VertexBoneWeight[i];
+                nt += transpose(inverse(B)) * VertexBoneWeight[i];
             }
         }
     } else {
         mt = Mesh.DefaultTransform;
+        nt = transpose(inverse(mt));
     }
 
     // Convert to model space
     v = mt * v;
-    n = mt * n;
-	t = mt * t;
-	b = mt * b;
+    n = nt * n;
+	t = nt * t;
+	b = nt * b;
 
     // Orient object in model space.
     vec3 InverseObjectScale = vec3(1.0f / Object.Scale.x, 1.0f / Object.Scale.y, 1.0f / Object.Scale.z);
