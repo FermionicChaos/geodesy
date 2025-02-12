@@ -108,7 +108,7 @@ namespace geodesy::core::gfx {
 	model::model(std::string aFilePath, file::manager* aFileManager) : file(aFilePath) {
 		this->Time = 0.0;
 		if (aFilePath.length() == 0) return;
-		const aiScene *Scene = ModelImporter->ReadFile(aFilePath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
+		const aiScene *Scene = ModelImporter->ReadFile(aFilePath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace);
 
 		// for (int i = 0; i < Scene->mNumMeshes; i++) {
 		// 	std::cout << "Mesh Name: " << Scene->mMeshes[i]->mName.C_Str() << std::endl;
