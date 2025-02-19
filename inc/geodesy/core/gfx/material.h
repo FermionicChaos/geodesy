@@ -32,24 +32,28 @@ namespace geodesy::core::gfx {
 			TRANSLUCENT
 		};
 
+		struct uniform_data {
+			alignas(16) math::vec<float, 3> 	Color;					// Base Color of the Material
+			alignas(16) math::vec<float, 3> 	Emissive;				// Emissive Color of the Material
+			alignas(16) math::vec<float, 3> 	Ambient;				// Ambient Color of the Material
+			alignas(16) math::vec<float, 3> 	Specular;				// Specular Color of the Material
+			alignas(4) float 					Opacity;
+			alignas(4) float 					RefractionIndex;
+			alignas(4) float 					Shininess;
+			alignas(4) float 					Metallic;
+			alignas(4) float 					Roughness;
+			alignas(4) float 					VertexColorWeight;
+            alignas(4) float 					MaterialColorWeight;
+			alignas(4) float 					ParallaxScale;
+			alignas(4) int 						ParallaxIterationCount;
+			uniform_data();
+			uniform_data(const material* aMaterial);
+        };
+
 		std::string 											Name;					// Name of the material
 		rendering_system 										RenderingSystem;		// Rendering System of the Material
 		transparency 											Transparency;
-
-		math::vec<float, 3> 									Color;					// Base Color of the Material
-		math::vec<float, 3> 									Emissive;				// Emissive Color of the Material
-		math::vec<float, 3> 									Ambient;				// Ambient Color of the Material
-		math::vec<float, 3> 									Specular;				// Specular Color of the Material
-		float 													Opacity;
-		float 													RefractionIndex;
-		float 													Shininess;
-		float 													Metallic;
-		float 													Roughness;
-		float 													VertexColorWeight;
-		float 													MaterialColorWeight;
-		float 													ParallaxScale;
-		int 													ParallaxIterationCount;
-
+		uniform_data 											UniformData;
 		std::shared_ptr<gcl::buffer> 							UniformBuffer;			// Uniform Buffer for the Material
 		std::map<std::string, std::shared_ptr<gcl::image>> 		Texture;				// Texture Maps of the Material
 

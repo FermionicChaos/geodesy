@@ -13,66 +13,19 @@
 
 namespace geodesy::core::gfx {
 
-    using namespace gcl;
+	using namespace gcl;
 
-    namespace {
+	namespace {
 
-        struct texture_type_database {
+		struct texture_type_database {
 			std::string Name;
 			std::vector<aiTextureType> Type;
 			std::shared_ptr<gcl::image> DefaultTexture;
 		};
 
-        struct material_data {
-			alignas(16) math::vec<float, 3> 	Color;					// Base Color of the Material
-			alignas(16) math::vec<float, 3> 	Emissive;				// Emissive Color of the Material
-			alignas(16) math::vec<float, 3> 	Ambient;				// Ambient Color of the Material
-			alignas(16) math::vec<float, 3> 	Specular;				// Specular Color of the Material
-			alignas(4) float 					Opacity;
-			alignas(4) float 					RefractionIndex;
-			alignas(4) float 					Shininess;
-			alignas(4) float 					Metallic;
-			alignas(4) float 					Roughness;
-			alignas(4) float 					VertexColorWeight;
-            alignas(4) float 					MaterialColorWeight;
-			alignas(4) float 					ParallaxScale;
-			alignas(4) int 						ParallaxIterationCount;
-			material_data();
-			material_data(const material* aMaterial);
-        };
+	}
 
-        material_data::material_data() {
-			this->Color                     = { 1.0f, 0.0f, 1.0f };
-			this->Emissive                  = { 0.0f, 0.0f, 0.0f };
-			this->Ambient                   = { 0.0f, 0.0f, 0.0f };
-			this->Specular                  = { 0.0f, 0.0f, 0.0f };
-			this->Opacity                   = 1.0f;
-			this->RefractionIndex           = 1.0f;
-			this->Shininess                 = 0.0f;
-			this->Metallic                  = 0.0f;
-			this->Roughness                 = 0.0f;
-			this->VertexColorWeight         = 0.0f;
-            this->MaterialColorWeight       = 0.0f;
-			this->ParallaxScale             = 0.0f;
-			this->ParallaxIterationCount    = 0;
-        }
-
-        material_data::material_data(const material* aMaterial) {
-            this->Color                     = aMaterial->Color;
-            this->Emissive                  = aMaterial->Emissive;
-            this->Ambient                   = aMaterial->Ambient;
-            this->Specular                  = aMaterial->Specular;
-            this->Opacity                   = aMaterial->Opacity;
-            this->RefractionIndex           = aMaterial->RefractionIndex;
-            this->VertexColorWeight         = aMaterial->VertexColorWeight;
-            this->MaterialColorWeight       = aMaterial->MaterialColorWeight;
-            this->ParallaxScale             = aMaterial->ParallaxScale;
-            this->ParallaxIterationCount    = aMaterial->ParallaxIterationCount;
-        }
-
-    }
-
-    // Default values for each texture type as unsigned char arrays
+	// Default values for each texture type as unsigned char arrays
 	static const unsigned char DefaultColorData[4] 			= {255, 0, 255, 255}; 		// Magenta (Missing Texture Color)
 	static const unsigned char DefaultNormalData[4] 		= {128, 128, 255, 255};		// Up vector (0.5, 0.5, 1.0)
 	static const unsigned char DefaultHeightData[4] 		= {0, 0, 0, 0}; 			// No displacement
@@ -124,11 +77,7 @@ namespace geodesy::core::gfx {
 		}
 	}
 
-    material::material() {
-        this->Name                      = "";
-        this->RenderingSystem           = UNKNOWN;
-        this->Transparency              = OPAQUE;
-        
+	material::uniform_data::uniform_data() {
 		this->Color                     = { 1.0f, 0.0f, 1.0f };
 		this->Emissive                  = { 0.0f, 0.0f, 0.0f };
 		this->Ambient                   = { 0.0f, 0.0f, 0.0f };
@@ -139,12 +88,22 @@ namespace geodesy::core::gfx {
 		this->Metallic                  = 0.0f;
 		this->Roughness                 = 0.0f;
 		this->VertexColorWeight         = 0.0f;
-        this->MaterialColorWeight       = 0.0f;
+		this->MaterialColorWeight       = 0.0f;
 		this->ParallaxScale             = 1.0f;
-		this->ParallaxIterationCount    = 100;
-    }
+		this->ParallaxIterationCount    = 16;
+	}
 
-    material::material(const aiMaterial* Mat, std::string aDirectory, io::file::manager* aFileManager) : material() {
+	material::uniform_data::uniform_data(const material* aMaterial) : uniform_data() {
+		*this = aMaterial->UniformData;
+	}
+
+	material::material() {
+		this->Name                      = "";
+		this->RenderingSystem           = UNKNOWN;
+		this->Transparency              = OPAQUE;
+	}
+
+	material::material(const aiMaterial* Mat, std::string aDirectory, io::file::manager* aFileManager) : material() {
 		// Get Material Name
 		this->Name = Mat->GetName().C_Str();
 		// Get Material Properties.
@@ -185,15 +144,15 @@ namespace geodesy::core::gfx {
 			Mat->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness);
 
 			// Convert to geodesy internal format.
-			this->Color = math::vec<float, 3>(diffuseColor.r, diffuseColor.g, diffuseColor.b);
-			this->Emissive = math::vec<float, 3>(emissiveColor.r, emissiveColor.g, emissiveColor.b);
-			this->Ambient = math::vec<float, 3>(ambientColor.r, ambientColor.g, ambientColor.b);
-			this->Specular = math::vec<float, 3>(specularColor.r, specularColor.g, specularColor.b);
-			this->Opacity = opacity;
+			this->UniformData.Color = math::vec<float, 3>(diffuseColor.r, diffuseColor.g, diffuseColor.b);
+			this->UniformData.Emissive = math::vec<float, 3>(emissiveColor.r, emissiveColor.g, emissiveColor.b);
+			this->UniformData.Ambient = math::vec<float, 3>(ambientColor.r, ambientColor.g, ambientColor.b);
+			this->UniformData.Specular = math::vec<float, 3>(specularColor.r, specularColor.g, specularColor.b);
+			this->UniformData.Opacity = opacity;
 			
-			this->Shininess = shininess;
-			this->Metallic = metallic;
-			this->Roughness = roughness;
+			this->UniformData.Shininess = shininess;
+			this->UniformData.Metallic = metallic;
+			this->UniformData.Roughness = roughness;
 		}
 		// Get Material Textures.
 		for (size_t j = 0; j < TextureTypeDatabase.size(); j++) {
@@ -205,41 +164,41 @@ namespace geodesy::core::gfx {
 			else {
 				// Texture does not exist, load default texture.
 				this->Texture[TextureTypeDatabase[j].Name] = TextureTypeDatabase[j].DefaultTexture;
-                // TODO: This is a hack to get the material color texture to work, fix later.
-				if ((TextureTypeDatabase[j].Name == "Color") && (!(this->Color == math::vec<float, 3>(0.0f, 0.0f, 0.0f)))) {
+				// TODO: This is a hack to get the material color texture to work, fix later.
+				if ((TextureTypeDatabase[j].Name == "Color") && (!(this->UniformData.Color == math::vec<float, 3>(0.0f, 0.0f, 0.0f)))) {
 					// Use material values for color texture.
-					this->MaterialColorWeight = 1.0f;
+					this->UniformData.MaterialColorWeight = 1.0f;
 				}
 			}
 		}
-    }
+	}
 
-    material::material(std::shared_ptr<gcl::context> aContext, gcl::image::create_info aCreateInfo, std::shared_ptr<material> aMaterial) : material() {
-        this->Name              = aMaterial->Name;
-        this->RenderingSystem   = aMaterial->RenderingSystem;
-        this->Transparency      = aMaterial->Transparency;
+	material::material(std::shared_ptr<gcl::context> aContext, gcl::image::create_info aCreateInfo, std::shared_ptr<material> aMaterial) : material() {
+		this->Name              = aMaterial->Name;
+		this->RenderingSystem   = aMaterial->RenderingSystem;
+		this->Transparency      = aMaterial->Transparency;
 
-        // Create GPU Uniform Buffer for material properties.
-        buffer::create_info UBCI;
-        UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
-        UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
+		// Create GPU Uniform Buffer for material properties.
+		buffer::create_info UBCI;
+		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
+		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 
-        material_data MaterialData = material_data(aMaterial.get());
-        this->UniformBuffer = aContext->create_buffer(UBCI, sizeof(material_data), &MaterialData);
-        this->UniformBuffer->map_memory(0, sizeof(material_data));
+		uniform_data MaterialData = uniform_data(aMaterial.get());
+		this->UniformBuffer = aContext->create_buffer(UBCI, sizeof(uniform_data), &MaterialData);
+		this->UniformBuffer->map_memory(0, sizeof(uniform_data));
 
-        // Copy over and create GPU instance textures.
-        for (auto& Texture : aMaterial->Texture) {
-            this->Texture[Texture.first] = std::make_shared<gcl::image>(aContext, aCreateInfo, Texture.second);
-        }
-    }
+		// Copy over and create GPU instance textures.
+		for (auto& Texture : aMaterial->Texture) {
+			this->Texture[Texture.first] = std::make_shared<gcl::image>(aContext, aCreateInfo, Texture.second);
+		}
+	}
 
 	material::~material() {}
 
-    void material::update(double aDeltaTime) {
-        // Update Material Properties
-        material_data MaterialData = material_data(this);
-        memcpy(this->UniformBuffer->Ptr, &MaterialData, sizeof(material_data));
-    }
+	void material::update(double aDeltaTime) {
+		// Update Material Properties
+		// material_data MaterialData = material_data(this);
+		// memcpy(this->UniformBuffer->Ptr, &MaterialData, sizeof(material_data));
+	}
 
 }
