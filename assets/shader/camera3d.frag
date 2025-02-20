@@ -115,43 +115,56 @@ vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
 	return UVMid;
 }
 
+// Comment out to remove lighting testing.
 const vec4 AmbientLight = vec4(0.8, 0.8, 0.6, 1.0);
 const float LightAmplitude = 100.0;
 const vec4 LightColor = vec4(0.0, 1.0, 1.0, 1.0);
-const vec3 LightPosition = vec3(0.0, 0.0, 5.0);
+const vec3 LightPosition = vec3(0.0, -5.0, 5.0);
 
 vec4 final_color(vec2 aUV) {
 	// Sampled color from material and texture.
 	vec4 SampledColor = mix(texture(SurfaceColor, aUV), vec4(Material.Color, Material.Opacity), Material.MaterialColorWeight);
 
 	// Calculates the distance between the light source and the pixel.
+	vec3 LightDir = normalize(LightPosition - PixelPosition.xyz);
+	vec3 ViewDir = normalize(Camera3D.Position - PixelPosition.xyz);
 	float r = length(PixelPosition.xyz - LightPosition);
 
 	// 
-	// float CosTheta = dot(normalize(PixelNormal.xyz), normalize(LightPosition - PixelPosition.xyz));
+	float CosTheta = max(dot(LightDir, PixelNormal.xyz), 0.0);
 	
 	// Calculates the final color of the pixel based on ambient lighting and light source.
-	vec4 FinalColor = SampledColor * (AmbientLight + LightAmplitude * LightColor / (r * r)); 
+	vec4 FinalColor = SampledColor * (AmbientLight + LightAmplitude * CosTheta * LightColor / (r * r)); 
 
 	return FinalColor;
 }
 
 void main() {
 
+	// After rastization interpolation of the vertex data, some values need to be normalized.
+	vec3 n = normalize(WorldNormal);
+	vec3 t = normalize(WorldTangent);
+	vec3 b = normalize(WorldBitangent);
+
+	// Apply correction to tangent vector after interpolation by rasterizer.
+	t = normalize(t - n * dot(n, t));
+	// Generate new bitangent vector based on the new tangent and normal vectors.
+	b = cross(n, t);
+
     // Construct the TBN matrix to transform from world space to surface tangent space.
-    mat3 TBN = mat3(normalize(WorldTangent), normalize(WorldBitangent), normalize(WorldNormal));
+    mat3 TBN = mat3(t, b, n);
 
 	// Calculate UV coordinates after applying the height map.
 	vec2 UV = TextureCoordinate.xy; //bisection_parallax(TextureCoordinate.xy, TBN);
 
 	// Get Texture Normal, z should be 1.0 if directly normal to surface.
 	vec3 TextureNormal = normalize(2.0 * texture(SurfaceNormalMap, UV).rgb - 1.0);
-	PixelNormal = mix(vec4(WorldNormal, 1.0), vec4(normalize(TBN * TextureNormal), 1.0), 0.0);
+	PixelNormal = mix(vec4(n, 1.0), vec4(normalize(TBN * TextureNormal), 1.0), 0.0);
 
 	// Determine World Space Position of the pixel. Maybe modify later to do based on interpolaed surface normal?
 	PixelPosition = vec4(WorldPosition, 1.0) + PixelNormal * texture(SurfaceHeightMap, UV).r;
 
 	// Calculates Albedo based on weights of the texture, vertex color, and material color.
-	PixelColor = final_color(UV);
+	PixelColor = final_color(UV);// * 0.1 + PixelNormal * 0.9;
 
 }

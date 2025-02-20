@@ -188,6 +188,13 @@ namespace geodesy::core::gfx {
 				};
 			}
 
+			// ^Save for later, not useful now. Just commit it.
+			// // Filter normal components and insure that tangent is perpendicular to normal.
+			// Vertex[i].Tangent -= (Vertex[i].Normal * Vertex[i].Tangent) * Vertex[i].Normal;
+			// Vertex[i].Tangent = math::normalize(Vertex[i].Tangent);
+			// // Generate bitangent from tangent and normal.
+			// Vertex[i].Bitangent = Vertex[i].Normal ^ Vertex[i].Tangent;
+
 			// -------------------- Texturing & Coloring -------------------- //
 
 			// TODO: Support multiple textures
