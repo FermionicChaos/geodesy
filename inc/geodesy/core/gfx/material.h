@@ -32,7 +32,14 @@ namespace geodesy::core::gfx {
 			TRANSLUCENT
 		};
 
+		enum orm_packing : int {
+		};
+
 		struct uniform_data {
+			alignas(4) int 						RenderingSystem; 		// Rendering System for the Material
+			alignas(4) int 						Transparency; 			// Transparency of the Material
+
+
 			alignas(16) math::vec<float, 3> 	Color;					// Base Color of the Material
 			alignas(16) math::vec<float, 3> 	Emissive;				// Emissive Color of the Material
 			alignas(16) math::vec<float, 3> 	Ambient;				// Ambient Color of the Material
@@ -43,12 +50,12 @@ namespace geodesy::core::gfx {
 			alignas(4) float 					Metallic;
 			alignas(4) float 					Roughness;
 			alignas(4) float 					VertexColorWeight;
-            alignas(4) float 					MaterialColorWeight;
+			alignas(4) float 					MaterialColorWeight;
 			alignas(4) float 					ParallaxScale;
 			alignas(4) int 						ParallaxIterationCount;
 			uniform_data();
 			uniform_data(const material* aMaterial);
-        };
+		};
 
 		std::string 											Name;					// Name of the material
 		rendering_system 										RenderingSystem;		// Rendering System of the Material

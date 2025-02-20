@@ -27,28 +27,36 @@ namespace geodesy::core::gfx {
 
 	// Default values for each texture type as unsigned char arrays
 	static const unsigned char DefaultColorData[4] 			= {255, 0, 255, 255}; 		// Magenta (Missing Texture Color)
-	static const unsigned char DefaultNormalData[4] 		= {128, 128, 255, 255};		// Up vector (0.5, 0.5, 1.0)
-	static const unsigned char DefaultHeightData[4] 		= {0, 0, 0, 0}; 			// No displacement
-	static const unsigned char DefaultEmissiveData[4] 		= {0, 0, 0, 0}; 			// No emission
-	static const unsigned char DefaultOpacityData[4] 		= {255, 255, 255, 255};  	// Fully opaque
-	static const unsigned char DefaultAOData[4] 			= {255, 255, 255, 255}; 	// No occlusion
 	static const unsigned char DefaultSpecularData[4] 		= {0, 0, 0, 255}; 			// No specularity
 	static const unsigned char DefaultAmbientData[4] 		= {0, 0, 0, 255}; 			// No ambient
+	static const unsigned char DefaultEmissiveData[4] 		= {0, 0, 0, 0}; 			// No emission
+	static const unsigned char DefaultHeightData[4] 		= {0, 0, 0, 0}; 			// No displacement
+	static const unsigned char DefaultNormalData[4] 		= {128, 128, 255, 255};		// Up vector (0.5, 0.5, 1.0)
 	static const unsigned char DefaultShininessData[4] 		= {0, 0, 0, 255}; 			// No shininess
+	static const unsigned char DefaultOpacityData[4] 		= {255, 255, 255, 255};  	// Fully opaque
+	static const unsigned char DefaultAOData[4] 			= {255, 255, 255, 255}; 	// No occlusion
 	static const unsigned char DefaultMetallicData[4] 		= {0, 0, 0, 255}; 			// Non-metallic, smooth
+	static const unsigned char DefaultRoughnessData[4] 		= {255, 255, 255, 255}; 	// Smooth
+	static const unsigned char DefaultSheenData[4] 			= {0, 0, 0, 255}; 			// No sheen
+	static const unsigned char DefaultClearCoatData[4] 		= {0, 0, 0, 255}; 			// No clear coat
 
    static std::vector<texture_type_database> TextureTypeDatabase = {
-		{ "Color", 				{ aiTextureType_DIFFUSE, aiTextureType_BASE_COLOR }, 				std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultColorData), (void*)DefaultColorData) 			},
-		{ "Normal", 			{ aiTextureType_NORMALS, aiTextureType_NORMAL_CAMERA }, 			std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultNormalData), (void*)DefaultNormalData) 			},
-		{ "Height", 			{ aiTextureType_HEIGHT, aiTextureType_DISPLACEMENT }, 				std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultHeightData), (void*)DefaultHeightData) 			},
-		{ "Emissive", 			{ aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR }, 			std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultEmissiveData), (void*)DefaultEmissiveData) 		},
-		{ "Opacity", 			{ aiTextureType_OPACITY }, 											std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultOpacityData), (void*)DefaultOpacityData) 		},
-		{ "AmbientOcclusion", 	{ aiTextureType_LIGHTMAP, aiTextureType_AMBIENT_OCCLUSION }, 		std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultAOData), (void*)DefaultAOData) 					},
-		{ "Specular", 			{ aiTextureType_SPECULAR }, 										std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultSpecularData), (void*)DefaultSpecularData) 		},
-		{ "AmbientLighting", 	{ aiTextureType_AMBIENT }, 											std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultAmbientData), (void*)DefaultAmbientData) 		},
-		{ "Shininess", 			{ aiTextureType_SHININESS }, 										std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultShininessData), (void*)DefaultShininessData) 	},
-		{ "MetallicRoughness", 	{ aiTextureType_METALNESS, aiTextureType_DIFFUSE_ROUGHNESS }, 		std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultMetallicData), (void*)DefaultMetallicData) 		}
+		{ "Color", 					{ aiTextureType_DIFFUSE, aiTextureType_BASE_COLOR }, 			std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultColorData), (void*)DefaultColorData) 			},
+		{ "Specular", 				{ aiTextureType_SPECULAR }, 									std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultSpecularData), (void*)DefaultSpecularData) 		},	
+		{ "AmbientLighting" , 		{ aiTextureType_AMBIENT }, 										std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultAmbientData), (void*)DefaultAmbientData) 		},
+		{ "Emissive", 				{ aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR }, 		std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultEmissiveData), (void*)DefaultEmissiveData) 		},
+		{ "Height", 				{ aiTextureType_HEIGHT, aiTextureType_DISPLACEMENT }, 			std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultHeightData), (void*)DefaultHeightData) 			},
+		{ "Normal", 				{ aiTextureType_NORMALS /*, aiTextureType_NORMAL_CAMERA*/ }, 	std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultNormalData), (void*)DefaultNormalData) 			},
+		{ "Shininess", 				{ aiTextureType_SHININESS }, 									std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultShininessData), (void*)DefaultShininessData) 	},
+		{ "Opacity", 				{ aiTextureType_OPACITY, aiTextureType_TRANSMISSION }, 			std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultOpacityData), (void*)DefaultOpacityData) 		},
+		{ "AmbientOcclusion", 		{ aiTextureType_LIGHTMAP, aiTextureType_AMBIENT_OCCLUSION }, 	std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultAOData), (void*)DefaultAOData) 					},
+		// { "Reflection", 			{ aiTextureType_REFLECTION }, 									nullptr },
+		{ "Metallic", 				{ aiTextureType_METALNESS }, 									std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultMetallicData), (void*)DefaultMetallicData) 		},
+		{ "Roughness", 				{ aiTextureType_DIFFUSE_ROUGHNESS }, 							std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultRoughnessData), (void*)DefaultRoughnessData) 	},
+		{ "Sheen", 					{ aiTextureType_SHEEN }, 										std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultSheenData), (void*)DefaultSheenData) 			},
+		{ "ClearCoat", 				{ aiTextureType_CLEARCOAT }, 									std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultClearCoatData), (void*)DefaultClearCoatData) 	}
    };
+   // ! TODO: Metallic, Roughness, and AO are some times packed into the same file, so find a way to work with this data backend and shader wise.
 
 	static std::string absolute_texture_path(std::string aModelPath, const aiMaterial *aMaterial, std::vector<aiTextureType> aTextureTypeList) {
 		// This function searches a list of texture types, and returns the first texture path it finds.
