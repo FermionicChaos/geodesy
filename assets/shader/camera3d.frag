@@ -115,6 +115,27 @@ vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
 	return UVMid;
 }
 
+const vec4 AmbientLight = vec4(0.8, 0.8, 0.6, 1.0);
+const float LightAmplitude = 100.0;
+const vec4 LightColor = vec4(0.0, 1.0, 1.0, 1.0);
+const vec3 LightPosition = vec3(0.0, 0.0, 5.0);
+
+vec4 final_color(vec2 aUV) {
+	// Sampled color from material and texture.
+	vec4 SampledColor = mix(texture(SurfaceColor, aUV), vec4(Material.Color, Material.Opacity), Material.MaterialColorWeight);
+
+	// Calculates the distance between the light source and the pixel.
+	float r = length(PixelPosition.xyz - LightPosition);
+
+	// 
+	// float CosTheta = dot(normalize(PixelNormal.xyz), normalize(LightPosition - PixelPosition.xyz));
+	
+	// Calculates the final color of the pixel based on ambient lighting and light source.
+	vec4 FinalColor = SampledColor * (AmbientLight + LightAmplitude * LightColor / (r * r)); 
+
+	return FinalColor;
+}
+
 void main() {
 
     // Construct the TBN matrix to transform from world space to surface tangent space.
@@ -131,7 +152,6 @@ void main() {
 	PixelPosition = vec4(WorldPosition, 1.0) + PixelNormal * texture(SurfaceHeightMap, UV).r;
 
 	// Calculates Albedo based on weights of the texture, vertex color, and material color.
-	float TextureColorWeight = 1.0f;
-	PixelColor = texture(SurfaceColor, UV)*TextureColorWeight + InterpolatedVertexColor*Material.VertexColorWeight + vec4(Material.Color, Material.Opacity)*Material.MaterialColorWeight;
+	PixelColor = final_color(UV);
 
 }
