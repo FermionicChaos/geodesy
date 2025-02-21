@@ -81,8 +81,11 @@ namespace geodesy::bltn::obj {
 			this->Image[i]["OGB.Color"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
 			this->Image[i]["OGB.Position"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
 			this->Image[i]["OGB.Normal"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Emissive"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.SS"] 		= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.ORM"] 		= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
 			this->Image[i]["OGB.Depth"] 	= aContext->create_image(DepthCreateInfo, DepthFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["FinalColor"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			// Outputs for post processing.
 		}
 
 		// Setup frame clearing commands.
@@ -96,6 +99,9 @@ namespace geodesy::bltn::obj {
 			this->Image[i]["OGB.Color"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.Position"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.Normal"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["OGB.Emissive"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["OGB.SS"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["OGB.ORM"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.Depth"]->clear_depth(ClearCommand, { 1.0f, 0 }, image::layout::DEPTH_ATTACHMENT_OPTIMAL);
 			// this->Image[i]["FinalColor"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			aContext->end(ClearCommand);
@@ -120,6 +126,9 @@ namespace geodesy::bltn::obj {
 			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Color"],
 			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Position"],
 			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Normal"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Emissive"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.SS"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.ORM"],
 			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Depth"]
 		};
 		// Acquire Mesh Vertex Buffer, and Mesh Instance Vertex Weight Buffer.
@@ -137,12 +146,17 @@ namespace geodesy::bltn::obj {
 
 		// Bind Material Textures.
 		DescriptorArray->bind(1, 0, 0, Material->Texture["Color"]);
-		DescriptorArray->bind(1, 1, 0, Material->Texture["Normal"]);
-		DescriptorArray->bind(1, 2, 0, Material->Texture["Height"]);
-		DescriptorArray->bind(1, 3, 0, Material->Texture["Emission"]);
-		DescriptorArray->bind(1, 4, 0, Material->Texture["Opacity"]);
-		DescriptorArray->bind(1, 5, 0, Material->Texture["AmbientOcclusion"]);
-		DescriptorArray->bind(1, 6, 0, Material->Texture["MetallicRoughness"]);
+		DescriptorArray->bind(1, 1, 0, Material->Texture["Opacity"]);
+		DescriptorArray->bind(1, 2, 0, Material->Texture["Normal"]);
+		DescriptorArray->bind(1, 3, 0, Material->Texture["Height"]);
+		DescriptorArray->bind(1, 4, 0, Material->Texture["Emissive"]);
+		DescriptorArray->bind(1, 5, 0, Material->Texture["Specular"]);
+		DescriptorArray->bind(1, 6, 0, Material->Texture["Shininess"]);
+		DescriptorArray->bind(1, 7, 0, Material->Texture["AmbientOcclusion"]);
+		DescriptorArray->bind(1, 8, 0, Material->Texture["Metallic"]);
+		DescriptorArray->bind(1, 9, 0, Material->Texture["Roughness"]);
+		DescriptorArray->bind(1, 10, 0, Material->Texture["Sheen"]);
+		DescriptorArray->bind(1, 11, 0, Material->Texture["ClearCoat"]);
 
 		// Actual Draw Call.
 		Result = Context->begin(DrawCommand);
@@ -203,7 +217,10 @@ namespace geodesy::bltn::obj {
 		Rasterizer->attach(0, this->Framechain->draw_frame()["OGB.Color"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
 		Rasterizer->attach(1, this->Framechain->draw_frame()["OGB.Position"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
 		Rasterizer->attach(2, this->Framechain->draw_frame()["OGB.Normal"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
-		Rasterizer->attach(3, this->Framechain->draw_frame()["OGB.Depth"], 		image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+		Rasterizer->attach(3, this->Framechain->draw_frame()["OGB.Emissive"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
+		Rasterizer->attach(4, this->Framechain->draw_frame()["OGB.SS"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
+		Rasterizer->attach(5, this->Framechain->draw_frame()["OGB.ORM"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
+		Rasterizer->attach(6, this->Framechain->draw_frame()["OGB.Depth"], 		image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 		// How to intepret vertex data in rasterization.
 		Rasterizer->InputAssembly.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;

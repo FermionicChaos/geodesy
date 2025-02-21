@@ -90,13 +90,20 @@ layout (set = 0, binding = 3) uniform MaterialUBO {
 } Material;
 
 // Texture Data
-layout (set = 1, binding = 0) uniform sampler2D SurfaceColor; 				// Color of the Surface
-layout (set = 1, binding = 1) uniform sampler2D SurfaceNormalMap; 			// Normal Map of the Surface.
-layout (set = 1, binding = 2) uniform sampler2D SurfaceHeightMap; 			// Bump Map of the surface.
-layout (set = 1, binding = 3) uniform sampler2D SurfaceEmission; 			// Light Emission of surface.
-layout (set = 1, binding = 4) uniform sampler2D SurfaceOpacity; 			// Opacity of the Surface.
-layout (set = 1, binding = 5) uniform sampler2D SurfaceAOC; 				// Opacity of the Surface.
-layout (set = 1, binding = 6) uniform sampler2D SurfaceMetallicRoughness;	// PBR Specific
+layout (set = 1, binding = 0) uniform sampler2D MaterialColor; 				// Color of the Surface
+layout (set = 1, binding = 1) uniform sampler2D MaterialOpacity; 			// Opacity Map
+layout (set = 1, binding = 2) uniform sampler2D MaterialNormalMap; 			// Normal Map
+layout (set = 1, binding = 3) uniform sampler2D MaterialHeightMap; 			// Height Map
+layout (set = 1, binding = 4) uniform sampler2D MaterialEmissive; 			// Emissive Lighting
+// Blinn-Phong Specular Highlights
+layout (set = 1, binding = 5) uniform sampler2D MaterialSpecular; 			// Specular Highlights
+layout (set = 1, binding = 6) uniform sampler2D MaterialShininess; 			// Shininess Map
+// PBR Specific Textures
+layout (set = 1, binding = 7) uniform sampler2D MaterialAmbientOcclusion; 	// Ambient Occlusion Map
+layout (set = 1, binding = 8) uniform sampler2D MaterialMetallic; 			// Metallic Map
+layout (set = 1, binding = 9) uniform sampler2D MaterialRoughness; 			// Roughness Map
+layout (set = 1, binding = 10) uniform sampler2D MaterialSheen; 			// Sheen Map
+layout (set = 1, binding = 11) uniform sampler2D MaterialClearCoat; 		// Clear Coat Map
 
 // -------------------- OUTPUT DATA -------------------- //
 
@@ -107,6 +114,9 @@ layout (set = 1, binding = 6) uniform sampler2D SurfaceMetallicRoughness;	// PBR
 layout (location = 0) out vec4 PixelColor;
 layout (location = 1) out vec4 PixelPosition;
 layout (location = 2) out vec4 PixelNormal;
+layout (location = 3) out vec4 PixelEmissive;
+layout (location = 4) out vec2 PixelSS;
+layout (location = 5) out vec3 PixelORM;
 
 vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
 
@@ -130,8 +140,8 @@ vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
 	vec2 UVEnd = UVMaxDir.xy * UVMaxMag + aUV;
 
 	// Sample the height at the midpoint
-	float hStart = texture(SurfaceHeightMap, UVStart).r;
-	float hEnd = texture(SurfaceHeightMap, UVEnd).r;
+	float hStart = texture(MaterialHeightMap, UVStart).r;
+	float hEnd = texture(MaterialHeightMap, UVEnd).r;
 
 	// The y values are going to be the values to determine where an inversion 
 	// has occurred. It is the height map height minus expected interception point
@@ -147,7 +157,7 @@ vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
 
 		// Compute the midpoint between UVStart and UVEnd
 		UVMid = (UVStart + UVEnd) * 0.5;
-		float hMid = texture(SurfaceHeightMap, UVMid).r;
+		float hMid = texture(MaterialHeightMap, UVMid).r;
 		float yMid = hMid - (length(UVMid - aUV) / UVMaxMag) * Material.ParallaxScale;
 
 		// Early exit condition if height threshold is met.
@@ -177,17 +187,46 @@ const float LightAmplitude = 100.0;
 const vec4 LightColor = vec4(0.0, 1.0, 1.0, 1.0);
 const vec3 LightPosition = vec3(0.0, -5.0, 5.0);
 
+float blinn_phong(float aKs, float aS, vec3 aN, vec3 aL, vec3 aV) {
+	// Calculate the half vector between the light and view direction.
+	return ((1.0 - aKs) * max(dot(aN, aL), 0.0) + aKs * pow(max(dot(aN, normalize(aL + aV)), 0.0), aS));
+}
+
+float cook_torrance(float aF0, float aAlpha, vec3 aN, vec3 aL, vec3 aV) {
+	// Calculate the half vector between the light and view direction.
+	vec3 H = normalize(aL + aV);
+
+	// Calculate the dot products of the normal with the half vector, light, and view direction.
+	float NdotH = dot(aN, H);
+	float NdotL = dot(aN, aL);
+	float NdotV = dot(aN, aV);
+	float HdotL = dot(H, aL);
+	float HdotV = dot(H, aV);
+
+	// Calculate fresnel term.
+	float F = aF0 + (1.0 - aF0) * pow(1.0 - NdotH, 5.0);
+
+	// Calculate geometric attenuation.
+	float G = min(1.0, min(2.0 * NdotH * NdotV / HdotV, 2.0 * NdotH * NdotL / HdotV));
+
+	// Calculate the distribution term.
+	float D = exp((NdotH * NdotH - 1.0) / (aAlpha * aAlpha * NdotH * NdotH)) / (aAlpha * aAlpha * NdotH * NdotH * NdotH * NdotH);
+
+	return F * G * D / (4.0 * NdotL * NdotV);	
+}
+
 vec4 final_color(vec2 aUV) {
 	// Sampled color from material and texture.
-	vec4 SampledColor = mix(texture(SurfaceColor, aUV), vec4(Material.Color, Material.Opacity), Material.ColorWeight);
+	vec4 SampledColor = mix(texture(MaterialColor, aUV), vec4(Material.Color, Material.Opacity), Material.ColorWeight);
 
 	// Calculates the distance between the light source and the pixel.
-	vec3 LightDir = normalize(LightPosition - PixelPosition.xyz);
-	vec3 ViewDir = normalize(Camera3D.Position - PixelPosition.xyz);
+	vec3 l = normalize(LightPosition - PixelPosition.xyz);
+	vec3 v = normalize(Camera3D.Position - PixelPosition.xyz);
 	float r = length(PixelPosition.xyz - LightPosition);
+	vec3 h = (l + v) / length(l + v);
 
 	// 
-	float CosTheta = max(dot(LightDir, PixelNormal.xyz), 0.0);
+	float CosTheta = max(dot(l, PixelNormal.xyz), 0.0);
 	
 	// Calculates the final color of the pixel based on ambient lighting and light source.
 	vec4 FinalColor = SampledColor * (AmbientLight + LightAmplitude * CosTheta * LightColor / (r * r)); 
@@ -214,12 +253,12 @@ void main() {
 	vec2 UV = TextureCoordinate.xy; //bisection_parallax(TextureCoordinate.xy, TBN);
 
 	// Get Texture Normal, z should be 1.0 if directly normal to surface.
-	vec3 TextureNormal = normalize(2.0 * texture(SurfaceNormalMap, UV).rgb - 1.0);
+	vec3 TextureNormal = normalize(2.0 * texture(MaterialNormalMap, UV).rgb - 1.0);
 	PixelNormal = vec4(n, 1.0) * Material.VertexNormalWeight + vec4(TBN * TextureNormal, 1.0) * Material.TextureNormalWeight;
 	// mix(vec4(n, 1.0), vec4(normalize(TBN * TextureNormal), 1.0), 1.0);
 
 	// Determine World Space Position of the pixel. Maybe modify later to do based on interpolaed surface normal?
-	PixelPosition = vec4(WorldPosition, 1.0) + PixelNormal * texture(SurfaceHeightMap, UV).r;
+	PixelPosition = vec4(WorldPosition, 1.0) + PixelNormal * texture(MaterialHeightMap, UV).r;
 
 	// Calculates Albedo based on weights of the texture, vertex color, and material color.
 	PixelColor = final_color(UV);// * 0.1 + PixelNormal * 0.9;
