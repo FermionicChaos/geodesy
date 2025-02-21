@@ -13,22 +13,78 @@ layout (location = 5) in vec4 InterpolatedVertexColor;
 
 layout (set = 0, binding = 0) uniform Camera3DUBO {
 	vec3 Position;
-    mat4 Rotation;
-    mat4 Projection;
+	mat4 Rotation;
+	mat4 Projection;
 } Camera3D;
 
 layout (set = 0, binding = 3) uniform MaterialUBO {
-	vec3 Color;
-	vec3 Emissive;
-	vec3 Ambient;
-	vec3 Specular;
-	float Opacity;
-	float RefractionIndex;
-	float Shininess;
-	float Metallic;
-	float Roughness;
+	// Rendering System Metadata
+	int RenderingSystem;
+	int Transparency;
+
+	// ----- Material Property Constants & Control Weights ----- //
 	float VertexColorWeight;
-	float MaterialColorWeight;
+	float TextureColorWeight;
+	float ColorWeight;
+	vec3 Color; // Aligns to 16 bytes
+
+	float TextureSpecularWeight;
+	float SpecularWeight;
+	vec3 Specular; // Aligns to 16 bytes
+
+	float TextureAmbientWeight;
+	float AmbientWeight;
+	vec3 AmbientLighting; // Aligns to 16 bytes
+
+	float TextureEmissiveWeight;
+	float EmissiveWeight;
+	vec3 Emissive; // Aligns to 16 bytes
+
+	float TextureShininessWeight;
+	float ShininessWeight;
+	float Shininess;
+
+	float TextureOpacityWeight;
+	float OpacityWeight;
+	float Opacity;
+
+	float VertexNormalWeight;
+	float TextureNormalWeight;
+
+	float TextureAmbientOcclusionWeight;
+	float AmbientOcclusionWeight;
+	float AmbientOcclusion;
+
+	float TextureReflectionWeight;
+	float ReflectionWeight;
+	float Reflection;
+
+	float TextureMetallicWeight;
+	float MetallicWeight;
+	float Metallic;
+
+	float TextureRoughnessWeight;
+	float RoughnessWeight;
+	float Roughness;
+
+	float TextureSheenWeight;
+	float SheenWeight;
+	vec3 SheenColor; // Aligns to 16 bytes
+	float SheenRoughness;
+
+	float TextureClearCoatWeight;
+	float ClearCoatWeight;
+	float ClearCoat;
+	float ClearCoatRoughness;
+
+	// ----- Extraneous Material Properties ----- //
+	float RefractionIndex;
+
+	float Anisotropy;
+	vec3 AnisotropyDirection; // Aligns to 16 bytes
+
+	float SubsurfaceScattering;
+
 	float ParallaxScale;
 	int ParallaxIterationCount;
 } Material;
@@ -69,9 +125,9 @@ vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
 	// transforms back to world space.
 	vec3 UVMaxDir = aTBN * vec3(InvertedViewDir.xy, 0.0);
 
-    // Initialize the start and end points of the search
-    vec2 UVStart = aUV;
-    vec2 UVEnd = UVMaxDir.xy * UVMaxMag + aUV;
+	// Initialize the start and end points of the search
+	vec2 UVStart = aUV;
+	vec2 UVEnd = UVMaxDir.xy * UVMaxMag + aUV;
 
 	// Sample the height at the midpoint
 	float hStart = texture(SurfaceHeightMap, UVStart).r;
@@ -83,14 +139,14 @@ vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
 	float yStart = hStart - (length(UVStart - aUV) / UVMaxMag) * Material.ParallaxScale;
 	float yEnd = hEnd - (length(UVEnd - aUV) / UVMaxMag) * Material.ParallaxScale;
 
-    // Perform the bisection search here. We can modify later
+	// Perform the bisection search here. We can modify later
 	// to start biased towards the end and move inwards. That
 	// way it finds the first intersection farthest to UVMax.
 	vec2 UVMid;
-    for (int i = 0; i < Material.ParallaxIterationCount; i++) {
+	for (int i = 0; i < Material.ParallaxIterationCount; i++) {
 
-	    // Compute the midpoint between UVStart and UVEnd
-        UVMid = (UVStart + UVEnd) * 0.5;
+		// Compute the midpoint between UVStart and UVEnd
+		UVMid = (UVStart + UVEnd) * 0.5;
 		float hMid = texture(SurfaceHeightMap, UVMid).r;
 		float yMid = hMid - (length(UVMid - aUV) / UVMaxMag) * Material.ParallaxScale;
 
@@ -110,7 +166,7 @@ vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
 			yEnd = yMid;
 		}
 
-    }
+	}
 	
 	return UVMid;
 }
@@ -123,7 +179,7 @@ const vec3 LightPosition = vec3(0.0, -5.0, 5.0);
 
 vec4 final_color(vec2 aUV) {
 	// Sampled color from material and texture.
-	vec4 SampledColor = mix(texture(SurfaceColor, aUV), vec4(Material.Color, Material.Opacity), Material.MaterialColorWeight);
+	vec4 SampledColor = mix(texture(SurfaceColor, aUV), vec4(Material.Color, Material.Opacity), Material.ColorWeight);
 
 	// Calculates the distance between the light source and the pixel.
 	vec3 LightDir = normalize(LightPosition - PixelPosition.xyz);
@@ -151,8 +207,8 @@ void main() {
 	// Generate new bitangent vector based on the new tangent and normal vectors.
 	b = cross(n, t);
 
-    // Construct the TBN matrix to transform from world space to surface tangent space.
-    mat3 TBN = mat3(t, b, n);
+	// Construct the TBN matrix to transform from world space to surface tangent space.
+	mat3 TBN = mat3(t, b, n);
 
 	// Calculate UV coordinates after applying the height map.
 	vec2 UV = TextureCoordinate.xy; //bisection_parallax(TextureCoordinate.xy, TBN);

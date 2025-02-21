@@ -194,7 +194,7 @@ namespace geodesy {
 
 		aApp->Mutex.lock();
 
-		UpdateOperations = aApp->update(aApp->TimeStep);
+		UpdateOperations = aApp->update(this->ThreadController.total_time());
 
 		aApp->Mutex.unlock();
 
