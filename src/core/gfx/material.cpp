@@ -40,7 +40,7 @@ namespace geodesy::core::gfx {
 	static const unsigned char DefaultSheenData[4] 			= {0, 0, 0, 255}; 			// No sheen
 	static const unsigned char DefaultClearCoatData[4] 		= {0, 0, 0, 255}; 			// No clear coat
 
-   static std::vector<texture_type_database> TextureTypeDatabase = {
+	static std::vector<texture_type_database> TextureTypeDatabase = {
 		{ "Color", 					{ aiTextureType_DIFFUSE, aiTextureType_BASE_COLOR }, 			std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultColorData), (void*)DefaultColorData) 			},
 		{ "Specular", 				{ aiTextureType_SPECULAR }, 									std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultSpecularData), (void*)DefaultSpecularData) 		},	
 		{ "AmbientLighting" , 		{ aiTextureType_AMBIENT }, 										std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultAmbientData), (void*)DefaultAmbientData) 		},
