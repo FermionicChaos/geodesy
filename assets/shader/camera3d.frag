@@ -115,8 +115,8 @@ layout (location = 0) out vec4 PixelColor;
 layout (location = 1) out vec4 PixelPosition;
 layout (location = 2) out vec4 PixelNormal;
 layout (location = 3) out vec4 PixelEmissive;
-layout (location = 4) out vec2 PixelSS;
-layout (location = 5) out vec3 PixelORM;
+layout (location = 4) out vec4 PixelSS;
+layout (location = 5) out vec4 PixelORM;
 
 vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
 
@@ -236,7 +236,7 @@ vec4 final_color(vec2 aUV) {
 
 void main() {
 
-	// After rastization interpolation of the vertex data, some values need to be normalized.
+	// After rasterization interpolation of the vertex data, some values need to be normalized.
 	vec3 n = normalize(WorldNormal);
 	vec3 t = normalize(WorldTangent);
 	vec3 b = normalize(WorldBitangent);
@@ -252,15 +252,30 @@ void main() {
 	// Calculate UV coordinates after applying the height map.
 	vec2 UV = TextureCoordinate.xy; //bisection_parallax(TextureCoordinate.xy, TBN);
 
-	// Get Texture Normal, z should be 1.0 if directly normal to surface.
-	vec3 TextureNormal = normalize(2.0 * texture(MaterialNormalMap, UV).rgb - 1.0);
-	PixelNormal = vec4(n, 1.0) * Material.VertexNormalWeight + vec4(TBN * TextureNormal, 1.0) * Material.TextureNormalWeight;
-	// mix(vec4(n, 1.0), vec4(normalize(TBN * TextureNormal), 1.0), 1.0);
+	vec3 Emissive = texture(MaterialEmissive, UV).rgb*Material.TextureEmissiveWeight + Material.Emissive*Material.EmissiveWeight;
+	float Specular = texture(MaterialSpecular, UV).r*Material.TextureSpecularWeight + Material.Specular.r*Material.SpecularWeight;
+	float Shininess = texture(MaterialShininess, UV).r*Material.TextureShininessWeight + Material.Shininess*Material.ShininessWeight;
+	float AmbientOcclusion = texture(MaterialAmbientOcclusion, UV).r*Material.TextureAmbientOcclusionWeight + Material.AmbientOcclusion*Material.AmbientOcclusionWeight;
+	float Metallic = texture(MaterialMetallic, UV).r*Material.TextureMetallicWeight + Material.Metallic*Material.MetallicWeight;
+	float Roughness = texture(MaterialRoughness, UV).r*Material.TextureRoughnessWeight + Material.Roughness*Material.RoughnessWeight;
+	// vec3 SheenColor = texture(MaterialSheen, UV).rgb*Material.TextureSheenWeight + Material.SheenColor*Material.SheenWeight;
+	// float SheenRoughness = Material.SheenRoughness;
+	// float ClearCoat = texture(MaterialClearCoat, UV).r*Material.TextureClearCoatWeight + Material.ClearCoat*Material.ClearCoatWeight;
+	// float ClearCoatRoughness = Material.ClearCoatRoughness;
 
-	// Determine World Space Position of the pixel. Maybe modify later to do based on interpolaed surface normal?
-	PixelPosition = vec4(WorldPosition, 1.0) + PixelNormal * texture(MaterialHeightMap, UV).r;
+	// Get Texture Normal, z should be 1.0 if directly normal to surface.
+	vec3 TextureNormal = normalize(2.0*texture(MaterialNormalMap, UV).rgb - 1.0);
+	PixelNormal = vec4(n, 1.0)*Material.VertexNormalWeight + vec4(TBN*TextureNormal, 1.0)*Material.TextureNormalWeight;
+
+	// Determine World Space Position of the pixel. Maybe modify later to do based on interpolated surface normal?
+	PixelPosition = vec4(WorldPosition, 1.0) + PixelNormal*texture(MaterialHeightMap, UV).r;
+
+	// Copy over material properties to the output.
+	PixelEmissive = vec4(Emissive, 1.0);
+	PixelSS = vec4(Specular, Shininess, 0.0, 0.0);
+	PixelORM = vec4(AmbientOcclusion, Metallic, Roughness, 0.0);
 
 	// Calculates Albedo based on weights of the texture, vertex color, and material color.
-	PixelColor = final_color(UV);// * 0.1 + PixelNormal * 0.9;
+	PixelColor = InterpolatedVertexColor*Material.VertexColorWeight + texture(MaterialColor, UV)*Material.TextureColorWeight + vec4(Material.Color, Material.Opacity)*Material.ColorWeight;
 
 }
