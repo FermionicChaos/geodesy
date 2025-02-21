@@ -215,7 +215,8 @@ void main() {
 
 	// Get Texture Normal, z should be 1.0 if directly normal to surface.
 	vec3 TextureNormal = normalize(2.0 * texture(SurfaceNormalMap, UV).rgb - 1.0);
-	PixelNormal = mix(vec4(n, 1.0), vec4(normalize(TBN * TextureNormal), 1.0), 0.0);
+	PixelNormal = vec4(n, 1.0) * Material.VertexNormalWeight + vec4(TBN * TextureNormal, 1.0) * Material.TextureNormalWeight;
+	// mix(vec4(n, 1.0), vec4(normalize(TBN * TextureNormal), 1.0), 1.0);
 
 	// Determine World Space Position of the pixel. Maybe modify later to do based on interpolaed surface normal?
 	PixelPosition = vec4(WorldPosition, 1.0) + PixelNormal * texture(SurfaceHeightMap, UV).r;
