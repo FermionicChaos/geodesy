@@ -43,7 +43,10 @@ namespace geodesy::core::gfx {
 		std::shared_ptr<gcl::context> 		Context;
 		std::shared_ptr<gcl::buffer> 		VertexBuffer;
 		std::shared_ptr<gcl::buffer>		IndexBuffer;
-		std::shared_ptr<gcl::buffer>		UniformBuffer;
+		std::shared_ptr<gcl::buffer>		AccelerationStructureBuffer;
+		std::shared_ptr<gcl::buffer> 		ScratchBuffer;
+		VkAccelerationStructureKHR			AccelerationStructure;
+		VkDeviceAddress						AccelerationStructureDeviceAddress;
 
 		mesh(const aiMesh* aMesh);
 		mesh(std::shared_ptr<gcl::context> aContext, const std::vector<vertex>& aVertexData, const topology& aTopologyData);

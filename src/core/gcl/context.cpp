@@ -144,8 +144,60 @@ namespace geodesy::core::gcl {
 				QCI[i].pQueuePriorities			= QP[i].data();
 			}
 
+			void* Next = NULL;
+			// Buffer Device Address Features (required for acceleration structures)
+			VkPhysicalDeviceBufferDeviceAddressFeatures PDBDAF{};
+			if (aExtensionList.count("VK_KHR_buffer_device_address") > 0) {
+				PDBDAF.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES;
+				PDBDAF.pNext = Next;
+				PDBDAF.bufferDeviceAddress = VK_TRUE;
+				Next = &PDBDAF;
+			}
+			
+			// Descriptor Indexing Features (required for ray tracing shader binding tables)
+			VkPhysicalDeviceDescriptorIndexingFeatures PDDIF{};
+			if (aExtensionList.count("VK_EXT_descriptor_indexing") > 0) {
+				PDDIF.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
+				PDDIF.pNext = Next;
+				PDDIF.runtimeDescriptorArray = VK_TRUE;
+				PDDIF.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
+				Next = &PDDIF;
+			}
+			
+			// Acceleration Structure Features
+			VkPhysicalDeviceAccelerationStructureFeaturesKHR PDASF{};
+			if (aExtensionList.count("VK_KHR_acceleration_structure") > 0) {
+				PDASF.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
+				PDASF.pNext = Next;
+				PDASF.accelerationStructure = VK_TRUE;
+				Next = &PDASF;
+			}
+			
+			// Ray Tracing Pipeline Features
+			VkPhysicalDeviceRayTracingPipelineFeaturesKHR PDRTPF{};
+			if (aExtensionList.count("VK_KHR_ray_tracing_pipeline") > 0) {
+				PDRTPF.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
+				PDRTPF.pNext = Next;
+				PDRTPF.rayTracingPipeline = VK_TRUE;
+				Next = &PDRTPF;
+			}
+			
+			// Deferred Host Operations (improves performance for ray tracing)
+			// VkPhysicalDeviceDeferredHostOperationsFeaturesKHR PDHOF{};
+			// VkPhysicalDeviceDeferredHostOperationsFeaturesKHR deferredHostOpsFeatures{};
+			// deferredHostOpsFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEFERRED_HOST_OPERATIONS_FEATURES_KHR;
+			// deferredHostOpsFeatures.pNext = Next;
+			// deferredHostOpsFeatures.deferredHostOperations = VK_TRUE;
+			// Next = &deferredHostOpsFeatures;
+			
+			// Finally, link to the physical device features
+			VkPhysicalDeviceFeatures2 DF2{};
+			DF2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+			DF2.pNext = Next;
+			DF2.features = aDevice->Features;
+			
 			CI.sType						= VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-			CI.pNext						= NULL;
+			CI.pNext 						= &DF2;
 			CI.flags						= 0;
 			CI.queueCreateInfoCount			= QCI.size();
 			CI.pQueueCreateInfos			= QCI.data();
@@ -153,7 +205,7 @@ namespace geodesy::core::gcl {
 			CI.ppEnabledLayerNames			= Layer.data();
 			CI.enabledExtensionCount		= Extension.size();
 			CI.ppEnabledExtensionNames		= Extension.data();
-			CI.pEnabledFeatures				= &aDevice->Features;
+			CI.pEnabledFeatures				= NULL;
 
 			Result = vkCreateDevice(aDevice->Handle, &CI, NULL, &this->Handle);
 			if (Result != VK_SUCCESS) {
@@ -319,11 +371,15 @@ namespace geodesy::core::gcl {
 	VkDeviceMemory context::allocate_memory(VkMemoryRequirements aMemoryRequirements, uint aMemoryType) {
 		VkResult Result = VK_SUCCESS;
 		VkDeviceMemory MemoryHandle = VK_NULL_HANDLE;
+		VkMemoryAllocateFlagsInfo MemoryAllocateFlagsInfo{};
+		MemoryAllocateFlagsInfo.sType			= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
+		MemoryAllocateFlagsInfo.pNext			= NULL;
+		MemoryAllocateFlagsInfo.flags			= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
 		VkMemoryAllocateInfo AllocateInfo{};
-		AllocateInfo.sType				= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		AllocateInfo.pNext				= NULL;
-		AllocateInfo.allocationSize		= aMemoryRequirements.size;
-		AllocateInfo.memoryTypeIndex	= this->Device->get_memory_type_index(aMemoryRequirements, aMemoryType);
+		AllocateInfo.sType						= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		AllocateInfo.pNext						= &MemoryAllocateFlagsInfo;
+		AllocateInfo.allocationSize				= aMemoryRequirements.size;
+		AllocateInfo.memoryTypeIndex			= this->Device->get_memory_type_index(aMemoryRequirements, aMemoryType);
 		Result = vkAllocateMemory(this->Handle, &AllocateInfo, NULL, &MemoryHandle);
 		this->Memory.insert(MemoryHandle);
 		return MemoryHandle;

@@ -29,6 +29,8 @@ namespace geodesy::bltn {
 		std::set<std::string> LayerList = {};
 		// I want my device context to be able to render to system windows.
 		std::set<std::string> ExtensionList = system_window::context_extensions();
+		// Add ray tracing extensions to the device context.
+		ExtensionList.insert(context::RayTracingExtensions.begin(), context::RayTracingExtensions.end());
 		// Engine create device context for gpu operations.
 		DeviceContext = Engine->create_device_context(Engine->PrimaryDevice, OperationList, LayerList, ExtensionList);
 	}
