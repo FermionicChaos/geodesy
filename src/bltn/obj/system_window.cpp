@@ -279,19 +279,18 @@ namespace geodesy::bltn::obj {
 		glfwTerminate();
 	}
 
-	std::vector<const char*> system_window::engine_extensions() {
-		std::vector<const char*> EngineExtension;
+	std::set<std::string> system_window::engine_extensions() {
+		std::set<std::string> EngineExtension;
 		uint32_t EC = 0;
 		const char** EL = glfwGetRequiredInstanceExtensions(&EC);
 		for (uint32_t i = 0; i < EC; i++) {
-			EngineExtension.push_back(EL[i]);
+			EngineExtension.insert(EL[i]);
 		}
 		return EngineExtension;
 	}
 
-	std::vector<const char*> system_window::context_extensions() {
-		std::vector<const char*> ContextExtension = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-		return ContextExtension;
+	std::set<std::string> system_window::context_extensions() {
+		return { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 	}
 
 	void system_window::check_present_support(core::gcl::device* aDevice) {

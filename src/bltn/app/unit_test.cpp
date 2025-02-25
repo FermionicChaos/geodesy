@@ -26,10 +26,11 @@ namespace geodesy::bltn {
 			device::operation::GRAPHICS_AND_COMPUTE,
 			device::operation::PRESENT
 		};
+		std::set<std::string> LayerList = {};
 		// I want my device context to be able to render to system windows.
-		std::vector<const char*> DeviceContextExtension = system_window::context_extensions();
+		std::set<std::string> ExtensionList = system_window::context_extensions();
 		// Engine create device context for gpu operations.
-		DeviceContext = Engine->create_device_context(Engine->PrimaryDevice, OperationList, {}, DeviceContextExtension);
+		DeviceContext = Engine->create_device_context(Engine->PrimaryDevice, OperationList, LayerList, ExtensionList);
 	}
 
 	unit_test::~unit_test() {

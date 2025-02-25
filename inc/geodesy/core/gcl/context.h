@@ -17,6 +17,8 @@ namespace geodesy::core::gcl {
 	class context : public std::enable_shared_from_this<context> {
 	public:
 
+		static const std::set<std::string> 			RayTracingExtensions;
+
 		std::mutex									Mutex;
 		std::shared_ptr<device> 					Device;
 		VkDevice									Handle;
@@ -28,8 +30,9 @@ namespace geodesy::core::gcl {
 		std::set<VkSemaphore>						Semaphore;
 		std::set<VkFence>							Fence;
 		std::set<VkDeviceMemory>					Memory;
+		std::map<std::string, PFN_vkVoidFunction>	FunctionPointer;
 
-		context(std::shared_ptr<device> aDevice, std::vector<uint> aOperationBitfieldList, std::vector<const char*> aLayerList = {}, std::vector<const char*> aExtensionList = {});
+		context(std::shared_ptr<device> aDevice, std::vector<uint> aOperationBitfieldList, std::set<std::string> aLayerList = {}, std::set<std::string> aExtensionList = {});
 		~context();
 
 		VkMemoryRequirements get_buffer_memory_requirements(VkBuffer aBufferHandle) const;

@@ -89,7 +89,7 @@ namespace geodesy {
 		this->PrimaryDevice = nullptr;
 	}
 
-	engine::engine(std::vector<const char*> aCommandLineArgumentList, std::vector<const char*> aLayerList, std::vector<const char*> aExtensionList) : engine() {
+	engine::engine(std::vector<const char*> aCommandLineArgumentList, std::set<std::string> aLayerList, std::set<std::string> aExtensionList) : engine() {
 		VkResult Result = VK_SUCCESS;
 		this->Name			= "Geodesy Engine";
 		this->Version		= math::vec<uint, 3>(GEODESY_ENGINE_VERSION_MAJOR, GEODESY_ENGINE_VERSION_MINOR, GEODESY_ENGINE_VERSION_PATCH);
@@ -103,10 +103,14 @@ namespace geodesy {
 			std::vector<const char*> Extension;
 
 			// Add Validation Layers
-			Layer.insert(Layer.end(), aLayerList.begin(), aLayerList.end());
+			for (const std::string& LayerName : aLayerList) {
+				Layer.push_back(LayerName.c_str());
+			}
 
-			// Add WSI extensions
-			Extension.insert(Extension.end(), aExtensionList.begin(), aExtensionList.end());
+			// Add Extensions
+			for (const std::string& ExtensionName : aExtensionList) {
+				Extension.push_back(ExtensionName.c_str());
+			}
 			
 			// TODO: Figure out how to funnel app meta data into here.
 			AppInfo.sType								= VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -156,7 +160,7 @@ namespace geodesy {
 
 	}
 
-	std::shared_ptr<core::gcl::context> engine::create_device_context(std::shared_ptr<core::gcl::device> aDevice, std::vector<uint> aOperationBitfieldList, std::vector<const char*> aLayerList, std::vector<const char*> aExtensionList) {
+	std::shared_ptr<core::gcl::context> engine::create_device_context(std::shared_ptr<core::gcl::device> aDevice, std::vector<uint> aOperationBitfieldList, std::set<std::string> aLayerList, std::set<std::string> aExtensionList) {
 		std::shared_ptr<core::gcl::context> NewDeviceContext = std::make_shared<core::gcl::context>(aDevice, aOperationBitfieldList, aLayerList, aExtensionList);
 		Context.insert(NewDeviceContext);
 		return NewDeviceContext;

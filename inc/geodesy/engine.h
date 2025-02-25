@@ -102,10 +102,10 @@ namespace geodesy {
 		std::set<std::shared_ptr<core::gcl::context>>							Context;
 
 		engine();
-		engine(std::vector<const char*> aCommandLineArgumentList, std::vector<const char*> aLayerList, std::vector<const char*> aExtensionList);
+		engine(std::vector<const char*> aCommandLineArgumentList, std::set<std::string> aLayerList, std::set<std::string> aExtensionList);
 		~engine();
 
-		std::shared_ptr<core::gcl::context> create_device_context(std::shared_ptr<core::gcl::device> aDevice, std::vector<uint> aOperationBitfieldList, std::vector<const char*> aLayerList = {}, std::vector<const char*> aExtensionList = {});
+		std::shared_ptr<core::gcl::context> create_device_context(std::shared_ptr<core::gcl::device> aDevice, std::vector<uint> aOperationBitfieldList, std::set<std::string> aLayerList = {}, std::set<std::string> aExtensionList = {});
 		void destroy_device_context(std::shared_ptr<core::gcl::context> aDeviceContext);
 		VkResult wait_on_device_context(std::vector<std::shared_ptr<core::gcl::context>> aDeviceContextList = {});
 

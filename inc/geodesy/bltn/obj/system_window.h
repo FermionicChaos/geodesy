@@ -97,8 +97,8 @@ namespace geodesy::bltn::obj {
 
 		static bool initialize();
 		static void terminate();
-		static std::vector<const char*> engine_extensions();
-		static std::vector<const char*> context_extensions();
+		static std::set<std::string> engine_extensions();
+		static std::set<std::string> context_extensions();
 		static void check_present_support(core::gcl::device* aDevice);
 
 		// Timing

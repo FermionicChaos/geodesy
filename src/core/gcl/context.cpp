@@ -5,7 +5,68 @@ namespace geodesy::core::gcl {
 
 	using namespace util;
 
-	context::context(std::shared_ptr<device> aDevice, std::vector<uint> aOperationBitfieldList, std::vector<const char*> aLayerList, std::vector<const char*> aExtensionList) {
+	const std::set<std::string> context::RayTracingExtensions = {
+		"VK_KHR_acceleration_structure",
+		"VK_KHR_ray_tracing_pipeline",
+		"VK_KHR_buffer_device_address",
+		"VK_KHR_deferred_host_operations",
+		"VK_EXT_descriptor_indexing",
+		"VK_KHR_pipeline_library"
+	};
+
+	// Function names for Vulkan ray tracing extensions
+	static const std::vector<const char*> VulkanRayTracingFunctionNames = {
+		// VK_KHR_acceleration_structure functions
+		"vkCreateAccelerationStructureKHR",
+		"vkDestroyAccelerationStructureKHR",
+		"vkGetAccelerationStructureBuildSizesKHR",
+		"vkGetAccelerationStructureDeviceAddressKHR",
+		"vkCmdBuildAccelerationStructuresKHR",
+		"vkCmdBuildAccelerationStructuresIndirectKHR",
+		"vkBuildAccelerationStructuresKHR",
+		"vkCopyAccelerationStructureKHR",
+		"vkCopyAccelerationStructureToMemoryKHR",
+		"vkCopyMemoryToAccelerationStructureKHR",
+		"vkWriteAccelerationStructuresPropertiesKHR",
+		"vkCmdCopyAccelerationStructureKHR",
+		"vkCmdCopyAccelerationStructureToMemoryKHR",
+		"vkCmdCopyMemoryToAccelerationStructureKHR",
+		"vkGetDeviceAccelerationStructureCompatibilityKHR",
+		"vkCmdWriteAccelerationStructuresPropertiesKHR",
+
+		// VK_KHR_ray_tracing_pipeline functions
+		"vkCreateRayTracingPipelinesKHR",
+		"vkGetRayTracingShaderGroupHandlesKHR",
+		"vkGetRayTracingCaptureReplayShaderGroupHandlesKHR",
+		"vkCmdTraceRaysKHR",
+		"vkCmdTraceRaysIndirectKHR",
+		"vkGetRayTracingShaderGroupStackSizeKHR",
+		"vkCmdSetRayTracingPipelineStackSizeKHR",
+
+		// VK_KHR_buffer_device_address functions
+		"vkGetBufferDeviceAddressKHR",
+		"vkGetBufferOpaqueCaptureAddressKHR",
+		"vkGetDeviceMemoryOpaqueCaptureAddressKHR",
+
+		// VK_KHR_deferred_host_operations functions
+		"vkCreateDeferredOperationKHR",
+		"vkDestroyDeferredOperationKHR",
+		"vkGetDeferredOperationMaxConcurrencyKHR",
+		"vkGetDeferredOperationResultKHR",
+		"vkDeferredOperationJoinKHR",
+
+		// VK_EXT_descriptor_indexing
+		// (This extension primarily modifies structures and doesn't add
+		// many new functions, but here's the one it does add)
+		"vkGetDescriptorEXT",
+
+		// VK_KHR_pipeline_library
+		// (This extension mainly adds to VkPipelineCreateFlags and
+		// doesn't introduce new functions, it's primarily used with
+		// ray tracing pipelines to modularize shader groups)
+	};
+
+	context::context(std::shared_ptr<device> aDevice, std::vector<uint> aOperationBitfieldList, std::set<std::string> aLayerList, std::set<std::string> aExtensionList) {
 		VkResult Result = VK_SUCCESS;
 		std::vector<math::vec<uint32_t, 2>> QI(aOperationBitfieldList.size());
 
@@ -32,10 +93,20 @@ namespace geodesy::core::gcl {
 			std::vector<int>							UQFI;
 			std::vector<std::vector<float>> 	 		QP;
 			std::vector<VkDeviceQueueCreateInfo> 		QCI;
-			std::vector<const char*>					Layer = aLayerList;
-			std::vector<const char*>					Extension = aExtensionList;
+			std::vector<const char*>					Layer;
+			std::vector<const char*>					Extension;
 			VkPhysicalDeviceDynamicRenderingFeatures 	DRF{};
 			VkDeviceCreateInfo 					 		CI{};
+
+			// Convert std::set into std::vector.
+			for (const std::string& L : aLayerList) {
+				Layer.push_back(L.c_str());
+			}
+
+			// Convert std::set into std::vector.
+			for (const std::string& E : aExtensionList) {
+				Extension.push_back(E.c_str());
+			}
 
 			// Get Unique Queue Family Indices (UQFI).
 			{
@@ -88,6 +159,11 @@ namespace geodesy::core::gcl {
 			if (Result != VK_SUCCESS) {
 				aDevice->Engine->Logger << log::message(log::VULKAN, Result, "Error: Failed to create device context!");
 				throw aDevice->Engine->Logger;
+			}
+
+			// Load function pointers to ray tracing functions.
+			for (const char* FunctionName : VulkanRayTracingFunctionNames) {
+				this->FunctionPointer[FunctionName] = vkGetDeviceProcAddr(this->Handle, FunctionName);
 			}
 		}
 
