@@ -56,7 +56,7 @@ namespace geodesy::bltn {
 		// Create System Window Object.
 		system_window::creator SystemWindowCreator;
 		SystemWindowCreator.Name 			= "System Window";
-		SystemWindowCreator.Resolution 		= { 1920, 1080, 1 };
+		SystemWindowCreator.Resolution 		= { 960, 540, 1 };
 		SystemWindowCreator.FrameCount 		= 3;
 		SystemWindowCreator.FrameRate 		= 60.0f;
 		SystemWindowCreator.Display 		= Engine->PrimaryDisplay;

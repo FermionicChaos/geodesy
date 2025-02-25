@@ -15,6 +15,7 @@
 #include "gcl/framebuffer.h"
 #include "gcl/pipeline.h"
 #include "gcl/framechain.h"
+#include "gcl/acceleration_structure.h"
 #include "gcl/context.h"
 
 #endif // !GEODESY_CORE_GCL_H

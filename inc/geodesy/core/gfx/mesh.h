@@ -39,6 +39,9 @@ namespace geodesy::core::gfx {
 			
 		};
 
+		// Host Memory Reference
+		std::weak_ptr<mesh> 				HostMesh;
+
 		// Device Memory Objects
 		std::shared_ptr<gcl::context> 		Context;
 		std::shared_ptr<gcl::buffer> 		VertexBuffer;
@@ -49,7 +52,7 @@ namespace geodesy::core::gfx {
 		VkDeviceAddress						AccelerationStructureDeviceAddress;
 
 		mesh(const aiMesh* aMesh);
-		mesh(std::shared_ptr<gcl::context> aContext, const std::vector<vertex>& aVertexData, const topology& aTopologyData);
+		// mesh(std::shared_ptr<gcl::context> aContext, const std::vector<vertex>& aVertexData, const topology& aTopologyData);
 		mesh(std::shared_ptr<gcl::context> aContext, std::shared_ptr<mesh> aMesh);
 
 		// void draw(VkCommandBuffer aCommandBuffer, std::shared_ptr<gcl::pipeline> aPipeline, std::shared_ptr<gcl::framebuffer> aFramebuffer, std::shared_ptr<gcl::descriptor::array> aDescriptorArray);
