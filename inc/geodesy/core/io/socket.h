@@ -19,11 +19,8 @@ namespace geodesy::core::io {
 			UDP
 		};
 
-		static bool initialize();
-		static void terminate();
-
-		socket_t(std::string aIpAddress, unsigned short aPortNumber, address_family aAddressFamily = IPV4, protocol aProtocol = UDP);
-		~socket_t();
+		static int initialize();
+		static int terminate();
 
 	private:
 
