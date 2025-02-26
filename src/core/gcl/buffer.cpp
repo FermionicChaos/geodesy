@@ -307,9 +307,17 @@ namespace geodesy::core::gcl {
 		}
 	}
 
+	VkDeviceAddress buffer::device_address() const {
+		VkBufferDeviceAddressInfo BDIA{};
+		BDIA.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+		BDIA.pNext = NULL;
+		BDIA.buffer = this->Handle;
+		return vkGetBufferDeviceAddress(this->Context->Handle, &BDIA);
+	}
+
 	VkBufferMemoryBarrier buffer::memory_barrier(
-			uint aSrcAccess, uint aDstAccess,
-			size_t aOffset, size_t aSize
+		uint aSrcAccess, uint aDstAccess,
+		size_t aOffset, size_t aSize
 	) const {
 		VkBufferMemoryBarrier MemoryBarrier{};
 		MemoryBarrier.sType						= VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;

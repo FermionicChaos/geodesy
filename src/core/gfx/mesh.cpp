@@ -153,6 +153,13 @@ namespace geodesy::core::gfx {
 		}
 	}
 
+	mesh::mesh() : phys::mesh() {
+		this->Context = nullptr;
+		this->VertexBuffer = nullptr;
+		this->IndexBuffer = nullptr;
+		this->AccelerationStructure = nullptr;
+	}
+
 	mesh::mesh(const aiMesh* aMesh) {
 		// Size Vertex Buffer to hold all vertices.
 		Vertex = std::vector<vertex>(aMesh->mNumVertices);

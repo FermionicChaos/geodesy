@@ -113,6 +113,7 @@ namespace geodesy::core::gcl {
 
 		void *map_memory(size_t aOffset, size_t aSize);
 		void unmap_memory();
+		VkDeviceAddress device_address() const;
 
 		VkBufferMemoryBarrier memory_barrier(
 			uint aSrcAccess, uint aDstAccess,

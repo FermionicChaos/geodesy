@@ -43,9 +43,24 @@ namespace geodesy {
 	class engine;
 	namespace core {
 		namespace gcl {
+			class device;
+			class command_pool;
+			class semaphore_pool;
+			class command_batch;
+			class submission_batch;
+			class buffer;
+			class image;
+			class shader;
+			class descriptor;
+			class framebuffer;
+			class pipeline;
+			class framechain;
+			class acceleration_structure;
 			class context;
 		}
 		namespace gfx {
+			class mesh;
+			class node;
 			class model;
 		}
 	}
