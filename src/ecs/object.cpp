@@ -168,14 +168,13 @@ namespace geodesy::ecs {
 		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
 		this->DirectionFront			= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
 
-		uniform_data UniformData = uniform_data(
+		*(uniform_data*)this->UniformBuffer->Ptr = uniform_data(
 			this->Position, 
 			this->DirectionRight, 
 			this->DirectionUp, 
 			this->DirectionFront,
 			this->Scale
 		);
-		memcpy(this->UniformBuffer->Ptr, &UniformData, sizeof(uniform_data));
 
 		// Update Model if animation data exists.
 		if ((this->Model.get() != nullptr) && (this->Model->Animation.size() > 0)) {

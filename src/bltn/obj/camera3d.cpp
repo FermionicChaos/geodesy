@@ -297,7 +297,7 @@ namespace geodesy::bltn::obj {
 		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
 		this->DirectionFront			= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
 
-		camera_uniform_data UniformData = camera_uniform_data(
+		*(camera_uniform_data*)this->CameraUniformBuffer->Ptr = camera_uniform_data(
 			this->Position, 
 			this->DirectionRight, 
 			this->DirectionUp, 
@@ -307,7 +307,6 @@ namespace geodesy::bltn::obj {
 			this->Near,
 			this->Far
 		);
-		memcpy(this->CameraUniformBuffer->Ptr, &UniformData, sizeof(camera_uniform_data));
 	}
 
 	std::shared_ptr<ecs::object::renderer> camera3d::default_renderer(object* aObject) {
