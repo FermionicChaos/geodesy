@@ -391,6 +391,7 @@ namespace geodesy::bltn::obj {
 	}
 
 	core::gcl::submission_batch system_window::render(ecs::stage* aStage) {
+		VkResult Result = VK_SUCCESS;
 		// The next frame operation will both present previously drawn frame and acquire next
 		// frame. 
 
@@ -399,11 +400,14 @@ namespace geodesy::bltn::obj {
 
 		// Get next frame semaphore from queue.
 		this->NextFrameSemaphore = Swapchain->NextFrameSemaphoreList.front();
-		
-		VkResult Result = this->Framechain->next_frame(this->PresentFrameSemaphore, this->NextFrameSemaphore);
+
+		// Get next frame only if resolution is valid.
+		if ((this->Framechain->Resolution[0] > 0) && (this->Framechain->Resolution[1] > 0)) {
+			Result = this->Framechain->next_frame(this->PresentFrameSemaphore, this->NextFrameSemaphore);
+		}
 
 		// Rebuild pipelines and command buffers if out of date.
-		if ((Result != VK_ERROR_OUT_OF_DATE_KHR) && (Result != VK_SUBOPTIMAL_KHR)) {
+		if ((Result != VK_ERROR_OUT_OF_DATE_KHR) && (Result != VK_SUBOPTIMAL_KHR) && (this->Framechain->Resolution[0] > 0) && (this->Framechain->Resolution[1] > 0)) {
 			// ------------------------------ Rendering Operations ----------------------------- //
 
 			// Keep next frame semaphore from queue and place back.
@@ -459,19 +463,21 @@ namespace geodesy::bltn::obj {
 			vkDeviceWaitIdle(this->Context->Handle);
 	
 			// Create New swapchain based on old.
-			std::shared_ptr<swapchain> NewSwapchain = std::shared_ptr<swapchain>(new swapchain(this->Context, this->SurfaceHandle, swapchain::property(Swapchain->CreateInfo, Swapchain->FrameRate), Swapchain->Handle));
-	
-			// Use new swapchain to replace old.
-			this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(NewSwapchain);
-	
-			// Rebuild pipeline.
-			if (this->Pipeline->CreateInfo->BindPoint == pipeline::type::RASTERIZER) {
-				// Cast to rasterizer.
-				std::shared_ptr<pipeline::rasterizer> Rasterizer = std::dynamic_pointer_cast<pipeline::rasterizer>(this->Pipeline->CreateInfo);
-				// Resize rasterizer.
-				Rasterizer->resize(this->Framechain->Resolution);
+			if ((this->Framechain->Resolution[0] > 0) && (this->Framechain->Resolution[1] > 0)) {
+				std::shared_ptr<swapchain> NewSwapchain = std::shared_ptr<swapchain>(new swapchain(this->Context, this->SurfaceHandle, swapchain::property(Swapchain->CreateInfo, Swapchain->FrameRate), Swapchain->Handle));
+		
+				// Use new swapchain to replace old.
+				this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(NewSwapchain);
+		
 				// Rebuild pipeline.
-				this->Pipeline = this->Context->create_pipeline(Rasterizer);
+				if (this->Pipeline->CreateInfo->BindPoint == pipeline::type::RASTERIZER) {
+					// Cast to rasterizer.
+					std::shared_ptr<pipeline::rasterizer> Rasterizer = std::dynamic_pointer_cast<pipeline::rasterizer>(this->Pipeline->CreateInfo);
+					// Resize rasterizer.
+					Rasterizer->resize(this->Framechain->Resolution);
+					// Rebuild pipeline.
+					this->Pipeline = this->Context->create_pipeline(Rasterizer);
+				}
 			}
 	
 			// Destroy all existing commandbuffers that reference this subject.
@@ -592,10 +598,7 @@ namespace geodesy::bltn::obj {
 
 	void system_window::framebuffer_size_callback(GLFWwindow* aWindowHandle, int aFrameSizeX, int aFrameSizeY) {
 		system_window* Window = (system_window*)glfwGetWindowUserPointer(aWindowHandle);
-		//Window->FrameResolution = math::vec3<uint>(aFrameSizeX, aFrameSizeY, 1u);
-		//Window->Engine->ThreadController.suspend(Window->Engine->RenderThreadID);
-		//Window->recreate_swapchain(aFrameSizeX, aFrameSizeY);
-		//Window->Engine->ThreadController.resume(Window->Engine->RenderThreadID);
+		Window->Framechain->Resolution = math::vec<uint, 3>(aFrameSizeX, aFrameSizeY, 1u);
 	}
 
 	// Mouse callbacks
