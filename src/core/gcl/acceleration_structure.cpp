@@ -1,8 +1,11 @@
 #include <geodesy/core/gcl/acceleration_structure.h>
-#include <geodesy/core/gcl/context.h>
 
+#include <geodesy/core/gcl/context.h>
 #include <geodesy/core/gfx/mesh.h>
 #include <geodesy/core/gfx/node.h>
+#include <geodesy/core/gfx/model.h>
+#include <geodesy/ecs/object.h>
+#include <geodesy/ecs/stage.h>
 
 namespace geodesy::core::gcl {
 
@@ -14,6 +17,7 @@ namespace geodesy::core::gcl {
 
 	acceleration_structure::acceleration_structure(std::shared_ptr<context> aContext, const gfx::mesh* aDeviceMesh, const gfx::mesh* aHostMesh) : acceleration_structure() {
 		this->Context = aContext;
+		uint32_t PrimitiveCount = (aHostMesh->Vertex.size() <= (1 << 16) ? aHostMesh->Topology.Data16.size() : aHostMesh->Topology.Data32.size()) / 3;
 		// Build Bottom Level AS (Mesh Geometry Data).
 		// Needed for device addresses.
 		// PFN_vkGetBufferDeviceAddress vkGetBufferDeviceAddress = (PFN_vkGetBufferDeviceAddress)Context->FunctionPointer["vkGetBufferDeviceAddress"];
@@ -53,7 +57,6 @@ namespace geodesy::core::gcl {
 		ASBSI.sType										= VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR;
 		ASBSI.pNext										= NULL;
 		if (aContext->FunctionPointer.count("vkGetAccelerationStructureBuildSizesKHR") > 0) {
-			uint32_t PrimitiveCount = (aHostMesh->Vertex.size() <= (1 << 16) ? aHostMesh->Topology.Data16.size() : aHostMesh->Topology.Data32.size()) / 3;
 			PFN_vkGetAccelerationStructureBuildSizesKHR vkGetAccelerationStructureBuildSizesKHR = (PFN_vkGetAccelerationStructureBuildSizesKHR)aContext->FunctionPointer["vkGetAccelerationStructureBuildSizesKHR"];
 			vkGetAccelerationStructureBuildSizesKHR(aContext->Handle, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &ASBGI, &PrimitiveCount, &ASBSI);
 
@@ -93,7 +96,7 @@ namespace geodesy::core::gcl {
 
 			// Now fill out acceleration structure buffer.
 			VkAccelerationStructureBuildRangeInfoKHR ASBRI;
-			ASBRI.primitiveCount 	= (aHostMesh->Vertex.size() <= (1 << 16) ? aHostMesh->Topology.Data16.size() : aHostMesh->Topology.Data32.size()) / 3;
+			ASBRI.primitiveCount 	= PrimitiveCount;
 			ASBRI.primitiveOffset 	= 0;
 			ASBRI.firstVertex 		= 0;
 			ASBRI.transformOffset 	= 0;
@@ -123,6 +126,76 @@ namespace geodesy::core::gcl {
 			// Get the device address of the acceleration structure.
 			this->DeviceAddress = this->device_address();
 		}
+	}
+
+	acceleration_structure::acceleration_structure(std::shared_ptr<context> aContext, const ecs::stage* aStage) {
+		// TLAS will have to iterate through every objects model to gather its mesh instances.
+
+		// Vulkan mesh instance list over entire stage.
+		std::vector<VkAccelerationStructureInstanceKHR> InstanceList;
+
+		// Iterate through all objects in the stage.
+		for (const auto& Object : aStage->Object) {
+			// Get list of mesh instances per object model.
+			std::vector<gfx::mesh::instance*> MeshInstanceList = Object->Model->Hierarchy.gather_mesh_instances();
+			for (gfx::mesh::instance* MeshInstance : MeshInstanceList) {
+				VkAccelerationStructureInstanceKHR ASI{};
+				gfx::mesh* Mesh = Object->Model->Mesh[MeshInstance->Index].get();
+
+				// ! Object Transformation Info.
+				// Create Translation Matrix.
+				math::mat<float, 4, 4> ObjectTranslation = {
+					0.0f, 0.0f, 0.0f, Object->Position[0],
+					0.0f, 0.0f, 0.0f, Object->Position[1],
+					0.0f, 0.0f, 0.0f, Object->Position[2],
+					0.0f, 0.0f, 0.0f, 1.0f
+				};
+				// Create Orientation Matrix.
+				math::mat<float, 4, 4> ObjectOrientation = {
+					Object->DirectionRight[0], 		Object->DirectionFront[0], 		Object->DirectionUp[0], 	0.0f,
+					Object->DirectionRight[1], 		Object->DirectionFront[1], 		Object->DirectionUp[1], 	0.0f,
+					Object->DirectionRight[2], 		Object->DirectionFront[2], 		Object->DirectionUp[2], 	0.0f,
+					0.0f, 							0.0f, 							0.0f, 						1.0f
+				};
+				// Create Scale Matrix.
+				math::mat<float, 4, 4> ObjectScale = {
+					Object->Scale[0], 	0.0f, 				0.0f, 				0.0f,
+					0.0f, 				Object->Scale[1], 	0.0f, 				0.0f,
+					0.0f, 				0.0f, 				Object->Scale[2], 	0.0f,
+					0.0f, 				0.0f, 				0.0f, 				1.0f
+				};
+				math::mat<float, 4, 4> ObjectTransform = ObjectTranslation * ObjectOrientation * ObjectScale;
+
+				// Matrix Transform, get global transform to world space. (Include Object Transform.)
+				math::mat<float, 4, 4> WorldTransform = ObjectTransform * MeshInstance->Transform;
+				for (int Row = 0; Row < 3; Row++) {
+					for (int Col = 0; Col < 4; Col++) {
+						// Convert from memory internal format to vulkan using proper accessors.
+						ASI.transform.matrix[Row][Col] = WorldTransform(Row, Col);
+					}
+				}
+			
+				ASI.instanceCustomIndex							;
+				ASI.mask										;
+				ASI.instanceShaderBindingTableRecordOffset		; // TODO: Figure out relation with pipeline.
+				ASI.flags										;
+				ASI.accelerationStructureReference				;
+			}
+		}
+
+		VkAccelerationStructureCreateInfoKHR ASCI{};
+		ASCI.sType					= VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
+		ASCI.pNext					= NULL;
+		ASCI.createFlags			= 0;
+		ASCI.buffer					;
+		ASCI.offset					;
+		ASCI.size					;
+		ASCI.type					= VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR;
+		ASCI.deviceAddress			;
+
+		// Create Top Level Acceleration Structure.
+		PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR = (PFN_vkCreateAccelerationStructureKHR)aContext->FunctionPointer["vkCreateAccelerationStructureKHR"];
+		VkResult Result = vkCreateAccelerationStructureKHR(aContext->Handle, &ASCI, NULL, &this->Handle);
 	}
 
 	acceleration_structure::~acceleration_structure() {
