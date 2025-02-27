@@ -19,8 +19,8 @@ namespace geodesy::core::gcl {
 		std::shared_ptr<buffer>				Buffer;
 		std::shared_ptr<buffer> 			UpdateScratchBuffer;
 		std::shared_ptr<buffer> 			BuildScratchBuffer;
-		VkAccelerationStructureKHR			AccelerationStructure;
-		VkDeviceAddress						AccelerationStructureDeviceAddress;
+		VkAccelerationStructureKHR			Handle;
+		VkDeviceAddress						DeviceAddress;
 
 		acceleration_structure();
 		// Build Bottom Level AS (Mesh Geometry Data).
@@ -29,6 +29,8 @@ namespace geodesy::core::gcl {
 
 		// Clear out resources
 		~acceleration_structure();
+
+		VkDeviceAddress device_address() const;
 
 	};
 

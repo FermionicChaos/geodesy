@@ -83,11 +83,11 @@ namespace geodesy::core::gcl {
 		ASCI.deviceAddress 		= 0;  // This is for capturing device address during creation, typically not needed
 
 		PFN_vkCreateAccelerationStructureKHR vkCreateAccelerationStructureKHR = (PFN_vkCreateAccelerationStructureKHR)aContext->FunctionPointer["vkCreateAccelerationStructureKHR"];
-		VkResult Result = vkCreateAccelerationStructureKHR(aContext->Handle, &ASCI, NULL, &AccelerationStructure);
+		VkResult Result = vkCreateAccelerationStructureKHR(aContext->Handle, &ASCI, NULL, &this->Handle);
 
 		if (Result == VK_SUCCESS) {
 			// Update ASBGI with the acceleration structure handle.
-			ASBGI.dstAccelerationStructure = AccelerationStructure;
+			ASBGI.dstAccelerationStructure = this->Handle;
 			// Update ASBGI with the scratch buffer device address.
 			ASBGI.scratchData.deviceAddress = this->Buffer->device_address();
 
@@ -121,20 +121,21 @@ namespace geodesy::core::gcl {
 			aContext->release_command_buffer(device::operation::TRANSFER_AND_COMPUTE, CommandBuffer);
 
 			// Get the device address of the acceleration structure.
-			{
-				VkAccelerationStructureDeviceAddressInfoKHR ASDAI{};
-				ASDAI.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
-				ASDAI.accelerationStructure = AccelerationStructure;
-
-				PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR = (PFN_vkGetAccelerationStructureDeviceAddressKHR)aContext->FunctionPointer["vkGetAccelerationStructureDeviceAddressKHR"];
-
-				this->AccelerationStructureDeviceAddress = vkGetAccelerationStructureDeviceAddressKHR(aContext->Handle, &ASDAI);
-			}
+			this->DeviceAddress = this->device_address();
 		}
 	}
 
 	acceleration_structure::~acceleration_structure() {
 
+	}
+
+	VkDeviceAddress acceleration_structure::device_address() const {
+		// Get AS device address.
+		VkAccelerationStructureDeviceAddressInfoKHR ASDAI{};
+		ASDAI.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR;
+		ASDAI.accelerationStructure = this->Handle;
+		PFN_vkGetAccelerationStructureDeviceAddressKHR vkGetAccelerationStructureDeviceAddressKHR = (PFN_vkGetAccelerationStructureDeviceAddressKHR)this->Context->FunctionPointer["vkGetAccelerationStructureDeviceAddressKHR"];
+		return vkGetAccelerationStructureDeviceAddressKHR(this->Context->Handle, &ASDAI);
 	}
 
 }
