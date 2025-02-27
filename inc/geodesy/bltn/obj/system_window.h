@@ -72,12 +72,12 @@ namespace geodesy::bltn::obj {
 			VkSwapchainCreateInfoKHR				CreateInfo;
 			VkSwapchainKHR							Handle;
 
-		    swapchain(std::shared_ptr<core::gcl::context> aContext, VkSurfaceKHR aSurface, const property& aProperty);
+		    swapchain(std::shared_ptr<core::gcl::context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain = VK_NULL_HANDLE);
 		    ~swapchain();
 
 			VkImageCreateInfo image_create_info() const;
 
-			VkResult next_frame(VkSemaphore& aPresentFrameSemaphore, VkSemaphore& aNextFrameSemaphore, VkFence aNextFrameFence = VK_NULL_HANDLE) override;
+			VkResult next_frame(VkSemaphore aPresentFrameSemaphore = VK_NULL_HANDLE, VkSemaphore aNextFrameSemaphore = VK_NULL_HANDLE, VkFence aNextFrameFence = VK_NULL_HANDLE) override;
 
 		private:
 

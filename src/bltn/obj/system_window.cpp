@@ -51,9 +51,9 @@ namespace geodesy::bltn::obj {
 		this->Clipped 			= aCreateInfo.clipped;		
 	}
 
-	system_window::swapchain::swapchain(std::shared_ptr<context> aContext, VkSurfaceKHR aSurface, const property& aProperty) : framechain(aContext, aProperty.FrameRate, aProperty.FrameCount) {
+	system_window::swapchain::swapchain(std::shared_ptr<core::gcl::context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain) : framechain(aContext, aProperty.FrameRate, aProperty.FrameCount) {
 		// TODO: Maybe change later to take in class?
-		VkResult Result = this->create_swapchain(aContext, aSurface, aProperty, VK_NULL_HANDLE);
+		VkResult Result = this->create_swapchain(aContext, aSurface, aProperty, aOldSwapchain);
 
 		// Setup next image semaphore.
 		std::vector<VkSemaphore> NextImageSemaphoreList = aContext->create_semaphore(Image.size(), 0);
@@ -94,7 +94,7 @@ namespace geodesy::bltn::obj {
 		return ImageCreateInfo;
 	}
 
-	VkResult system_window::swapchain::next_frame(VkSemaphore& aPresentFrameSemaphore, VkSemaphore& aNextFrameSemaphore, VkFence aNextFrameFence) {
+	VkResult system_window::swapchain::next_frame(VkSemaphore aPresentFrameSemaphore, VkSemaphore aNextFrameSemaphore, VkFence aNextFrameFence) {
 		VkResult ReturnValue = VK_SUCCESS;
 
 		// Before acquiring next image, present current image.
@@ -111,47 +111,11 @@ namespace geodesy::bltn::obj {
 			ReturnValue = vkQueuePresentKHR(Context->Queue[device::operation::PRESENT], &PresentInfo);
 		}
 
-		// Use next semaphore in queue.
-		aNextFrameSemaphore = this->NextFrameSemaphoreList.front();
-		this->NextFrameSemaphoreList.pop();
-		this->NextFrameSemaphoreList.push(aNextFrameSemaphore);
-
+		// Set previous draw index for read operations.
 		ReadIndex = DrawIndex;
-		while (true) {
-			VkResult Result = VK_SUCCESS;
-			
-			// Acquire next image from swapchain.
-			Result = vkAcquireNextImageKHR(Context->Handle, Handle, UINT64_MAX, aNextFrameSemaphore, aNextFrameFence, &DrawIndex);
 
-			// If image succussfully acquired, break loop.
-			if (Result == VK_SUCCESS) break;
-
-			// Check if window has resized.
-			if ((Result == VK_ERROR_OUT_OF_DATE_KHR) || (Result == VK_SUBOPTIMAL_KHR)) {
-				ReturnValue = Result;
-				// Create new swap chain.
-				// TODO: Acquire new image resolution?
-				swapchain::property NewProperty = swapchain::property(CreateInfo, FrameRate);
-				// Erase other swapchain image resources.
-				for (size_t i = 0; i < Image.size(); i++) {
-					Image[i]["Color"]->Handle = VK_NULL_HANDLE;
-					Image[i]["Color"]->View = VK_NULL_HANDLE;
-				}
-				this->create_swapchain(Context, Surface, NewProperty, Handle);
-				// Also reset fence.
-				if (aNextFrameFence != VK_NULL_HANDLE) {
-					Result = this->Context->wait_and_reset(aNextFrameFence);
-				}
-			}
-			else {
-				ReturnValue = Result;
-			}
-		}
-
-		// Get new present semaphore.
-		aPresentFrameSemaphore = this->PresentFrameSemaphoreList[DrawIndex];
-
-		return ReturnValue;
+		// Acquire new image.
+		return vkAcquireNextImageKHR(Context->Handle, Handle, UINT64_MAX, aNextFrameSemaphore, aNextFrameFence, &DrawIndex);
 	}
 
 	VkResult system_window::swapchain::create_swapchain(std::shared_ptr<context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain) {
@@ -198,7 +162,7 @@ namespace geodesy::bltn::obj {
 		CreateInfo.pNext					= NULL;
 		CreateInfo.flags					= 0;
 		CreateInfo.surface					= aSurface;
-		CreateInfo.minImageCount			= std::clamp(aProperty.FrameCount, SurfaceCapabilities.minImageCount, SurfaceCapabilities.maxImageCount);
+		CreateInfo.minImageCount			= std::clamp(aProperty.FrameCount, SurfaceCapabilities.minImageCount, SurfaceCapabilities.maxImageCount == 0 ? UINT32_MAX : SurfaceCapabilities.maxImageCount);
 		CreateInfo.imageFormat				= (VkFormat)aProperty.PixelFormat;
 		CreateInfo.imageColorSpace			= (VkColorSpaceKHR)aProperty.ColorSpace;
 		CreateInfo.imageExtent				= SurfaceCapabilities.currentExtent;
@@ -429,11 +393,77 @@ namespace geodesy::bltn::obj {
 	core::gcl::submission_batch system_window::render(ecs::stage* aStage) {
 		// The next frame operation will both present previously drawn frame and acquire next
 		// frame. 
+
+		// Get temp swapchain pointer handle.
+		swapchain *Swapchain = dynamic_cast<swapchain*>(this->Framechain.get());
+
+		// Get next frame semaphore from queue.
+		this->NextFrameSemaphore = Swapchain->NextFrameSemaphoreList.front();
+		
 		VkResult Result = this->Framechain->next_frame(this->PresentFrameSemaphore, this->NextFrameSemaphore);
 
 		// Rebuild pipelines and command buffers if out of date.
-		if ((Result == VK_ERROR_OUT_OF_DATE_KHR) || (Result == VK_SUBOPTIMAL_KHR)) {
+		if ((Result != VK_ERROR_OUT_OF_DATE_KHR) && (Result != VK_SUBOPTIMAL_KHR)) {
+			// ------------------------------ Rendering Operations ----------------------------- //
 
+			// Keep next frame semaphore from queue and place back.
+			Swapchain->NextFrameSemaphoreList.pop();
+			Swapchain->NextFrameSemaphoreList.push(this->NextFrameSemaphore);
+	
+			// Acquire present semaphore from vector.
+			this->PresentFrameSemaphore = Swapchain->PresentFrameSemaphoreList[Swapchain->DrawIndex];
+	
+			// Acquire predraw rendering operations.
+			this->RenderingOperations += this->Framechain->predraw();
+	
+			// Iterate through all objects in the stage.
+			gcl::command_batch StageCommandBatch;
+			for (size_t i = 0; i < aStage->Object.size(); i++) {
+				// Draw object.
+				std::vector<std::shared_ptr<object::draw_call>> ObjectDrawCall = aStage->Object[i]->draw(this);
+				std::vector<VkCommandBuffer> ObjectDrawCommand(ObjectDrawCall.size());
+				for (size_t j = 0; j < ObjectDrawCall.size(); j++) {
+					ObjectDrawCommand[j] = ObjectDrawCall[j]->DrawCommand;
+				}
+				// Group into single submission.
+				StageCommandBatch += ObjectDrawCommand;
+			}
+	
+			// Aggregate all rendering operations to subject.
+			this->RenderingOperations += StageCommandBatch;
+	
+			// Acquire image transition and present frame if exists.
+			this->RenderingOperations += this->Framechain->postdraw();
+	
+			// Setup safety dependencies for default rendering system.
+			for (size_t i = 0; i < this->RenderingOperations.size() - 1; i++) {
+				VkPipelineStageFlags Stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+				this->RenderingOperations[i + 1].depends_on(this->SemaphorePool, Stage, this->RenderingOperations[i]);
+			}
+			
+			// If system_window, make sure that next image semaphore is provided to rendering operations.
+			if (this->NextFrameSemaphore != VK_NULL_HANDLE) {
+				this->RenderingOperations.front().WaitStageList = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+				this->RenderingOperations.front().WaitSemaphoreList = { this->NextFrameSemaphore };
+			}
+
+			// If system_window, make sure that present semaphore is signaled after rendering operations.
+			if  (this->PresentFrameSemaphore != VK_NULL_HANDLE) {
+				this->RenderingOperations.back().SignalSemaphoreList = { this->PresentFrameSemaphore };
+			}
+		}
+		else {
+			// ------------------------------ Swapchain Recreate ----------------------------- //
+
+			// Clear out all rendering commands first.
+			vkDeviceWaitIdle(this->Context->Handle);
+	
+			// Create New swapchain based on old.
+			std::shared_ptr<swapchain> NewSwapchain = std::shared_ptr<swapchain>(new swapchain(this->Context, this->SurfaceHandle, swapchain::property(Swapchain->CreateInfo, Swapchain->FrameRate), Swapchain->Handle));
+	
+			// Use new swapchain to replace old.
+			this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(NewSwapchain);
+	
 			// Rebuild pipeline.
 			if (this->Pipeline->CreateInfo->BindPoint == pipeline::type::RASTERIZER) {
 				// Cast to rasterizer.
@@ -443,7 +473,7 @@ namespace geodesy::bltn::obj {
 				// Rebuild pipeline.
 				this->Pipeline = this->Context->create_pipeline(Rasterizer);
 			}
-
+	
 			// Destroy all existing commandbuffers that reference this subject.
 			for (auto& Object : aStage->Object) {
 				// clear();
@@ -451,48 +481,13 @@ namespace geodesy::bltn::obj {
 					Object->Renderer.erase(this);
 				}
 			}
+
+			// Since there has been a rebuild event, skip rendering.
+			this->PresentFrameSemaphore = VK_NULL_HANDLE;
+	
+			// Skip render phase this frame. Try again next loop.
+			this->RenderingOperations.clear();
 		}
-
-		// Acquire predraw rendering operations.
-		this->RenderingOperations += this->Framechain->predraw();
-
-		// Iterate through all objects in the stage.
-		gcl::command_batch StageCommandBatch;
-		for (size_t i = 0; i < aStage->Object.size(); i++) {
-			// Draw object.
-			std::vector<std::shared_ptr<object::draw_call>> ObjectDrawCall = aStage->Object[i]->draw(this);
-			std::vector<VkCommandBuffer> ObjectDrawCommand(ObjectDrawCall.size());
-			for (size_t j = 0; j < ObjectDrawCall.size(); j++) {
-				ObjectDrawCommand[j] = ObjectDrawCall[j]->DrawCommand;
-			}
-			// Group into single submission.
-			StageCommandBatch += ObjectDrawCommand;
-		}
-
-		// Aggregate all rendering operations to subject.
-		this->RenderingOperations += StageCommandBatch;
-
-		// Acquire image transition and present frame if exists.
-		this->RenderingOperations += this->Framechain->postdraw();
-
-		// Setup safety dependencies for default rendering system.
-		for (size_t i = 0; i < this->RenderingOperations.size() - 1; i++) {
-			VkPipelineStageFlags Stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-			this->RenderingOperations[i + 1].depends_on(this->SemaphorePool, Stage, this->RenderingOperations[i]);
-		}
-
-		// ! Only applies to system_window.
-		if (this->NextFrameSemaphore != VK_NULL_HANDLE) {
-			// If system_window, make sure that next image semaphore is provided to rendering operations.
-			this->RenderingOperations.front().WaitStageList = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
-			this->RenderingOperations.front().WaitSemaphoreList = { this->NextFrameSemaphore };
-		}
-		if  (this->PresentFrameSemaphore != VK_NULL_HANDLE) {
-			// If system_window, make sure that present semaphore is signaled after rendering operations.
-			this->RenderingOperations.back().SignalSemaphoreList = { this->PresentFrameSemaphore };
-		}
-
-		// Build submission reference object and return.
 		return build(this->RenderingOperations);
 	}
 
@@ -540,7 +535,7 @@ namespace geodesy::bltn::obj {
 			// File drop
 			glfwSetDropCallback(ReturnHandle, system_window::file_drop_callback);
 		}
-		glfwSetInputMode(ReturnHandle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		// glfwSetInputMode(ReturnHandle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		return ReturnHandle;
 	}
 

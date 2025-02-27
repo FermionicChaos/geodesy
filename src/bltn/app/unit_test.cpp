@@ -56,7 +56,7 @@ namespace geodesy::bltn {
 		// Create System Window Object.
 		system_window::creator SystemWindowCreator;
 		SystemWindowCreator.Name 			= "System Window";
-		SystemWindowCreator.Resolution 		= { 960, 540, 1 };
+		SystemWindowCreator.Resolution 		= { 1280, 720, 1 };
 		SystemWindowCreator.FrameCount 		= 3;
 		SystemWindowCreator.FrameRate 		= 60.0f;
 		SystemWindowCreator.Display 		= Engine->PrimaryDisplay;
@@ -111,9 +111,9 @@ namespace geodesy::bltn {
 				//std::cout << "Thread Over Time: " << Engine->ThreadController.work_time() - TimeStep << std::endl;
 			}
 
-			// if (timer::get_time() > 60.0f) {
-			// 	break;
-			// }
+			if (timer::get_time() > 30.0f) {
+				break;
+			}
 
 		}
 

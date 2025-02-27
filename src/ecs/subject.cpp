@@ -38,7 +38,7 @@ namespace geodesy::ecs {
 	submission_batch subject::render(stage* aStage) {
 		// The next frame operation will both present previously drawn frame and acquire next
 		// frame. 
-		VkResult Result = this->Framechain->next_frame(this->PresentFrameSemaphore, this->NextFrameSemaphore);
+		VkResult Result = this->Framechain->next_frame();
 
 		// Acquire predraw rendering operations.
 		this->RenderingOperations += this->Framechain->predraw();

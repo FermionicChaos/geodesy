@@ -35,7 +35,7 @@ namespace geodesy::core::gcl {
 		VkResult present_frame_now();
 
 		// This function is special because it presents, and acquires next frame.
-		virtual VkResult next_frame(VkSemaphore& aPresentFrameSemaphore, VkSemaphore& aNextFrameSemaphore, VkFence aNextFrameFence = VK_NULL_HANDLE);
+		virtual VkResult next_frame(VkSemaphore aPresentFrameSemaphore = VK_NULL_HANDLE, VkSemaphore aNextFrameSemaphore = VK_NULL_HANDLE, VkFence aNextFrameFence = VK_NULL_HANDLE);
 		virtual std::vector<command_batch> predraw();
 		virtual std::vector<command_batch> postdraw();
 
