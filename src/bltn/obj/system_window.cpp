@@ -398,6 +398,9 @@ namespace geodesy::bltn::obj {
 		// Get temp swapchain pointer handle.
 		swapchain *Swapchain = dynamic_cast<swapchain*>(this->Framechain.get());
 
+		// Cast to rasterizer.
+		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::dynamic_pointer_cast<pipeline::rasterizer>(this->Pipeline->CreateInfo);
+
 		// Get next frame semaphore from queue.
 		this->NextFrameSemaphore = Swapchain->NextFrameSemaphoreList.front();
 
@@ -407,7 +410,16 @@ namespace geodesy::bltn::obj {
 		}
 
 		// Rebuild pipelines and command buffers if out of date.
-		if ((Result != VK_ERROR_OUT_OF_DATE_KHR) && (Result != VK_SUBOPTIMAL_KHR) && (this->Framechain->Resolution[0] > 0) && (this->Framechain->Resolution[1] > 0)) {
+		if (
+			// Check if swapchain is out of date.
+			(Result != VK_ERROR_OUT_OF_DATE_KHR) && (Result != VK_SUBOPTIMAL_KHR) 
+			&& 
+			// Check if resolution is valid.
+			(this->Framechain->Resolution[0] > 0) && (this->Framechain->Resolution[1] > 0) 
+			&&
+			// Check if pipeline resolution matches swapchain resolution.
+			(this->Framechain->Resolution[0] == Rasterizer->Resolution[0]) && (this->Framechain->Resolution[1] == Rasterizer->Resolution[1]) 
+		) {
 			// ------------------------------ Rendering Operations ----------------------------- //
 
 			// Keep next frame semaphore from queue and place back.
@@ -471,8 +483,6 @@ namespace geodesy::bltn::obj {
 		
 				// Rebuild pipeline.
 				if (this->Pipeline->CreateInfo->BindPoint == pipeline::type::RASTERIZER) {
-					// Cast to rasterizer.
-					std::shared_ptr<pipeline::rasterizer> Rasterizer = std::dynamic_pointer_cast<pipeline::rasterizer>(this->Pipeline->CreateInfo);
 					// Resize rasterizer.
 					Rasterizer->resize(this->Framechain->Resolution);
 					// Rebuild pipeline.

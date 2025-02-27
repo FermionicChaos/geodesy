@@ -89,6 +89,7 @@ for rendering. The first windowing system is older and more stable, X11. The sec
 which is much newer. I recommend using X11, because I have not messed with Wayland.
 ```bash
 sudo apt install xorg-dev
+sudo apt-get install libxcb-glx0-dev
 ```
 
 3. Project Generation: Due to the nature of Unix Makefiles, you will need to generate
