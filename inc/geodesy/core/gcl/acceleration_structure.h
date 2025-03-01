@@ -19,6 +19,7 @@ namespace geodesy::core::gcl {
 		std::shared_ptr<buffer>				Buffer;
 		std::shared_ptr<buffer> 			UpdateScratchBuffer;
 		std::shared_ptr<buffer> 			BuildScratchBuffer;
+		std::shared_ptr<buffer> 			InstanceBuffer;
 		VkAccelerationStructureKHR			Handle;
 		VkDeviceAddress						DeviceAddress;
 

@@ -67,7 +67,7 @@ namespace geodesy::core::gcl {
 		return (VkShaderStageFlagBits)this->Stage;
 	}
 
-	VkPipelineShaderStageCreateInfo shader::stageci() {
+	VkPipelineShaderStageCreateInfo shader::pipeline_shader_stage_create_info() {
 		VkPipelineShaderStageCreateInfo Temp;
 		Temp.sType					= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 		Temp.pNext					= NULL;

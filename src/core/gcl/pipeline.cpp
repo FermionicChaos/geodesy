@@ -396,7 +396,69 @@ namespace geodesy::core::gcl {
 		this->DefaultViewport[0] = { 0.0f, 0.0f, (float)aResolution[0], (float)aResolution[1], 0.0f, 1.0f };
 	}
 
-	pipeline::raytracer::raytracer() {}
+	pipeline::raytracer::raytracer() {
+		this->MaxRecursionDepth = 0;
+	}
+
+	pipeline::raytracer::raytracer(std::vector<shader_group> aShaderGroup, uint32_t aMaxRecursionDepth) : raytracer() {
+		this->ShaderGroup = aShaderGroup;
+		this->MaxRecursionDepth = aMaxRecursionDepth;
+		
+		// Now convert shader groups from pointers into std::vector<VkRayTracingShaderGroupCreateInfoKHR> & std::vector<std::shared_ptr<shader>>.
+		std::set<std::shared_ptr<shader>> LinearizedShaderSet;
+		for (size_t i = 0; i < this->ShaderGroup.size(); i++) {
+			std::vector<std::shared_ptr<shader>> ShaderList = { this->ShaderGroup[i].GeneralShader, this->ShaderGroup[i].ClosestHitShader, this->ShaderGroup[i].AnyHitShader, this->ShaderGroup[i].MissShader };
+			// Check if any of the shaders in ShaderList exist in this->Shader.
+			for (size_t j = 0; j < ShaderList.size(); j++) {
+				LinearizedShaderSet.insert(ShaderList[j]);
+			}
+		}
+
+		// Convert into an std::vector<std::shared_ptr<shader>>.
+		this->Shader = std::vector<std::shared_ptr<shader>>(LinearizedShaderSet.begin(), LinearizedShaderSet.end());
+
+		// Compile shaders.
+		bool Success = true;
+		// Link Shader Stages.
+		if (Success) {
+			EShMessages Message = (EShMessages)(
+				EShMessages::EShMsgAST |
+				EShMessages::EShMsgSpvRules |
+				EShMessages::EShMsgVulkanRules |
+				EShMessages::EShMsgDebugInfo |
+				EShMessages::EShMsgBuiltinSymbolTable
+			);
+
+			// Link various shader stages together.
+			this->Program = std::make_shared<glslang::TProgram>();
+			for (std::shared_ptr<shader> Shd : Shader) {
+				this->Program->addShader(Shd->Handle.get());
+			}
+
+			// Link Shader Stages
+			Success = this->Program->link(Message);
+
+			// Check if Link was successful
+			if (!Success) {
+				std::cout << this->Program->getInfoLog() << std::endl;
+			}
+		}
+
+		// TODO: Build and acquire reflection variables.
+		if (Success) {
+			this->Program->buildReflection(EShReflectionAllIOVariables);
+		}
+
+		// Generate SPIRV code.
+		if (Success) {
+			glslang::SpvOptions Option;
+			spv::SpvBuildLogger Logger;
+			this->ByteCode = std::vector<std::vector<uint>>(this->Shader.size());
+			for (size_t i = 0; i < this->Shader.size(); i++) {
+				glslang::GlslangToSpv(*this->Program->getIntermediate(this->Shader[i]->Handle->getStage()), this->ByteCode[i], &Logger, &Option);
+			}
+		}
+	}
 
 	pipeline::compute::compute() {}
 
@@ -496,13 +558,7 @@ namespace geodesy::core::gcl {
 			ShaderModuleCreateInfo.codeSize				= aRasterizer->ByteCode[i].size() * sizeof(uint);
 			ShaderModuleCreateInfo.pCode				= aRasterizer->ByteCode[i].data();
 
-			this->Stage[i].sType						= VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-			this->Stage[i].pNext						= NULL;
-			this->Stage[i].flags						= 0;
-			this->Stage[i].stage						= aRasterizer->Shader[i]->get_stage();
-			this->Stage[i].module						= VK_NULL_HANDLE;
-			this->Stage[i].pName						= "main";
-			this->Stage[i].pSpecializationInfo			= NULL;
+			this->Stage[i] 								= aRasterizer->Shader[i]->pipeline_shader_stage_create_info();
 
 			Result = vkCreateShaderModule(Context->Handle, &ShaderModuleCreateInfo, NULL, &this->Stage[i].module);
 		}
@@ -644,7 +700,56 @@ namespace geodesy::core::gcl {
 		BindPoint	= VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
 		Context		= aContext;
 
-		//Result = vkCreateRayTracingPipelinesKHR(Context->handle())
+		// Generate GPU shader modules.
+		std::vector<VkPipelineShaderStageCreateInfo> PSSCI(aRaytracer->Shader.size());
+		for (size_t i = 0; i < aRaytracer->Shader.size(); i++) {
+			// Copy over compiler generated SPIRV bytecode.
+			VkShaderModuleCreateInfo SMCI{};
+			SMCI.sType			= VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+			SMCI.pNext			= NULL;
+			SMCI.flags			= 0;
+			SMCI.codeSize		= aRaytracer->ByteCode[i].size() * sizeof(uint);
+			SMCI.pCode			= aRaytracer->ByteCode[i].data();
+
+			// Fill out VkPipelineShaderStageCreateInfo.
+			PSSCI[i] = aRaytracer->Shader[i]->pipeline_shader_stage_create_info();
+
+			// Create actual GPU shader module.
+			Result = vkCreateShaderModule(aContext->Handle, &SMCI, NULL, &PSSCI[i].module);
+		}
+
+		// Generate Shader Group information.
+		std::vector<VkRayTracingShaderGroupCreateInfoKHR> RSGCI(aRaytracer->ShaderGroup.size());
+		for (size_t i = 0; i < aRaytracer->ShaderGroup.size(); i++) {
+			RSGCI[i].sType									= VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
+			RSGCI[i].pNext									= NULL;
+			RSGCI[i].type									= VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+			// incorect, ShaderGroup has pointers, you can grab indices.
+			RSGCI[i].generalShader							= aRaytracer->ShaderGroup[i].GeneralShader->Stage;
+			RSGCI[i].closestHitShader						= aRaytracer->ShaderGroup[i].ClosestHitShader->Stage;
+			RSGCI[i].anyHitShader							= aRaytracer->ShaderGroup[i].AnyHitShader->Stage;
+			// RSGCI[i].intersectionShader						= aRaytracer->ShaderGroup[i].IntersectionShader->Stage;
+		}
+
+		VkRayTracingPipelineCreateInfoKHR RTPCI{};
+		RTPCI.sType									= VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
+		RTPCI.pNext									= NULL;
+		RTPCI.flags									= 0;
+		RTPCI.stageCount							= PSSCI.size();
+		RTPCI.pStages								= PSSCI.data();
+		RTPCI.groupCount							;
+		RTPCI.pGroups								;
+		RTPCI.maxPipelineRayRecursionDepth			= aRaytracer->MaxRecursionDepth;
+		RTPCI.pLibraryInfo							= NULL;
+		RTPCI.pLibraryInterface						= NULL;
+		RTPCI.pDynamicState							= NULL;
+		RTPCI.layout								= this->Layout;
+		RTPCI.basePipelineHandle					= VK_NULL_HANDLE;
+		RTPCI.basePipelineIndex						= 0;
+
+		// Requires loading function.
+		PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR = (PFN_vkCreateRayTracingPipelinesKHR)aContext->FunctionPointer["vkCreateRayTracingPipelinesKHR"];
+		Result = vkCreateRayTracingPipelinesKHR(aContext->Handle, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &RTPCI, NULL, &Handle);
 	}
 
 	pipeline::pipeline(std::shared_ptr<context> aContext, std::shared_ptr<compute> aCompute) : pipeline() {

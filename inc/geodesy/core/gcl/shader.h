@@ -46,13 +46,12 @@ namespace geodesy::core::gcl {
 		shader(stage aShaderStage, std::string aSourceCode);
 		
 		VkShaderStageFlagBits get_stage();
-		VkPipelineShaderStageCreateInfo stageci();
+		VkPipelineShaderStageCreateInfo pipeline_shader_stage_create_info();
 
 	private:
 
 		static bool initialize();
 		static void terminate();
-		static stage eid_to_stage(file::extension aFileExtension);
 
 		// TODO: Rename to something else, does not generate SPIRV.
 		bool compile_source(stage aShaderStage, std::string aSourceCode);

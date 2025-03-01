@@ -150,12 +150,29 @@ namespace geodesy::core::gcl {
 		};
 
 		// Pre creation options for a raytracer pipeline.
-		struct raytracer {
+		struct raytracer : public create_info {
+			
+			struct shader_group {
 
-			VkRayTracingPipelineCreateInfoKHR							CreateInfo{};
+				enum type {
+					GENERAL 				= VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
+					TRIANGLES_HIT_GROUP 	= VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR,
+					PROCEDURAL_HIT_GROUP 	= VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR,
+				};
+
+				type 													Type;
+				std::shared_ptr<shader> 								GeneralShader;
+				std::shared_ptr<shader> 								ClosestHitShader;
+				std::shared_ptr<shader> 								AnyHitShader;
+				std::shared_ptr<shader> 								MissShader;
+			};
+
+			uint32_t 													MaxRecursionDepth;
+			std::vector<shader_group> 									ShaderGroup;
+			// VkPipelineDynamicStateCreateInfo							DynamicState;
 
 			raytracer();
-			//raytracer(uint32_t aShaderCount, shader** aShaderList);
+			raytracer(std::vector<shader_group> aShaderGroup, uint32_t aMaxRecursionDepth);
 
 		};
 
