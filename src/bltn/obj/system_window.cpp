@@ -551,7 +551,7 @@ namespace geodesy::bltn::obj {
 			// File drop
 			glfwSetDropCallback(ReturnHandle, system_window::file_drop_callback);
 		}
-		// glfwSetInputMode(ReturnHandle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		glfwSetInputMode(ReturnHandle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		return ReturnHandle;
 	}
 

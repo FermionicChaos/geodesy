@@ -38,7 +38,9 @@ namespace geodesy::core::io {
 	int socket_t::terminate() {
 #if defined(_WIN32) || defined(_WIN64)
 		return WSACleanup();
-#endif	
+#elif defined(__linux__) || defined(__APPLE__) || defined(MACOSX)
+		return 0;
+#endif
 	}
 
 } // namespace geodesy::core::io
