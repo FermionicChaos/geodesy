@@ -947,6 +947,38 @@ namespace geodesy::core::gcl {
 		return Result;
 	}
 
+	void pipeline::raytrace(
+		VkCommandBuffer 											aCommandBuffer,
+		std::shared_ptr<image> 										aOutputImage
+	) {
+		VkStridedDeviceAddressRegionKHR RaygenShaderBindingTable;
+		VkStridedDeviceAddressRegionKHR MissShaderBindingTable;
+		VkStridedDeviceAddressRegionKHR HitShaderBindingTable;
+		VkStridedDeviceAddressRegionKHR CallableShaderBindingTable;
+		PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR = (PFN_vkCmdTraceRaysKHR)this->Context->FunctionPointer["vkCmdTraceRaysKHR"];
+		vkCmdTraceRaysKHR(
+			aCommandBuffer, 
+			&RaygenShaderBindingTable,
+			&MissShaderBindingTable,
+			&HitShaderBindingTable,
+			&CallableShaderBindingTable,
+			aOutputImage->CreateInfo.extent.width, 
+			aOutputImage->CreateInfo.extent.height, 
+			aOutputImage->CreateInfo.extent.depth
+		);
+	}
+
+	VkResult pipeline::raytrace(
+		std::shared_ptr<image> 										aOutputImage,
+		std::shared_ptr<acceleration_structure> 					aTLAS,
+		std::map<std::pair<int, int>, std::shared_ptr<buffer>> 		aUniformBuffer,
+		std::map<std::pair<int, int>, std::shared_ptr<image>> 		aSamplerImage
+	) {
+		VkResult Result = VK_SUCCESS;
+
+		return Result;
+	}
+
 	std::vector<VkDescriptorPoolSize> pipeline::descriptor_pool_sizes() const {
 		std::map<VkDescriptorType, uint32_t> DescriptorTypeCount = this->descriptor_type_count();
 		// Convert to pool size to vector data structure.

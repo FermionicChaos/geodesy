@@ -1,0 +1,35 @@
+#version 460
+#extension GL_EXT_ray_tracing : require
+
+layout(set = 0, binding = 0) uniform accelerationStructureEXT TLAS;
+
+layout (set = 0, binding = 0) uniform Camera3DUBO {
+	vec3 Position;
+	mat4 Rotation;
+	mat4 Projection;
+} Camera3D;
+
+layout(location = 0) rayPayloadEXT vec3 Payload;
+
+void main() {
+    const vec3 origin = vec3(0.0, 0.0, 0.0);
+    const vec3 direction = vec3(0.0, 0.0, -1.0);
+
+    traceRayEXT(
+        topLevelAS, 
+        gl_RayFlagsOpaqueEXT, 
+        0xFF, 
+        0, 
+        1, 
+        0, 
+        origin, 
+        0.0, 
+        direction, 
+        10000.0, 
+        0
+    );
+
+    // Output the payload
+    vec4 color = vec4(payload, 1.0);
+    // Store the color in an image or a buffer
+}

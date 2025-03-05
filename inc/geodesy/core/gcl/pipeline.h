@@ -84,6 +84,11 @@ namespace geodesy::core::gcl {
 		struct create_info {
 		public:
 
+			// I think this interface data exists in all pipelines types.
+			// Uniform metatdata
+			std::vector<std::vector<VkDescriptorSetLayoutBinding>>		DescriptorSetLayoutBinding;			// Vulkan Spec Minimum Req: 4 Descriptor Sets
+			std::map<std::pair<int, int>, util::variable> 				DescriptorSetVariable;
+
 			type														BindPoint;
 			std::vector<std::shared_ptr<shader>> 						Shader;								// 5 Stages For Rasterization Graphics (3 are Optional)
 			std::shared_ptr<glslang::TProgram> 							Program;							// glslang linked program.
@@ -126,10 +131,6 @@ namespace geodesy::core::gcl {
 			// Vertex metadata
 			std::vector<VkVertexInputBindingDescription> 				VertexBufferBindingDescription;		// Vulkan Spec Minimum Req: 16 Vertex Buffer Bindings
 			std::vector<attribute> 										VertexAttribute;					// Vulkan Spec Minimum Req: 16 Vertex Attributes
-
-			// Uniform metatdata
-			std::vector<std::vector<VkDescriptorSetLayoutBinding>>		DescriptorSetLayoutBinding;			// Vulkan Spec Minimum Req: 4 Descriptor Sets
-			std::map<std::pair<int, int>, util::variable> 				DescriptorSetVariable;
 
 			// Attachment metadata
 			std::vector<attachment> 									ColorAttachment;					// Vulkan Spec Minimum Req: 4 Attachments
@@ -261,6 +262,17 @@ namespace geodesy::core::gcl {
 			std::vector<std::shared_ptr<image>> 						aImage,
 			std::vector<std::shared_ptr<buffer>> 						aVertexBuffer = {},
 			std::shared_ptr<buffer> 									aIndexBuffer = nullptr,
+			std::map<std::pair<int, int>, std::shared_ptr<buffer>> 		aUniformBuffer = {},
+			std::map<std::pair<int, int>, std::shared_ptr<image>> 		aSamplerImage = {}
+		);
+
+		void raytrace(
+			VkCommandBuffer 											aCommandBuffer,
+			std::shared_ptr<image> 										aOutputImage
+		);
+		VkResult raytrace(
+			std::shared_ptr<image> 										aOutputImage,
+			std::shared_ptr<acceleration_structure> 					aTLAS,
 			std::map<std::pair<int, int>, std::shared_ptr<buffer>> 		aUniformBuffer = {},
 			std::map<std::pair<int, int>, std::shared_ptr<image>> 		aSamplerImage = {}
 		);
