@@ -10,8 +10,12 @@ layout(location = 0) rayPayloadEXT ray_payload Payload;
 
 layout(set = 0, binding = 0) uniform accelerationStructureEXT TLAS;
 layout(set = 0, binding = 1, rgba8) uniform image2D PixelColor;
-// Include images from the geometry buffer.
-
+layout(set = 0, binding = 2, rgba32f) uniform image2D PixelPosition;
+layout(set = 0, binding = 3, rgba32f) uniform image2D PixelNormal;
+layout(set = 0, binding = 4, rgba8) uniform image2D PixelEmissive;
+layout(set = 0, binding = 5, rgba8) uniform image2D PixelSS;
+layout(set = 0, binding = 6, rgba8) uniform image2D PixelORM;
+layout(set = 0, binding = 7, rgba8) uniform image2D OutputColor;
 
 layout (set = 1, binding = 0) uniform Camera3DUBO {
 	vec3 Position;

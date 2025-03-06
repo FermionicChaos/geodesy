@@ -1,0 +1,87 @@
+#version 460
+#extension GL_EXT_ray_tracing : require
+
+// this shader launches a ray into the direction of each light source checking for intersections.
+// If an intersection is found, the pixel is in shadow, if not, the pixel is illuminated by the light source.
+
+#define MAX_SCENE_LIGHTS 16
+
+struct lighting_and_shadow_payload {
+    vec3 RayOrigin;
+    vec3 RayDirection;
+    vec4 Color;
+};
+
+struct light {
+    int Type;
+    vec3 Position;
+    vec3 Direction;
+    vec3 Color;
+    float Intensity;
+}
+
+// Ray Payload
+layout(location = 0) rayPayloadEXT lighting_and_shadow_payload Payload;
+
+layout(set = 0, binding = 0) uniform accelerationStructureEXT TLAS;
+layout(set = 0, binding = 1, rgba8) uniform image2D OutputColor;
+layout(set = 0, binding = 2, rgba8) uniform image2D PixelColor;
+layout(set = 0, binding = 3, rgba32f) uniform image2D PixelPosition;
+layout(set = 0, binding = 4, rgba32f) uniform image2D PixelNormal;
+layout(set = 0, binding = 5, rgba8) uniform image2D PixelEmissive;
+layout(set = 0, binding = 6, rgba8) uniform image2D PixelSS;
+layout(set = 0, binding = 7, rgba8) uniform image2D PixelORM;
+
+// Deferred shading for light sources for both lighting and shadows.
+layout(set = 1, binding = 0) uniform SceneLightsUBO {
+    light Lights[MAX_SCENE_LIGHTS];
+    int LightCount;
+};
+
+void main() {
+    ivec2 RayIndex = ivec2(gl_LaunchIDEXT.xy);
+    ivec2 Resolution = imageSize(PixelColor);
+
+    // Ray origin will start at the world position of the fragment.
+    vec3 RayOrigin = imageLoad(PixelPosition, RayIndex).xyz;
+    // Ray direction will be determined from the pixel position to the light source.
+    vec3 RayDirection = normalize(Lights[0].Position - RayOrigin);
+
+    // Final Color.
+    vec3 FinalColor = vec3(0.0);
+
+    // Iterate through each light source adding contributions per light source based on intersection
+    // with object in TLAS.
+    for (int i = 0; i < LightCount; i++) {
+        // Trace ray into scene to see if there is an intersection towards the direction of the light source.
+        traceRayEXT(
+            TLAS,
+            gl_RayFlagsOpaqueEXT,
+            0xFF,
+            0, 0, 0,
+            RayOrigin,
+            0.0,
+            RayDirection,
+            10000.0,
+        );
+    }
+
+    traceRayEXT(
+        TLAS, 
+        gl_RayFlagsOpaqueEXT, 
+        0xFF, 
+        0, 
+        1, 
+        0, 
+        RayOrigin, 
+        0.0, 
+        RayDirection, 
+        10000.0, 
+        0
+    );
+
+    // Output the payload
+    vec4 color = vec4(payload, 1.0);
+    // Store the color in an image or a buffer
+    imageStore(PixelColor, RayIndex, color);
+}
