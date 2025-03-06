@@ -109,6 +109,27 @@ namespace geodesy::core::gcl {
 		WDS.pTexelBufferView	= NULL;
 		vkUpdateDescriptorSets(this->Context->Handle, 1, &WDS, 0, NULL);	
 	}
+
+	void descriptor::array::bind(int aSet, int aBinding, int aArrayElement, std::shared_ptr<acceleration_structure> aAccelerationStructure) {
+		if ((!this->exists(aSet, aBinding)) || (aAccelerationStructure == nullptr)) return;
+		VkDescriptorSetLayoutBinding DSLB = this->get_descriptor_set_layout_binding(aSet, aBinding);
+		VkWriteDescriptorSetAccelerationStructureKHR WDSAS{};
+		WDSAS.sType								= VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
+		WDSAS.pNext								= NULL;
+		WDSAS.accelerationStructureCount		= 1;
+		WDSAS.pAccelerationStructures			= &aAccelerationStructure->Handle;
+		VkWriteDescriptorSet WDS {};
+		WDS.sType								= VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		WDS.pNext								= &WDSAS;
+		WDS.dstSet								= this->DescriptorSet[aSet];
+		WDS.dstBinding							= aBinding;
+		WDS.dstArrayElement						= aArrayElement;
+		WDS.descriptorCount						= 1;
+		WDS.descriptorType						= DSLB.descriptorType;
+		WDS.pImageInfo							= NULL;
+		WDS.pBufferInfo							= NULL;
+		WDS.pTexelBufferView					= NULL;
+	}
 	
 	void descriptor::array::bind(int aSet, int aBinding, int aArrayElement, VkBufferView aBufferView) {
 		if ((!this->exists(aSet, aBinding)) || (aBufferView == VK_NULL_HANDLE)) return;

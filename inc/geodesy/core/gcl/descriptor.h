@@ -7,6 +7,7 @@
 
 #include "buffer.h"
 #include "image.h"
+#include "acceleration_structure.h"
 
 namespace geodesy::core::gcl {
 
@@ -44,6 +45,7 @@ namespace geodesy::core::gcl {
 
 			void bind(int aSet, int aBinding, int aArrayElement, std::shared_ptr<image> aImage, image::layout aImageLayout = image::layout::SHADER_READ_ONLY_OPTIMAL);
 			void bind(int aSet, int aBinding, int aArrayElement, std::shared_ptr<buffer> aBuffer, size_t aSize = VK_WHOLE_SIZE, size_t aOffset = 0);
+			void bind(int aSet, int aBinding, int aArrayElement, std::shared_ptr<acceleration_structure> aAccelerationStructure);
 			void bind(int aSet, int aBinding, int aArrayElement, VkBufferView aBufferView);
 
 		private:
