@@ -187,8 +187,8 @@ namespace geodesy::bltn::obj {
 
 		// List of assets Camera3D will load into memory.
 		std::vector<std::string> AssetList = {
-			"assets/shader/camera3d.vert",
-			"assets/shader/camera3d.frag"
+			"assets/shader/camera3d/camera3d.vert",
+			"assets/shader/camera3d/camera3d.frag"
 		};
 
 		// Loaded host memory assets for this object's possession.

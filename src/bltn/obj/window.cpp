@@ -100,8 +100,8 @@ namespace geodesy::bltn::obj {
 		// Uses only a quad for basic shaping features, and window parameters. Mostly used for 2D graphics.
 		// Load in shaders for rendering.
 		std::vector<std::string> AssetPath = {
-			"assets/shader/window.vert",
-			"assets/shader/window.frag",
+			"assets/shader/window/window.vert",
+			"assets/shader/window/window.frag",
 		};
 
 		// Open Shader Files.
