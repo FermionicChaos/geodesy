@@ -11,6 +11,21 @@ namespace geodesy::bltn::obj {
 
 		class geometry_buffer : public core::gcl::framechain {
 		public:
+			/*
+			The Geometry Buffer contains the Following Attachments.
+			// --- Final Output --- //
+			Color: 		The Final Output color of the camera after rendering the scene plus post processing.
+			// --- Classic Opaque Geometry Buffer --- //
+			Albedo: 	The Color of the rasterized scene of all opaque and transparent objects.
+			Position: 	The Fragment Position of the rasterized scene of all opaque and transparent objects.
+			Normal: 	The Fragment Normal of the rasterized scene of all opaque and transparent objects.
+			Emissive: 	The Emissive Color of the rasterized scene of all opaque and transparent objects.
+			SS: 		The Specular & Shininess values of the rasterized scene of all opaque and transparent objects.
+			ORM: 		The Occlusion, Roughness, and Metallic values of the rasterized scene of all opaque and transparent objects.
+			Depth: 		The Depth of the rasterized scene of all opaque and transparent objects.
+			// --- Ray Traced Deferred Shading Output --- //
+			// --- Translucent Ray Tracing Layer --- //
+			*/
 			geometry_buffer(std::shared_ptr<core::gcl::context> aContext, core::math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount);
 		};
 
