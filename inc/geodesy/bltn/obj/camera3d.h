@@ -29,6 +29,22 @@ namespace geodesy::bltn::obj {
 			geometry_buffer(std::shared_ptr<core::gcl::context> aContext, core::math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount);
 		};
 
+		struct uniform_data {
+			alignas(16) core::math::vec<float, 3> 		Position;
+			alignas(16) core::math::mat<float, 4, 4> 	Rotation;
+			alignas(16) core::math::mat<float, 4, 4> 	Projection;
+			uniform_data(
+				core::math::vec<float, 3> 		aPosition, 
+				core::math::vec<float, 3> 		aDirRight,
+				core::math::vec<float, 3> 		aDirUp,
+				core::math::vec<float, 3> 		aDirForward,
+				float 							aFOV,
+				core::math::vec<uint, 3> 		aResolution,
+				float 							aNear,
+				float 							aFar
+			);
+		};
+
 		struct deferred_draw_call : object::draw_call {
 			deferred_draw_call(
 				object* 								aObject, 
@@ -61,6 +77,7 @@ namespace geodesy::bltn::obj {
 		void input(const core::hid::input& aInput) override;
 		void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f }) override;
 		std::shared_ptr<renderer> default_renderer(ecs::object* aObject) override;
+		// core::gcl::submission_batch render(ecs::stage* aStage) override;
 
 	};
 

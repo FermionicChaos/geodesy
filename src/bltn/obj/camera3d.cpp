@@ -8,45 +8,25 @@ namespace geodesy::bltn::obj {
 	using namespace geodesy::core::gfx;
 	using namespace geodesy::core::gcl;
 
-	namespace {
-
-		struct camera_uniform_data {
-			alignas(16) math::vec<float, 3> Position;
-			alignas(16) math::mat<float, 4, 4> Rotation;
-			alignas(16) math::mat<float, 4, 4> Projection;
-			camera_uniform_data(
-				math::vec<float, 3> aPosition, 
-				math::vec<float, 3> aDirRight,
-				math::vec<float, 3> aDirUp,
-				math::vec<float, 3> aDirForward,
-				float aFOV,
-				math::vec<uint, 3> aResolution,
-				float aNear,
-				float aFar
-			);
-		};
-
-		camera_uniform_data::camera_uniform_data(
-			math::vec<float, 3> aPosition, 
-			math::vec<float, 3> aDirRight,
-			math::vec<float, 3> aDirUp,
-			math::vec<float, 3> aDirForward,
-			float aFOV,
-			math::vec<uint, 3> aResolution,
-			float aNear,
-			float aFar
-		) {
-			float AspectRatio = static_cast<float>(aResolution[0]) / static_cast<float>(aResolution[1]);
-			this->Position = aPosition;
-			this->Rotation = math::mat<float, 4, 4>(
-				 aDirRight[0], 		 aDirRight[1], 		 aDirRight[2], 			0.0f,
-				-aDirUp[0], 		-aDirUp[1], 		-aDirUp[2], 			0.0f,
-				 aDirForward[0], 	 aDirForward[1], 	 aDirForward[2], 		0.0f,
-				 0.0f, 				 0.0f, 				 0.0f, 					1.0f
-			);
-			this->Projection = math::perspective(math::radians(aFOV), AspectRatio, aNear, aFar);
-		}
-
+	camera3d::uniform_data::uniform_data(
+		math::vec<float, 3> aPosition, 
+		math::vec<float, 3> aDirRight,
+		math::vec<float, 3> aDirUp,
+		math::vec<float, 3> aDirForward,
+		float aFOV,
+		math::vec<uint, 3> aResolution,
+		float aNear,
+		float aFar
+	) {
+		float AspectRatio = static_cast<float>(aResolution[0]) / static_cast<float>(aResolution[1]);
+		this->Position = aPosition;
+		this->Rotation = math::mat<float, 4, 4>(
+			 aDirRight[0], 		 aDirRight[1], 		 aDirRight[2], 			0.0f,
+			-aDirUp[0], 		-aDirUp[1], 		-aDirUp[2], 			0.0f,
+			 aDirForward[0], 	 aDirForward[1], 	 aDirForward[2], 		0.0f,
+			 0.0f, 				 0.0f, 				 0.0f, 					1.0f
+		);
+		this->Projection = math::perspective(math::radians(aFOV), AspectRatio, aNear, aFar);
 	}
 
 	camera3d::geometry_buffer::geometry_buffer(
@@ -250,7 +230,7 @@ namespace geodesy::bltn::obj {
 		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
 		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 
-		camera_uniform_data UniformData = camera_uniform_data(
+		uniform_data UniformData = uniform_data(
 			this->Position, 
 			this->DirectionRight, 
 			this->DirectionUp, 
@@ -297,7 +277,7 @@ namespace geodesy::bltn::obj {
 		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
 		this->DirectionFront			= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
 
-		*(camera_uniform_data*)this->CameraUniformBuffer->Ptr = camera_uniform_data(
+		*(uniform_data*)this->CameraUniformBuffer->Ptr = uniform_data(
 			this->Position, 
 			this->DirectionRight, 
 			this->DirectionUp, 
@@ -313,5 +293,83 @@ namespace geodesy::bltn::obj {
 		return std::dynamic_pointer_cast<ecs::object::renderer>(std::make_shared<deferred_renderer>(aObject, this));
 	}
 
+	// core::gcl::submission_batch camera3d::render(ecs::stage* aStage) {
+	// 	core::gcl::submission_batch SubmissionBatch;
+
+	// 	std::list<std::shared_ptr<draw_call>> Opaque;
+	// 	std::list<std::shared_ptr<draw_call>> Transparent;
+	// 	std::list<std::shared_ptr<draw_call>> Translucent;
+	// 	std::list<std::shared_ptr<draw_call>> PostProcess;
+
+	// 	// Iterate through all draw calls.
+	// 	for (auto& Object : aStage->Object) {
+	// 		std::vector<std::shared_ptr<draw_call>> DrawCallList = Object->draw(this);
+	// 		for (auto& DrawCall : DrawCallList) {
+	// 			// Use insert sort to sort draw calls by distance from camera.
+	// 			switch(DrawCall->TransparencyMode) {
+	// 				case gfx::material::transparency::OPAQUE: {
+	// 						// Sort nearest to the camera first.
+	// 						// insert 2.0
+	// 						// 0.2 | 0.7 | 3.3 | 4.5
+	// 						if (!Opaque.empty()) {
+	// 							// Write for loop to iterate through each element in Opaque.
+	// 							for (auto it = Opaque.begin(); it != Opaque.end(); ++it) {
+	// 								if (DrawCall->DistanceFromSubject < (*it)->DistanceFromSubject) {
+	// 									Opaque.insert(it, DrawCall);
+	// 									break;
+	// 								}
+	// 							}
+	// 						} 
+	// 						else {
+	// 							Opaque.push_back(DrawCall);
+	// 						}
+	// 					}
+	// 					break;
+	// 				case gfx::material::transparency::TRANSPARENT: {
+	// 						// This section sorts by farthest to the camera first.
+	// 						// insert 2.0
+	// 						// 4.5 | 3.3 | 0.7 | 0.2
+	// 						if (!Transparent.empty()) {
+	// 							// Write for loop to iterate through each element in Transparent.
+	// 							for (auto it = Transparent.begin(); it != Transparent.end(); ++it) {
+	// 								if (DrawCall->DistanceFromSubject > (*it)->DistanceFromSubject) {
+	// 									Transparent.insert(it, DrawCall);
+	// 									break;
+	// 								}
+	// 							}
+	// 						} 
+	// 						else {
+	// 							Transparent.push_back(DrawCall);
+	// 						}
+	// 					}
+	// 					break;
+	// 				case gfx::material::transparency::TRANSLUCENT: {
+	// 						// This section sorts by farthest to the camera first.
+	// 						// insert 2.0
+	// 						// 4.5 | 3.3 | 0.7 | 0.2
+	// 						if (!Translucent.empty()) {
+	// 							// Write for loop to iterate through each element in Transparent.
+	// 							for (auto it = Translucent.begin(); it != Translucent.end(); ++it) {
+	// 								if (DrawCall->DistanceFromSubject > (*it)->DistanceFromSubject) {
+	// 									Translucent.insert(it, DrawCall);
+	// 									break;
+	// 								}
+	// 							}
+	// 						} 
+	// 						else {
+	// 							Translucent.push_back(DrawCall);
+	// 						}
+	// 					}
+	// 					break;
+	// 				default:
+	// 					break;
+	// 			}
+	// 		}
+	// 	}
+
+	// 	// Setup Semaphore dependencies between command_batches.
+
+	// 	return SubmissionBatch;
+	// }
 
 }
