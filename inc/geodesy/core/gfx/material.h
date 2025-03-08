@@ -20,13 +20,13 @@ namespace geodesy::core::gfx {
 	class material {
 	public:
 
-		enum rendering_system {
+		enum rendering_system : int {
 			LEGACY,
 			PBR,
 			UNKNOWN
 		};
 
-		enum transparency {
+		enum transparency : int {
 			OPAQUE, 
 			TRANSPARENT,
 			TRANSLUCENT
