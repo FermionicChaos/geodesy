@@ -33,19 +33,6 @@ namespace geodesy::core::gcl {
 		return SubmitInfo;
 	}
 
-	VkPresentInfoKHR command_batch::build_present_info() const {
-		VkPresentInfoKHR PresentInfo{};
-		PresentInfo.sType 					= VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-		PresentInfo.pNext 					= NULL;
-		PresentInfo.waitSemaphoreCount 		= this->WaitSemaphoreList.size();
-		PresentInfo.pWaitSemaphores 		= this->WaitSemaphoreList.data();
-		PresentInfo.swapchainCount 			= this->Swapchain.size();
-		PresentInfo.pSwapchains 			= this->Swapchain.data();
-		PresentInfo.pImageIndices 			= this->ImageIndex.data();
-		PresentInfo.pResults 				= NULL;
-		return PresentInfo;
-	}
-
 	std::vector<command_batch> operator+(const std::vector<command_batch>& aLeftBatch, const command_batch& aRightBatch) {
 		return (aLeftBatch + std::vector<command_batch>{aRightBatch});
 	}
@@ -55,12 +42,12 @@ namespace geodesy::core::gcl {
 		size_t RightNonZeroCount = 0;
 		// Determine non zero elements in both sides.
 		for (size_t i = 0; i < aLeftBatch.size(); i++) {
-			if ((aLeftBatch[i].CommandBufferList.size() > 0) || (aLeftBatch[i].Swapchain.size() > 0)) {
+			if (aLeftBatch[i].CommandBufferList.size() > 0) {
 				LeftNonZeroCount++;
 			}
 		}
 		for (size_t i = 0; i < aRightBatch.size(); i++) {
-			if ((aRightBatch[i].CommandBufferList.size() > 0) || (aRightBatch[i].Swapchain.size() > 0)) {
+			if (aRightBatch[i].CommandBufferList.size() > 0) {
 				RightNonZeroCount++;
 			}
 		}
@@ -68,14 +55,14 @@ namespace geodesy::core::gcl {
 		size_t ResultIndex = 0;
 		// Copy over left batch.
 		for (size_t i = 0; i < aLeftBatch.size(); i++) {
-			if ((aLeftBatch[i].CommandBufferList.size() > 0) || (aLeftBatch[i].Swapchain.size() > 0)) {
+			if (aLeftBatch[i].CommandBufferList.size() > 0) {
 				Result[ResultIndex] = aLeftBatch[i];
 				ResultIndex++;
 			}
 		}
 		// Copy over right batch.
 		for (size_t i = 0; i < aRightBatch.size(); i++) {
-			if ((aRightBatch[i].CommandBufferList.size() > 0) || (aRightBatch[i].Swapchain.size() > 0)) {
+			if (aRightBatch[i].CommandBufferList.size() > 0) {
 				Result[ResultIndex] = aRightBatch[i];
 				ResultIndex++;
 			}

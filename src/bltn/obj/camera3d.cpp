@@ -409,9 +409,9 @@ namespace geodesy::bltn::obj {
 			std::vector<VkCommandBuffer> TransparentCommandBuffer = convert(TransparentVector);
 			std::vector<VkCommandBuffer> TranslucentCommandBuffer = convert(TranslucentVector);
 			// Convert to Command Batches.
-			command_batch OpaqueBatch;//(OpaqueCommandBuffer);
-			command_batch TransparentBatch;//(TransparentCommandBuffer);
-			command_batch TranslucentBatch;//(TranslucentCommandBuffer);
+			command_batch OpaqueBatch(OpaqueCommandBuffer);
+			command_batch TransparentBatch(TransparentCommandBuffer);
+			command_batch TranslucentBatch(TranslucentCommandBuffer);
 			// Add to Rendering Operations.
 			this->RenderingOperations += OpaqueBatch;
 			this->RenderingOperations += TransparentBatch;
@@ -423,6 +423,7 @@ namespace geodesy::bltn::obj {
 		// Ray Tracing Operations on Translucent Geometry Buffer.
 
 		// Post Processing Operations on Final Color Output.
+		this->RenderingOperations += this->Framechain->postdraw();
 
 		// Setup Semaphore dependencies between command_batches.
 		for (size_t i = 0; i < this->RenderingOperations.size() - 1; i++) {

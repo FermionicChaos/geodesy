@@ -106,13 +106,9 @@ namespace geodesy::core::gcl {
 		
 		VkResult execute(device::operation aDeviceOperation, VkCommandBuffer aCommandBuffer, VkFence aFence = VK_NULL_HANDLE);
 		VkResult execute(device::operation aDeviceOperation, const std::vector<VkSubmitInfo>& aSubmissionList, VkFence aFence = VK_NULL_HANDLE);
-		VkResult present(const std::vector<VkPresentInfoKHR>& aPresentationList);
-		VkResult execute(device::operation aDeviceOperation, const std::vector<VkSubmitInfo>& aSubmissionList, const std::vector<VkPresentInfoKHR>& aPresentationList = {}, VkFence aFence = VK_NULL_HANDLE);
 
 		VkResult execute_and_wait(device::operation aDeviceOperation, VkCommandBuffer aCommandBuffer);
 		VkResult execute_and_wait(device::operation aDeviceOperation, const std::vector<VkSubmitInfo>& aSubmissionList);
-		VkResult present_and_wait(const std::vector<VkPresentInfoKHR>& aPresentationList);
-		VkResult execute_and_wait(device::operation aDeviceOperation, const std::vector<VkSubmitInfo>& aSubmissionList, const std::vector<VkPresentInfoKHR>& aPresentationList);
 		
 		VkResult engine_wait(std::vector<device::operation> aDeviceOperation);
 		VkResult engine_execute(device::operation aDeviceOperation, const std::vector<VkSubmitInfo>& aSubmissionList);

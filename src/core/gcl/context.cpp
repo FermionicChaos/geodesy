@@ -581,30 +581,8 @@ namespace geodesy::core::gcl {
 	}
 
 	VkResult context::execute(device::operation aDeviceOperation, const std::vector<VkSubmitInfo>& aSubmissionList, VkFence aFence) {
-		return this->execute(aDeviceOperation, aSubmissionList, std::vector<VkPresentInfoKHR>(0), aFence);
-	}
-
-	VkResult context::present(const std::vector<VkPresentInfoKHR>& aPresentationList) {
-		return this->execute(device::operation::PRESENT, {}, aPresentationList);
-	}
-
-	VkResult context::execute(device::operation aDeviceOperation, const std::vector<VkSubmitInfo>& aSubmissionList, const std::vector<VkPresentInfoKHR>& aPresentationList, VkFence aFence) {
-		VkResult Result = VK_SUCCESS;
-
-		if ((aSubmissionList.size() == 0) && (aPresentationList.size() == 0)) return Result;
-
-		switch (aDeviceOperation) {
-		case device::operation::PRESENT:
-			for (size_t k = 0; k < aPresentationList.size(); k++) {
-				Result = vkQueuePresentKHR(Queue[aDeviceOperation], &aPresentationList[k]);
-			}
-			break;
-		default:
-			Result = vkQueueSubmit(Queue[aDeviceOperation], aSubmissionList.size(), aSubmissionList.data(), aFence);
-			break;
-		}
-
-		return Result;
+		if (aSubmissionList.size() == 0) return VK_SUCCESS;
+		return vkQueueSubmit(Queue[aDeviceOperation], aSubmissionList.size(), aSubmissionList.data(), aFence);
 	}
 
 	VkResult context::execute_and_wait(device::operation aDeviceOperation, VkCommandBuffer aCommandBuffer) {
@@ -624,17 +602,9 @@ namespace geodesy::core::gcl {
 	}
 
 	VkResult context::execute_and_wait(device::operation aDeviceOperation, const std::vector<VkSubmitInfo>& aSubmissionList) {
-		return this->execute_and_wait(aDeviceOperation, aSubmissionList, std::vector<VkPresentInfoKHR>(0));
-	}
-
-	VkResult context::present_and_wait(const std::vector<VkPresentInfoKHR>& aPresentationList) {
-		return this->execute_and_wait(device::operation::PRESENT, {}, aPresentationList);
-	}
-
-	VkResult context::execute_and_wait(device::operation aDeviceOperation, const std::vector<VkSubmitInfo>& aSubmissionList, const std::vector<VkPresentInfoKHR>& aPresentationList) {
 		VkResult Result = VK_SUCCESS;
 		VkFence Fence = this->create_fence();
-		Result = this->execute(aDeviceOperation, aSubmissionList, aPresentationList, Fence);
+		Result = this->execute(aDeviceOperation, aSubmissionList, Fence);
 		Result = this->wait(Fence);
 		this->destroy_fence(Fence);
 		return Result;

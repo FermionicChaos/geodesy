@@ -12,13 +12,9 @@ namespace geodesy::core::gcl {
 	public:
 
 		std::vector<VkSubmitInfo> 		SubmitInfo;
-		std::vector<VkPresentInfoKHR> 	PresentInfo;
 
 		submission_batch& operator+=(const VkSubmitInfo& aSubmitInfo);
 		submission_batch& operator+=(const std::vector<VkSubmitInfo>& aSubmitInfo);
-
-		submission_batch& operator+=(const VkPresentInfoKHR& aPresentInfo);
-		submission_batch& operator+=(const std::vector<VkPresentInfoKHR>& aPresentInfoKHR);
 
 		submission_batch& operator+=(submission_batch aSubmissionBatch);
 		submission_batch& operator+=(const std::vector<submission_batch>& aSubmissionBatch);

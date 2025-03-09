@@ -13,9 +13,6 @@ namespace geodesy::core::gcl {
 
 		// Can either be a VkSubmitInfo, or VkPresentInfoKHR.
 		std::vector<VkCommandBuffer> 				CommandBufferList;
-		std::vector<VkSwapchainKHR> 				Swapchain;
-		std::vector<uint32_t>						ImageIndex;
-
 		std::vector<VkSemaphore> 					WaitSemaphoreList;
 		std::vector<VkPipelineStageFlags> 			WaitStageList;
 		std::vector<VkSemaphore> 					SignalSemaphoreList;
@@ -25,7 +22,6 @@ namespace geodesy::core::gcl {
 
 		void depends_on(std::shared_ptr<semaphore_pool> aSemaphorePool, VkPipelineStageFlags aWaitStage, command_batch& aWaitBatch);
 		VkSubmitInfo build_submit_info() const;
-		VkPresentInfoKHR build_present_info() const;
 
 	};
 
