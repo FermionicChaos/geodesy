@@ -86,7 +86,7 @@ namespace geodesy::ecs {
 
 		this->Context 			= aContext;
 
-				// Create Object Model from GPU Device Context.
+		// Create Object Model from GPU Device Context.
 		if (aCreator->ModelPath != "") {
 			// Load Host Model into memory.
 			std::shared_ptr<io::file> ModelFile = Engine->FileManager.open(aCreator->ModelPath);

@@ -112,7 +112,6 @@ namespace geodesy::core::gcl {
 		
 		VkResult engine_wait(std::vector<device::operation> aDeviceOperation);
 		VkResult engine_execute(device::operation aDeviceOperation, const std::vector<VkSubmitInfo>& aSubmissionList);
-		//VkResult engine_execute(device::operation aDeviceOperation, const std::vector<VkPresentInfoKHR>& aPresentationList);
 
 	};
 
