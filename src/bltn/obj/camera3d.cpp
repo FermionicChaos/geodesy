@@ -308,16 +308,29 @@ namespace geodesy::bltn::obj {
 		return std::dynamic_pointer_cast<ecs::object::renderer>(std::make_shared<deferred_renderer>(aObject, this));
 	}
 
+	// ----- Geodesy Default 3D Real Time Rendering System ----- //
+	// this->RenderingOperations[0]: Clears all images in geometry buffer.
+	// this->RenderingOperations[1]: Opaque Mesh Instance Renderings
+	// this->RenderingOperations[2]: Transparent Mesh Instance Renderings
+	// this->RenderingOperations[3]: Translucent Mesh Instance Renderings for ray tracing.
+	// this->RenderingOperations[4]: Lighting & Shadows on Opaque Geometry Buffer
+	// this->RenderingOperations[5]: Ray Tracing informed by Translucent Outputs.
+	// this->RenderingOperations[6]: Post Processing to Final Color Output.
+	// this->RenderingOperations[7]: postdraw operations.
 	/*
 	core::gcl::submission_batch camera3d::render(ecs::stage* aStage) {
-		core::gcl::submission_batch SubmissionBatch;
 
-		std::list<std::shared_ptr<draw_call>> Opaque;
-		std::list<std::shared_ptr<draw_call>> Transparent;
-		std::list<std::shared_ptr<draw_call>> Translucent;
-		std::list<std::shared_ptr<draw_call>> PostProcess;
+		// Get next frame.
+		VkResult Result = this->Framechain->next_frame();
 
-		// Iterate through all draw calls.
+		// Predraw operations.
+		this->RenderingOperations += this->Framechain->predraw();
+
+		std::list<std::shared_ptr<draw_call>> OpaqueList;
+		std::list<std::shared_ptr<draw_call>> TransparentList;
+		std::list<std::shared_ptr<draw_call>> TranslucentList;
+
+		// Iterate through all draw calls and sort based on assigned material to mesh instance.
 		for (auto& Object : aStage->Object) {
 			std::vector<std::shared_ptr<draw_call>> DrawCallList = Object->draw(this);
 			for (auto& DrawCall : DrawCallList) {
@@ -327,17 +340,18 @@ namespace geodesy::bltn::obj {
 							// Sort nearest to the camera first.
 							// insert 2.0
 							// 0.2 | 0.7 | 3.3 | 4.5
-							if (!Opaque.empty()) {
-								// Write for loop to iterate through each element in Opaque.
-								for (auto it = Opaque.begin(); it != Opaque.end(); ++it) {
-									if (DrawCall->DistanceFromSubject < (*it)->DistanceFromSubject) {
-										Opaque.insert(it, DrawCall);
-										break;
-									}
+							// Rewrite code, when list empty, push back, and fix if larger than all elements.
+							bool Inserted = false;
+							for (auto it = OpaqueList.begin(); it != OpaqueList.end(); ++it) {
+								if (DrawCall->DistanceFromSubject < (*it)->DistanceFromSubject) {
+									OpaqueList.insert(it, DrawCall);
+									Inserted = true;
+									break;
 								}
-							} 
-							else {
-								Opaque.push_back(DrawCall);
+							}
+							// If not inserted, push back.
+							if (!Inserted) {
+								OpaqueList.push_back(DrawCall);
 							}
 						}
 						break;
@@ -345,17 +359,18 @@ namespace geodesy::bltn::obj {
 							// This section sorts by farthest to the camera first.
 							// insert 2.0
 							// 4.5 | 3.3 | 0.7 | 0.2
-							if (!Transparent.empty()) {
-								// Write for loop to iterate through each element in Transparent.
-								for (auto it = Transparent.begin(); it != Transparent.end(); ++it) {
-									if (DrawCall->DistanceFromSubject > (*it)->DistanceFromSubject) {
-										Transparent.insert(it, DrawCall);
-										break;
-									}
+							// Copy the opaque code but in reverse order.
+							bool Inserted = false;
+							for (auto it = TransparentList.begin(); it != TransparentList.end(); ++it) {
+								if (DrawCall->DistanceFromSubject > (*it)->DistanceFromSubject) {
+									TransparentList.insert(it, DrawCall);
+									Inserted = true;
+									break;
 								}
-							} 
-							else {
-								Transparent.push_back(DrawCall);
+							}
+							// If not inserted, push back.
+							if (!Inserted) {
+								TransparentList.push_back(DrawCall);
 							}
 						}
 						break;
@@ -363,17 +378,18 @@ namespace geodesy::bltn::obj {
 							// This section sorts by farthest to the camera first.
 							// insert 2.0
 							// 4.5 | 3.3 | 0.7 | 0.2
-							if (!Translucent.empty()) {
-								// Write for loop to iterate through each element in Transparent.
-								for (auto it = Translucent.begin(); it != Translucent.end(); ++it) {
-									if (DrawCall->DistanceFromSubject > (*it)->DistanceFromSubject) {
-										Translucent.insert(it, DrawCall);
-										break;
-									}
+							// Repeat the transparent code.
+							bool Inserted = false;
+							for (auto it = TranslucentList.begin(); it != TranslucentList.end(); ++it) {
+								if (DrawCall->DistanceFromSubject > (*it)->DistanceFromSubject) {
+									TranslucentList.insert(it, DrawCall);
+									Inserted = true;
+									break;
 								}
-							} 
-							else {
-								Translucent.push_back(DrawCall);
+							}
+							// If not inserted, push back.
+							if (!Inserted) {
+								TranslucentList.push_back(DrawCall);
 							}
 						}
 						break;
@@ -383,9 +399,39 @@ namespace geodesy::bltn::obj {
 			}
 		}
 
-		// Setup Semaphore dependencies between command_batches.
+		// Convert Linked List objects into command batches.
+		{
+			std::vector<std::shared_ptr<draw_call>> OpaqueVector(OpaqueList.begin(), OpaqueList.end());
+			std::vector<std::shared_ptr<draw_call>> TransparentVector(TransparentList.begin(), TransparentList.end());
+			std::vector<std::shared_ptr<draw_call>> TranslucentVector(TranslucentList.begin(), TranslucentList.end());
+			// Convert to Command Buffer arrays.
+			std::vector<VkCommandBuffer> OpaqueCommandBuffer = convert(OpaqueVector);
+			std::vector<VkCommandBuffer> TransparentCommandBuffer = convert(TransparentVector);
+			std::vector<VkCommandBuffer> TranslucentCommandBuffer = convert(TranslucentVector);
+			// Convert to Command Batches.
+			command_batch OpaqueBatch;//(OpaqueCommandBuffer);
+			command_batch TransparentBatch;//(TransparentCommandBuffer);
+			command_batch TranslucentBatch;//(TranslucentCommandBuffer);
+			// Add to Rendering Operations.
+			this->RenderingOperations += OpaqueBatch;
+			this->RenderingOperations += TransparentBatch;
+			this->RenderingOperations += TranslucentBatch;
+		}
 
-		return SubmissionBatch;
+		// Shadow & Lighting Operations on Opaque Geometry Buffer.
+
+		// Ray Tracing Operations on Translucent Geometry Buffer.
+
+		// Post Processing Operations on Final Color Output.
+
+		// Setup Semaphore dependencies between command_batches.
+		for (size_t i = 0; i < this->RenderingOperations.size() - 1; i++) {
+			VkPipelineStageFlags Stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			this->RenderingOperations[i + 1].depends_on(this->SemaphorePool, Stage, this->RenderingOperations[i]);
+		}
+
+		// Build submission batch and prepare for GPU execution.
+		return build(this->RenderingOperations);
 	}
 	//*/
 

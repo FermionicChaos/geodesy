@@ -77,7 +77,7 @@ namespace geodesy::bltn::obj {
 		void input(const core::hid::input& aInput) override;
 		void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f }) override;
 		std::shared_ptr<renderer> default_renderer(ecs::object* aObject) override;
-		//core::gcl::submission_batch render(ecs::stage* aStage) override;
+		// core::gcl::submission_batch render(ecs::stage* aStage) override;
 
 	};
 

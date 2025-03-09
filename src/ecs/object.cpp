@@ -201,10 +201,10 @@ namespace geodesy::ecs {
 		return DrawCallList;
 	}
 
-	std::vector<VkCommandBuffer> convert(std::vector<object::draw_call> aDrawCallList) {
+	std::vector<VkCommandBuffer> convert(std::vector<std::shared_ptr<object::draw_call>> aDrawCallList) {
 		std::vector<VkCommandBuffer> CommandBufferList(aDrawCallList.size());
 		for (size_t i = 0; i < aDrawCallList.size(); i++) {
-			CommandBufferList[i] = aDrawCallList[i].DrawCommand;
+			CommandBufferList[i] = aDrawCallList[i]->DrawCommand;
 		}
 		return CommandBufferList;
 	}

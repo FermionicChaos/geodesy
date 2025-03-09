@@ -139,7 +139,7 @@ namespace geodesy::ecs {
 
 	};
 
-	std::vector<VkCommandBuffer> convert(std::vector<object::draw_call> aDrawCallList);
+	std::vector<VkCommandBuffer> convert(std::vector<std::shared_ptr<object::draw_call>> aDrawCallList);
 
 }
 
