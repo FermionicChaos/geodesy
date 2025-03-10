@@ -96,6 +96,8 @@ namespace geodesy::core::gcl {
 
 			virtual ~create_info() = default;
 
+			void generate_descriptor_set_layout_binding();
+
 		};
 
 		// Pre creation options for a rasterizer pipeline.
@@ -155,17 +157,17 @@ namespace geodesy::core::gcl {
 			
 			struct shader_group {
 
-				enum type {
-					GENERAL 				= VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
-					TRIANGLES_HIT_GROUP 	= VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR,
-					PROCEDURAL_HIT_GROUP 	= VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR,
-				};
+				// enum type {
+				// 	GENERAL 				= VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
+				// 	TRIANGLES_HIT_GROUP 	= VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR,
+				// 	PROCEDURAL_HIT_GROUP 	= VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR,
+				// };
 
-				type 													Type;
+				// type 													Type;
 				std::shared_ptr<shader> 								GeneralShader;
 				std::shared_ptr<shader> 								ClosestHitShader;
 				std::shared_ptr<shader> 								AnyHitShader;
-				std::shared_ptr<shader> 								MissShader;
+				std::shared_ptr<shader> 								IntersectionShader;
 			};
 
 			uint32_t 													MaxRecursionDepth;
@@ -179,7 +181,7 @@ namespace geodesy::core::gcl {
 
 		// Pre creation options for a compute pipeline.
 		// Requires on a single compute shader.
-		struct compute {
+		struct compute : public create_info {
 
 			math::vec<uint, 3> 											GroupCount; // Number of Groups
 			math::vec<uint, 3> 											GroupSize; //  Number of Items
@@ -280,6 +282,11 @@ namespace geodesy::core::gcl {
 		std::vector<VkDescriptorPoolSize> descriptor_pool_sizes() const;
 		std::map<VkDescriptorType, uint32_t> descriptor_type_count() const;
 		std::vector<std::vector<VkDescriptorSetLayoutBinding>> descriptor_set_layout_binding() const;
+
+	private:
+
+		VkResult shader_stage_create(std::shared_ptr<create_info> aCreateInfo);
+		VkResult create_pipeline_layout(std::vector<std::vector<VkDescriptorSetLayoutBinding>> aDescriptorSetLayoutBinding);
 
 	};
 

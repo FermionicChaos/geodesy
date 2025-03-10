@@ -9,6 +9,141 @@ namespace geodesy::core::gcl {
 
 	using namespace util;
 
+	void pipeline::create_info::generate_descriptor_set_layout_binding() {
+		// This reduces code redundancy in DSLB for each pipeline type. Now all pipeline types
+		// will extract uniform metadata in the same fashion. 
+
+		// Get Uniform Blocks (uniform buffers).
+		for (size_t i = 0; i < this->Program->getNumUniformBlocks(); i++) {
+			VkDescriptorSetLayoutBinding DSLB{};
+			const glslang::TObjectReflection& Variable = this->Program->getUniformBlock(i);
+			const glslang::TType* Type = Variable.getType();
+			const glslang::TArraySizes* ArraySize = Type->getArraySizes();
+			size_t DescriptorCount = 0;
+			if (ArraySize != NULL) {
+				for (int j = 0; j < ArraySize->getNumDims(); j++) {
+					DescriptorCount += ArraySize->getDimSize(j);
+				}
+			} else {
+				DescriptorCount = 1;
+			}
+
+			int SetIndex = Type->getQualifier().layoutSet;
+			int BindingIndex = Type->getQualifier().layoutBinding;
+			std::pair<int, int> SetBinding = std::make_pair(SetIndex, BindingIndex);
+
+			// Generate Bindings for Uniform Buffers.
+			DSLB.binding = BindingIndex;
+			DSLB.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			DSLB.descriptorCount = DescriptorCount;
+			DSLB.stageFlags = glslang_shader_stage_to_vulkan(Variable.stages);
+			DSLB.pImmutableSamplers = NULL;
+
+			// Resize DescriptorSetLayoutBinding if SetIndex does not exist.
+			if (SetIndex >= this->DescriptorSetLayoutBinding.size()) {
+				this->DescriptorSetLayoutBinding.resize(SetIndex + 1);
+			}
+
+			this->DescriptorSetLayoutBinding[SetIndex].push_back(DSLB);
+			this->DescriptorSetVariable[SetBinding] = convert_to_variable(Type, Variable.name.c_str());
+		}
+		
+		// Gets buffer blocks (storage buffers).
+		for (size_t i = 0; i < this->Program->getNumBufferBlocks(); i++) {
+			VkDescriptorSetLayoutBinding DSLB{};
+			const glslang::TObjectReflection& Variable = this->Program->getBufferBlock(i);
+			const glslang::TType* Type = Variable.getType();
+			const glslang::TArraySizes* ArraySize = Type->getArraySizes();
+			size_t DescriptorCount = 0;
+			if (ArraySize != NULL) {
+				for (int j = 0; j < ArraySize->getNumDims(); j++) {
+					DescriptorCount += ArraySize->getDimSize(j);
+				}
+			} else {
+				DescriptorCount = 1;
+			}
+		
+			int SetIndex = Type->getQualifier().layoutSet;
+			int BindingIndex = Type->getQualifier().layoutBinding;
+			std::pair<int, int> SetBinding = std::make_pair(SetIndex, BindingIndex);
+		
+			// Generate Bindings for Storage Buffers.
+			DSLB.binding = BindingIndex;
+			DSLB.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+			DSLB.descriptorCount = DescriptorCount;
+			DSLB.stageFlags = glslang_shader_stage_to_vulkan(Variable.stages);
+			DSLB.pImmutableSamplers = NULL;
+		
+			// Resize DescriptorSetLayoutBinding if SetIndex does not exist.
+			if (SetIndex >= this->DescriptorSetLayoutBinding.size()) {
+				this->DescriptorSetLayoutBinding.resize(SetIndex + 1);
+			}
+		
+			this->DescriptorSetLayoutBinding[SetIndex].push_back(DSLB);
+			this->DescriptorSetVariable[SetBinding] = convert_to_variable(Type, Variable.name.c_str());
+		}
+		
+		// Acquires uniform images, samplers, acceleration structures.
+		for (int i = 0; i < this->Program->getNumUniformVariables(); i++) {
+			const glslang::TObjectReflection& Variable = this->Program->getUniform(i);
+			const glslang::TType* Type = Variable.getType();				
+			const glslang::TArraySizes* ArraySize = Type->getArraySizes();
+			size_t DescriptorCount = 0;
+			if (ArraySize != NULL) {
+				for (int j = 0; j < ArraySize->getNumDims(); j++) {
+					DescriptorCount += ArraySize->getDimSize(j);
+				}
+			} else {
+				DescriptorCount = 1;
+			}
+
+			int SetIndex = Type->getQualifier().layoutSet;
+			int BindingIndex = Type->getQualifier().layoutBinding;
+			std::pair<int, int> SetBinding = std::make_pair(SetIndex, BindingIndex);
+
+			VkDescriptorSetLayoutBinding DSLB{};
+			DSLB.binding = BindingIndex;
+			switch(Type->getBasicType()){
+			case glslang::TBasicType::EbtSampler:
+				if (Type->getSampler().isImage()) {
+					// Storage Image (read/write image)
+					DSLB.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+				} else if (Type->getSampler().isBuffer()) {
+					// Texel buffer - either uniform (read-only) or storage (read-write)
+					if (Type->getSampler().isImageClass()) {
+						// Storage texel buffer (read-write)
+						DSLB.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+					} else {
+						// Uniform texel buffer (read-only)
+						DSLB.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+					}
+				} else if (Type->getSampler().isPureSampler()) {
+					// Standalone sampler
+					DSLB.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER;
+				} else {
+					// Regular Combined Image Sampler
+					DSLB.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				}
+				break;
+			default:
+				// TODO: Add other variables later.
+				// Skip other types we don't care for.
+				continue;
+			}
+			DSLB.descriptorCount = DescriptorCount;
+			DSLB.stageFlags = glslang_shader_stage_to_vulkan(Variable.stages);
+			DSLB.pImmutableSamplers = NULL;
+
+			// Resize DescriptorSetLayoutBinding if SetIndex does not exist
+			if (SetIndex >= this->DescriptorSetLayoutBinding.size()) {
+				this->DescriptorSetLayoutBinding.resize(SetIndex + 1);
+			}
+
+			this->DescriptorSetLayoutBinding[SetIndex].push_back(DSLB);
+			this->DescriptorSetVariable[SetBinding] = convert_to_variable(Type, Variable.name.c_str());
+		}
+	}
+
 	pipeline::rasterizer::rasterizer() {
 		this->BindPoint 									= type::RASTERIZER;
 		this->InputAssembly 								= {};
@@ -95,7 +230,6 @@ namespace geodesy::core::gcl {
 		this->DepthStencilAttachment.Description.stencilStoreOp 	= VK_ATTACHMENT_STORE_OP_DONT_CARE;
 		this->DepthStencilAttachment.Description.initialLayout 		= VK_IMAGE_LAYOUT_UNDEFINED;
 		this->DepthStencilAttachment.Description.finalLayout 		= VK_IMAGE_LAYOUT_UNDEFINED;
-
 	}
 
 	pipeline::rasterizer::rasterizer(std::vector<std::shared_ptr<shader>> aShaderList, math::vec<uint, 3> aResolution) : rasterizer() {
@@ -169,81 +303,6 @@ namespace geodesy::core::gcl {
 				this->VertexAttribute[Location].Description.offset 		= 0;
 			}
 
-			// Get Uniform Blocks, Samplers, and Storage Buffers.
-			for (size_t i = 0; i < this->Program->getNumUniformBlocks(); i++) {
-				VkDescriptorSetLayoutBinding DSLB{};
-				const glslang::TObjectReflection& Variable 		= this->Program->getUniformBlock(i);
-				const glslang::TType* Type 						= Variable.getType();
-				const glslang::TArraySizes* ArraySize			= Type->getArraySizes();
-				size_t DescriptorCount							= 0;
-				if (ArraySize != NULL) {
-					for (int j = 0; j < ArraySize->getNumDims(); j++) {
-						DescriptorCount += ArraySize->getDimSize(j);
-					}
-				}
-				else {
-					DescriptorCount = 1;
-				}
-
-				int SetIndex 						= Type->getQualifier().layoutSet;
-				int BindingIndex 					= Type->getQualifier().layoutBinding;
-				std::pair<int, int> SetBinding 		= std::make_pair(SetIndex, BindingIndex);
-
-				// Generate Bindings for Uniform Buffers.
-				DSLB.binding 						= BindingIndex;
-				DSLB.descriptorType 				= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-				DSLB.descriptorCount 				= DescriptorCount;							// 
-				DSLB.stageFlags 					= glslang_shader_stage_to_vulkan(Variable.stages);
-				DSLB.pImmutableSamplers 			= NULL;
-
-				// Resize DescriptorSetLayoutBinding if SetIndex does not exist.
-				if (SetIndex >= this->DescriptorSetLayoutBinding.size()) {
-					this->DescriptorSetLayoutBinding.resize(SetIndex + 1);
-				}
-
-				this->DescriptorSetLayoutBinding[SetIndex].push_back(DSLB);
-				this->DescriptorSetVariable[SetBinding] = convert_to_variable(Type, Variable.name.c_str());
-			}
-
-			// Get Samplers from shader.
-			for (int i = 0; i < this->Program->getNumUniformVariables(); i++) {
-				const glslang::TObjectReflection& Variable 		= this->Program->getUniform(i);
-				const glslang::TType* Type 						= Variable.getType();
-				const glslang::TArraySizes* ArraySize			= Type->getArraySizes();
-				size_t DescriptorCount							= 0;
-				if (ArraySize != NULL) {
-					for (int j = 0; j < ArraySize->getNumDims(); j++) {
-						DescriptorCount += ArraySize->getDimSize(j);
-					}
-				}
-				else {
-					DescriptorCount = 1;
-				}
-
-				// Checks if type is a sampler. If block, ignore, we already have that.
-				if (Type->getBasicType() == glslang::TBasicType::EbtSampler) {
-					VkDescriptorSetLayoutBinding DSLB{};
-					int SetIndex 					= Type->getQualifier().layoutSet;
-					int BindingIndex 				= Type->getQualifier().layoutBinding;
-					std::pair<int, int> SetBinding 	= std::make_pair(SetIndex, BindingIndex);
-
-					// Generate Bindings for Samplers.
-					DSLB.binding 					= BindingIndex;
-					DSLB.descriptorType 			= VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-					DSLB.descriptorCount 			= DescriptorCount;
-					DSLB.stageFlags 				= VK_SHADER_STAGE_FRAGMENT_BIT; // Only exists in fragment shader.
-					DSLB.pImmutableSamplers 		= NULL;
-
-					// Resize DescriptorSetLayoutBinding if SetIndex does not exist.
-					if (SetIndex >= this->DescriptorSetLayoutBinding.size()) {
-						this->DescriptorSetLayoutBinding.resize(SetIndex + 1);
-					}
-
-					this->DescriptorSetLayoutBinding[SetIndex].push_back(DSLB);
-					this->DescriptorSetVariable[SetBinding] = convert_to_variable(Type, Variable.name.c_str());
-				}
-			}
-
 			// Get Framebuffer Attachment Outputs
 			this->ColorAttachment = std::vector<struct attachment>(this->Program->getNumPipeOutputs());
 			for (size_t i = 0; i < this->ColorAttachment.size(); i++) {
@@ -268,6 +327,9 @@ namespace geodesy::core::gcl {
 				this->ColorAttachment[Location].Description.initialLayout		= VK_IMAGE_LAYOUT_UNDEFINED;
 				this->ColorAttachment[Location].Description.finalLayout			= VK_IMAGE_LAYOUT_UNDEFINED;
 			}
+
+			// Generates Descriptor Set Layout Bindings.
+			this->generate_descriptor_set_layout_binding();
 
 			std::cout << "// -------------------- Pipeline Reflection Start -------------------- \\\\" << std::endl << std::endl;
 
@@ -401,24 +463,28 @@ namespace geodesy::core::gcl {
 	}
 
 	pipeline::raytracer::raytracer(std::vector<shader_group> aShaderGroup, uint32_t aMaxRecursionDepth) : raytracer() {
+		bool Success = true;
 		this->ShaderGroup = aShaderGroup;
 		this->MaxRecursionDepth = aMaxRecursionDepth;
 		
 		// Now convert shader groups from pointers into std::vector<VkRayTracingShaderGroupCreateInfoKHR> & std::vector<std::shared_ptr<shader>>.
-		std::set<std::shared_ptr<shader>> LinearizedShaderSet;
-		for (size_t i = 0; i < this->ShaderGroup.size(); i++) {
-			std::vector<std::shared_ptr<shader>> ShaderList = { this->ShaderGroup[i].GeneralShader, this->ShaderGroup[i].ClosestHitShader, this->ShaderGroup[i].AnyHitShader, this->ShaderGroup[i].MissShader };
-			// Check if any of the shaders in ShaderList exist in this->Shader.
-			for (size_t j = 0; j < ShaderList.size(); j++) {
-				LinearizedShaderSet.insert(ShaderList[j]);
+		{
+			std::set<std::shared_ptr<shader>> LinearizedShaderSet;
+			for (size_t i = 0; i < this->ShaderGroup.size(); i++) {
+				std::vector<std::shared_ptr<shader>> ShaderList = { this->ShaderGroup[i].GeneralShader, this->ShaderGroup[i].ClosestHitShader, this->ShaderGroup[i].AnyHitShader, this->ShaderGroup[i].IntersectionShader };
+				// Check if any of the shaders in ShaderList exist in this->Shader.
+				for (size_t j = 0; j < ShaderList.size(); j++) {
+					if (ShaderList[j] != nullptr) {
+						LinearizedShaderSet.insert(ShaderList[j]);
+					}
+				}
 			}
+	
+			// Convert into an std::vector<std::shared_ptr<shader>>.
+			this->Shader = std::vector<std::shared_ptr<shader>>(LinearizedShaderSet.begin(), LinearizedShaderSet.end());
 		}
 
-		// Convert into an std::vector<std::shared_ptr<shader>>.
-		this->Shader = std::vector<std::shared_ptr<shader>>(LinearizedShaderSet.begin(), LinearizedShaderSet.end());
-
 		// Compile shaders.
-		bool Success = true;
 		// Link Shader Stages.
 		if (Success) {
 			EShMessages Message = (EShMessages)(
@@ -447,6 +513,21 @@ namespace geodesy::core::gcl {
 		// TODO: Build and acquire reflection variables.
 		if (Success) {
 			this->Program->buildReflection(EShReflectionAllIOVariables);
+
+			// Generates Descriptor Set Layout Bindings.
+			this->generate_descriptor_set_layout_binding();
+		
+			// Debug output for ray tracing pipeline reflection
+			std::cout << "// -------------------- Ray Tracing Pipeline Reflection Start -------------------- \\\\" << std::endl << std::endl;
+		
+			// Print Uniforms
+			std::cout << "----- Uniform Objects -----" << std::endl;
+			for (std::pair<std::pair<int, int>, util::variable> Variable : this->DescriptorSetVariable) {
+				std::cout << "layout (set = " << Variable.first.first << ", binding = " << Variable.first.second << ") uniform " << Variable.second;
+			}
+			std::cout << std::endl;
+		
+			std::cout << "\\\\ -------------------- Ray Tracing Pipeline Reflection End -------------------- //" << std::endl;
 		}
 
 		// Generate SPIRV code.
@@ -547,78 +628,11 @@ namespace geodesy::core::gcl {
 			Result = vkCreateRenderPass(aContext->Handle, &RPCI, NULL, &this->RenderPass);
 		}
 
-		// Generate GPU Shader Modules.
-		this->Stage = std::vector<VkPipelineShaderStageCreateInfo>(aRasterizer->Shader.size());
-		for (size_t i = 0; i < this->Stage.size(); i++) {
-			VkShaderModuleCreateInfo ShaderModuleCreateInfo{};
-
-			ShaderModuleCreateInfo.sType				= VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-			ShaderModuleCreateInfo.pNext				= NULL;
-			ShaderModuleCreateInfo.flags				= 0;
-			ShaderModuleCreateInfo.codeSize				= aRasterizer->ByteCode[i].size() * sizeof(uint);
-			ShaderModuleCreateInfo.pCode				= aRasterizer->ByteCode[i].data();
-
-			this->Stage[i] 								= aRasterizer->Shader[i]->pipeline_shader_stage_create_info();
-
-			Result = vkCreateShaderModule(Context->Handle, &ShaderModuleCreateInfo, NULL, &this->Stage[i].module);
-		}
+		// Create Respective Shader Modules.
+		Result = this->shader_stage_create(aRasterizer);
 
 		// Generate Descriptor Set Layouts from Meta Data gathered from shaders.
-		if (Result == VK_SUCCESS) {
-			this->DescriptorSetLayout = std::vector<VkDescriptorSetLayout>(aRasterizer->DescriptorSetLayoutBinding.size());
-			for (size_t i = 0; i < aRasterizer->DescriptorSetLayoutBinding.size(); i++) {
-				VkDescriptorSetLayoutCreateInfo CreateInfo{};
-				CreateInfo.sType			= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-				CreateInfo.pNext			= NULL;
-				CreateInfo.flags			= 0;
-				if (aRasterizer->DescriptorSetLayoutBinding[i].size() > 0) {
-					CreateInfo.bindingCount		= aRasterizer->DescriptorSetLayoutBinding[i].size();
-					CreateInfo.pBindings		= aRasterizer->DescriptorSetLayoutBinding[i].data();
-				}
-				else {
-					CreateInfo.bindingCount		= 0;
-					CreateInfo.pBindings		= NULL;
-				}
-				// ! NOTE: We got our answer, we cannot use VK_NULL_HANDLE for empty descriptor set layouts. We have to 
-				// ! construct them even if they are empty. The only exception is if extension VK_EXT_graphics_pipeline_library 
-				// ! is enabled, then we can use VK_NULL_HANDLE to construct pipeline layouts and descriptor sets.
-				Result = vkCreateDescriptorSetLayout(Context->Handle, &CreateInfo, NULL, &this->DescriptorSetLayout[i]);
-			}
-		}
-		else {
-
-		}
-
-		// Generate Descriptor Set Pool.
-		if (Result == VK_SUCCESS) {
-			std::vector<VkDescriptorPoolSize> DescriptorPoolSize = this->descriptor_pool_sizes();
-			VkDescriptorPoolCreateInfo DPCI{};
-			DPCI.sType 				= VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-			DPCI.pNext 				= NULL;
-			DPCI.flags 				= VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-			DPCI.maxSets 			= aRasterizer->DescriptorSetLayoutBinding.size();
-			DPCI.poolSizeCount 		= DescriptorPoolSize.size();
-			DPCI.pPoolSizes 		= DescriptorPoolSize.data();
-			Result = vkCreateDescriptorPool(Context->Handle, &DPCI, NULL, &this->DescriptorPool);
-		}
-
-		// Create Pipeline Layout.
-		if (Result == VK_SUCCESS) {
-			// Create Pipeline Layout.
-			VkPipelineLayoutCreateInfo CreateInfo{};
-			CreateInfo.sType						= VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-			CreateInfo.pNext						= NULL;
-			CreateInfo.flags						= 0;
-			CreateInfo.setLayoutCount				= this->DescriptorSetLayout.size();
-			CreateInfo.pSetLayouts					= this->DescriptorSetLayout.data();
-			CreateInfo.pushConstantRangeCount		= 0;
-			CreateInfo.pPushConstantRanges			= NULL;
-
-			Result = vkCreatePipelineLayout(this->Context->Handle, &CreateInfo, NULL, &this->Layout);
-		}
-		else {
-
-		}
+		Result = this->create_pipeline_layout(aRasterizer->DescriptorSetLayoutBinding);
 
 		// Create Pipeline
 		if (Result == VK_SUCCESS) {
@@ -689,9 +703,6 @@ namespace geodesy::core::gcl {
 			// Create Rasterization Pipeline.
 			Result = vkCreateGraphicsPipelines(this->Context->Handle, this->Cache, 1, &RasterizerCreateInfo, NULL, &this->Handle);
 		}
-		else {
-
-		}
 	}
 
 	pipeline::pipeline(std::shared_ptr<context> aContext, std::shared_ptr<raytracer> aRaytracer) : pipeline() {
@@ -701,55 +712,123 @@ namespace geodesy::core::gcl {
 		Context		= aContext;
 
 		// Generate GPU shader modules.
-		std::vector<VkPipelineShaderStageCreateInfo> PSSCI(aRaytracer->Shader.size());
-		for (size_t i = 0; i < aRaytracer->Shader.size(); i++) {
-			// Copy over compiler generated SPIRV bytecode.
-			VkShaderModuleCreateInfo SMCI{};
-			SMCI.sType			= VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-			SMCI.pNext			= NULL;
-			SMCI.flags			= 0;
-			SMCI.codeSize		= aRaytracer->ByteCode[i].size() * sizeof(uint);
-			SMCI.pCode			= aRaytracer->ByteCode[i].data();
-
-			// Fill out VkPipelineShaderStageCreateInfo.
-			PSSCI[i] = aRaytracer->Shader[i]->pipeline_shader_stage_create_info();
-
-			// Create actual GPU shader module.
-			Result = vkCreateShaderModule(aContext->Handle, &SMCI, NULL, &PSSCI[i].module);
-		}
+		Result = this->shader_stage_create(aRaytracer);
 
 		// Generate Shader Group information.
 		std::vector<VkRayTracingShaderGroupCreateInfoKHR> RSGCI(aRaytracer->ShaderGroup.size());
 		for (size_t i = 0; i < aRaytracer->ShaderGroup.size(); i++) {
 			RSGCI[i].sType									= VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR;
 			RSGCI[i].pNext									= NULL;
-			RSGCI[i].type									= VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
-			// incorect, ShaderGroup has pointers, you can grab indices.
-			RSGCI[i].generalShader							= aRaytracer->ShaderGroup[i].GeneralShader->Stage;
-			RSGCI[i].closestHitShader						= aRaytracer->ShaderGroup[i].ClosestHitShader->Stage;
-			RSGCI[i].anyHitShader							= aRaytracer->ShaderGroup[i].AnyHitShader->Stage;
-			// RSGCI[i].intersectionShader						= aRaytracer->ShaderGroup[i].IntersectionShader->Stage;
+			// Use inference to determine shader group type.
+			if (aRaytracer->ShaderGroup[i].IntersectionShader != nullptr) {
+				RSGCI[i].type								= VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR;
+			}
+			else if ((aRaytracer->ShaderGroup[i].AnyHitShader != nullptr) || (aRaytracer->ShaderGroup[i].ClosestHitShader != nullptr)) {
+				RSGCI[i].type 								= VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
+			}
+			else {
+				RSGCI[i].type								= VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR;
+			}
+			// TODO: Clean up this code later for index searching template code.
+			{
+				// find general shader location index.
+				int Index = -1;
+				{
+					auto it = std::find(aRaytracer->Shader.begin(), aRaytracer->Shader.end(), aRaytracer->ShaderGroup[i].GeneralShader);
+					if (it != aRaytracer->Shader.end()) {
+						// Search for index of where this shader exists in aRaytracer->Shader.
+						Index = (int)(it - aRaytracer->Shader.begin());
+					}
+				}
+				if (Index >= 0) {
+					RSGCI[i].generalShader							= Index;
+				}
+				else {
+					RSGCI[i].generalShader							= VK_SHADER_UNUSED_KHR;
+				}
+			}
+			{
+				// find closest hit shader location index.
+				int Index = -1;
+				{
+					auto it = std::find(aRaytracer->Shader.begin(), aRaytracer->Shader.end(), aRaytracer->ShaderGroup[i].ClosestHitShader);
+					if (it != aRaytracer->Shader.end()) {
+						// Search for index of where this shader exists in aRaytracer->Shader.
+						Index = (int)(it - aRaytracer->Shader.begin());
+					}
+				}
+				if (Index >= 0) {
+					RSGCI[i].closestHitShader						= Index;
+				}
+				else {
+					RSGCI[i].closestHitShader						= VK_SHADER_UNUSED_KHR;
+				}
+			}
+			{
+				// find any hit shader location index.
+				int Index = -1;
+				{
+					auto it = std::find(aRaytracer->Shader.begin(), aRaytracer->Shader.end(), aRaytracer->ShaderGroup[i].AnyHitShader);
+					if (it != aRaytracer->Shader.end()) {
+						// Search for index of where this shader exists in aRaytracer->Shader.
+						Index = (int)(it - aRaytracer->Shader.begin());
+					}
+				}
+				if (Index >= 0) {
+					RSGCI[i].anyHitShader							= Index;
+				}
+				else {
+					RSGCI[i].anyHitShader							= VK_SHADER_UNUSED_KHR;
+				}
+			}
+			{
+				// Intersection Shader.
+				int Index = -1;
+				{
+					auto it = std::find(aRaytracer->Shader.begin(), aRaytracer->Shader.end(), aRaytracer->ShaderGroup[i].IntersectionShader);
+					if (it != aRaytracer->Shader.end()) {
+						// Search for index of where this shader exists in aRaytracer->Shader.
+						Index = (int)(it - aRaytracer->Shader.begin());
+					}
+				}
+				if (Index >= 0) {
+					RSGCI[i].intersectionShader						= Index;
+				}
+				else {
+					RSGCI[i].intersectionShader						= VK_SHADER_UNUSED_KHR;
+				}
+			}			
 		}
 
-		VkRayTracingPipelineCreateInfoKHR RTPCI{};
-		RTPCI.sType									= VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
-		RTPCI.pNext									= NULL;
-		RTPCI.flags									= 0;
-		RTPCI.stageCount							= PSSCI.size();
-		RTPCI.pStages								= PSSCI.data();
-		RTPCI.groupCount							;
-		RTPCI.pGroups								;
-		RTPCI.maxPipelineRayRecursionDepth			= aRaytracer->MaxRecursionDepth;
-		RTPCI.pLibraryInfo							= NULL;
-		RTPCI.pLibraryInterface						= NULL;
-		RTPCI.pDynamicState							= NULL;
-		RTPCI.layout								= this->Layout;
-		RTPCI.basePipelineHandle					= VK_NULL_HANDLE;
-		RTPCI.basePipelineIndex						= 0;
+		// Create Pipeline Layout.
+		Result = this->create_pipeline_layout(aRaytracer->DescriptorSetLayoutBinding);
 
-		// Requires loading function.
-		PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR = (PFN_vkCreateRayTracingPipelinesKHR)aContext->FunctionPointer["vkCreateRayTracingPipelinesKHR"];
-		Result = vkCreateRayTracingPipelinesKHR(aContext->Handle, VK_NULL_HANDLE, VK_NULL_HANDLE, 1, &RTPCI, NULL, &Handle);
+		// Create Actual Ray Tracing Pipeline.
+		if (Result == VK_SUCCESS) {
+			VkRayTracingPipelineCreateInfoKHR RTPCI{};
+			RTPCI.sType									= VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR;
+			RTPCI.pNext									= NULL;
+			RTPCI.flags									= 0;
+			RTPCI.stageCount							= this->Stage.size();
+			RTPCI.pStages								= this->Stage.data();
+			RTPCI.groupCount							= RSGCI.size();
+			RTPCI.pGroups								= RSGCI.data();
+			RTPCI.maxPipelineRayRecursionDepth			= aRaytracer->MaxRecursionDepth;
+			RTPCI.pLibraryInfo							= NULL;
+			RTPCI.pLibraryInterface						= NULL;
+			RTPCI.pDynamicState							= NULL;
+			RTPCI.layout								= this->Layout;
+			RTPCI.basePipelineHandle					= VK_NULL_HANDLE;
+			RTPCI.basePipelineIndex						= 0;
+			
+			// Requires loading function.
+			// TODO: Deferred Host Operations?
+			PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR = (PFN_vkCreateRayTracingPipelinesKHR)aContext->FunctionPointer["vkCreateRayTracingPipelinesKHR"];
+			Result = vkCreateRayTracingPipelinesKHR(aContext->Handle, VK_NULL_HANDLE, this->Cache, 1, &RTPCI, NULL, &this->Handle);
+		}
+
+		// Create Shader Binding Table.
+		if (Result == VK_SUCCESS) {}
 	}
 
 	pipeline::pipeline(std::shared_ptr<context> aContext, std::shared_ptr<compute> aCompute) : pipeline() {
@@ -1034,6 +1113,82 @@ namespace geodesy::core::gcl {
 			break;
 		}
 		return DescriptorSetLayoutBinding;
+	}
+
+	VkResult pipeline::shader_stage_create(std::shared_ptr<create_info> aCreateInfo) {
+		VkResult Result = VK_SUCCESS;
+		// Generate GPU Shader Modules.
+		this->Stage = std::vector<VkPipelineShaderStageCreateInfo>(aCreateInfo->Shader.size());
+		for (size_t i = 0; i < this->Stage.size(); i++) {
+			// Generate Shader Module Info
+			VkShaderModuleCreateInfo ShaderModuleCreateInfo{};
+			ShaderModuleCreateInfo.sType				= VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+			ShaderModuleCreateInfo.pNext				= NULL;
+			ShaderModuleCreateInfo.flags				= 0;
+			ShaderModuleCreateInfo.codeSize				= aCreateInfo->ByteCode[i].size() * sizeof(uint);
+			ShaderModuleCreateInfo.pCode				= aCreateInfo->ByteCode[i].data();
+			// Load Shader Stage Meta Data
+			this->Stage[i] 								= aCreateInfo->Shader[i]->pipeline_shader_stage_create_info();
+			// Create Shader Module
+			Result = vkCreateShaderModule(Context->Handle, &ShaderModuleCreateInfo, NULL, &this->Stage[i].module);
+		}
+		return Result;
+	}
+
+	VkResult pipeline::create_pipeline_layout(std::vector<std::vector<VkDescriptorSetLayoutBinding>> aDescriptorSetLayoutBinding) {
+		VkResult Result = VK_SUCCESS;
+		// Generate Descriptor Set Layouts from Meta Data gathered from shaders.
+		if (Result == VK_SUCCESS) {
+			this->DescriptorSetLayout = std::vector<VkDescriptorSetLayout>(aDescriptorSetLayoutBinding.size());
+			for (size_t i = 0; i < aDescriptorSetLayoutBinding.size(); i++) {
+				VkDescriptorSetLayoutCreateInfo CreateInfo{};
+				CreateInfo.sType			= VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+				CreateInfo.pNext			= NULL;
+				CreateInfo.flags			= 0;
+				if (aDescriptorSetLayoutBinding[i].size() > 0) {
+					CreateInfo.bindingCount		= aDescriptorSetLayoutBinding[i].size();
+					CreateInfo.pBindings		= aDescriptorSetLayoutBinding[i].data();
+				}
+				else {
+					CreateInfo.bindingCount		= 0;
+					CreateInfo.pBindings		= NULL;
+				}
+				// ! NOTE: We got our answer, we cannot use VK_NULL_HANDLE for empty descriptor set layouts. We have to 
+				// ! construct them even if they are empty. The only exception is if extension VK_EXT_graphics_pipeline_library 
+				// ! is enabled, then we can use VK_NULL_HANDLE to construct pipeline layouts and descriptor sets.
+				Result = vkCreateDescriptorSetLayout(Context->Handle, &CreateInfo, NULL, &this->DescriptorSetLayout[i]);
+			}
+		}
+
+		// Generate Descriptor Set Pool.
+		if (Result == VK_SUCCESS) {
+			std::vector<VkDescriptorPoolSize> DescriptorPoolSize = this->descriptor_pool_sizes();
+			VkDescriptorPoolCreateInfo DPCI{};
+			DPCI.sType 				= VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+			DPCI.pNext 				= NULL;
+			DPCI.flags 				= VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+			DPCI.maxSets 			= aDescriptorSetLayoutBinding.size();
+			DPCI.poolSizeCount 		= DescriptorPoolSize.size();
+			DPCI.pPoolSizes 		= DescriptorPoolSize.data();
+			Result = vkCreateDescriptorPool(Context->Handle, &DPCI, NULL, &this->DescriptorPool);
+		}
+
+		// Create Pipeline Layout.
+		if (Result == VK_SUCCESS) {
+			// Create Pipeline Layout.
+			VkPipelineLayoutCreateInfo CreateInfo{};
+			CreateInfo.sType						= VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+			CreateInfo.pNext						= NULL;
+			CreateInfo.flags						= 0;
+			CreateInfo.setLayoutCount				= this->DescriptorSetLayout.size();
+			CreateInfo.pSetLayouts					= this->DescriptorSetLayout.data();
+			CreateInfo.pushConstantRangeCount		= 0;
+			CreateInfo.pPushConstantRanges			= NULL;
+
+			Result = vkCreatePipelineLayout(this->Context->Handle, &CreateInfo, NULL, &this->Layout);
+		}
+
+		return Result;
 	}
 
 }
