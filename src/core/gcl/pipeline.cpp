@@ -841,14 +841,15 @@ namespace geodesy::core::gcl {
 			vkGetPhysicalDeviceProperties2(aContext->Device->Handle, &PDP2);
 
 			// Get Shader Group Handle Size.
-			uint32_t GroupHandleSize					= PDRTPP.shaderGroupHandleSize;
-			uint32_t GroupHandleAlignment				= PDRTPP.shaderGroupHandleAlignment;
-			uint32_t GroupCount							= (uint32_t)RSGCI.size();
+			uint32_t HandleSize						= PDRTPP.shaderGroupHandleSize;
+			uint32_t HandleAlignment				= PDRTPP.shaderGroupHandleAlignment;
+			uint32_t BaseAlignment 					= PDRTPP.shaderGroupBaseAlignment;
+			uint32_t GroupCount						= (uint32_t)RSGCI.size();
 
 			// Get Shader Group Handles.
-			std::vector<uint8_t> ShaderGroupHandle(GroupCount * GroupHandleSize);
+			std::vector<uint8_t> ShaderGroupHandle(GroupCount * HandleSize);
 			PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR = (PFN_vkGetRayTracingShaderGroupHandlesKHR)aContext->FunctionPointer["vkGetRayTracingShaderGroupHandlesKHR"];
-			Result = vkGetRayTracingShaderGroupHandlesKHR(aContext->Handle, this->Handle, 0, GroupCount, GroupHandleSize * GroupCount, ShaderGroupHandle.data());
+			Result = vkGetRayTracingShaderGroupHandlesKHR(aContext->Handle, this->Handle, 0, GroupCount, HandleSize * GroupCount, ShaderGroupHandle.data());
 
 			// Get Shader Region Counts
 			uint32_t RayGenCount = 0, MissCount = 0, HitCount = 0, CallableCount = 0;
@@ -872,14 +873,109 @@ namespace geodesy::core::gcl {
 					break;
 				}
 			}
+			
+			// TODO: Maybe generalize to alignment function general?
+			auto align_up = [](uint32_t aValue, uint32_t aAlignment) -> uint32_t {
+				return (aValue + aAlignment - 1) & ~(aAlignment - 1);
+			};
+			
+			// Calculate Region Sizes based on alignment.
+			uint32_t HandleSizeAligned 		= align_up(HandleSize, HandleAlignment);
+			uint32_t RayGenSize 			= align_up(RayGenCount * HandleSizeAligned, BaseAlignment);
+			uint32_t MissSize 				= align_up(MissCount * HandleSizeAligned, BaseAlignment);
+			uint32_t HitSize 				= align_up(HitCount * HandleSizeAligned, BaseAlignment);
+			uint32_t CallableSize 			= align_up(CallableCount * HandleSizeAligned, BaseAlignment);
+			uint32_t TotalSize = RayGenSize + MissSize + HitSize + CallableSize;
 
+			// Calculate offsets into SBTHM.
+			uint32_t RayGenOffset = 0;
+			uint32_t MissOffset = RayGenSize;
+			uint32_t HitOffset = MissOffset + MissSize;
+			uint32_t CallableOffset = HitOffset + HitSize;
+
+			// Get Index Map.
+			std::vector<uint32_t> RayGenIndices;
+			std::vector<uint32_t> MissIndices;
+			std::vector<uint32_t> HitIndices;
+			std::vector<uint32_t> CallableIndices;
+			for (size_t i = 0; i < aRaytracer->Shader.size(); i++) {
+				switch(aRaytracer->Shader[i]->Stage) {
+				case shader::stage::RAYGEN:
+					RayGenIndices.push_back(i);
+					break;
+				case shader::stage::MISS:
+					MissIndices.push_back(i);
+					break;
+				case shader::stage::CLOSEST_HIT:
+				case shader::stage::ANY_HIT:
+				case shader::stage::INTERSECTION:
+					HitIndices.push_back(i);
+					break;
+				case shader::stage::CALLABLE:
+					CallableIndices.push_back(i);
+					break;
+				default:
+					break;
+				}
+			}
+			
+			// Load Host memory object with handles.
+			std::vector<uint8_t> SBTHM(TotalSize);
+			for (size_t i = 0; i < RayGenIndices.size(); i++) {
+				memcpy(
+					SBTHM.data() + RayGenOffset + i*HandleSizeAligned,
+					ShaderGroupHandle.data() + RayGenIndices[i]*HandleSize, 
+					HandleSize
+				);
+			}
+			for (size_t i = 0; i < MissIndices.size(); i++) {
+				memcpy(
+					SBTHM.data() + MissOffset + i*HandleSizeAligned,
+					ShaderGroupHandle.data() + MissIndices[i]*HandleSize, 
+					HandleSize
+				);
+			}
+			for (size_t i = 0; i < HitIndices.size(); i++) {
+				memcpy(
+					SBTHM.data() + HitOffset + i*HandleSizeAligned,
+					ShaderGroupHandle.data() + HitIndices[i]*HandleSize, 
+					HandleSize
+				);
+			}
+			for (size_t i = 0; i < CallableIndices.size(); i++) {
+				memcpy(
+					SBTHM.data() + CallableOffset + i*HandleSizeAligned,
+					ShaderGroupHandle.data() + CallableIndices[i]*HandleSize, 
+					HandleSize
+				);
+			}
+			
 			// Create Shader Binding Table.
 			buffer::create_info SBTCI{};
 			SBTCI.Usage = buffer::usage::SHADER_BINDING_TABLE_KHR | buffer::usage::SHADER_DEVICE_ADDRESS_KHR | buffer::usage::TRANSFER_DST | buffer::usage::TRANSFER_SRC;
 			SBTCI.Memory = device::memory::DEVICE_LOCAL;
 
-			// TODO: Figure out regions
-			
+			// Create Actual Buffer.
+			this->ShaderBindingTable.Buffer = aContext->create_buffer(SBTCI, TotalSize, SBTHM.data());
+
+			// Get addresses for each region for vkCmdTraceRaysKHR().
+			VkDeviceAddress SBTBaseAddress = this->ShaderBindingTable.Buffer->device_address();
+
+			this->ShaderBindingTable.Raygen.deviceAddress 		= SBTBaseAddress + RayGenOffset;
+			this->ShaderBindingTable.Raygen.stride 				= HandleSizeAligned;
+			this->ShaderBindingTable.Raygen.size 				= RayGenSize;
+
+			this->ShaderBindingTable.Miss.deviceAddress 		= SBTBaseAddress + MissOffset;
+			this->ShaderBindingTable.Miss.stride 				= HandleSizeAligned;
+			this->ShaderBindingTable.Miss.size 					= MissSize;
+
+			this->ShaderBindingTable.Hit.deviceAddress 			= SBTBaseAddress + HitOffset;
+			this->ShaderBindingTable.Hit.stride 				= HandleSizeAligned;
+			this->ShaderBindingTable.Hit.size 					= HitSize;
+
+			this->ShaderBindingTable.Callable.deviceAddress 	= SBTBaseAddress + CallableOffset;
+			this->ShaderBindingTable.Callable.stride 			= HandleSizeAligned;
+			this->ShaderBindingTable.Callable.size 				= CallableSize;
 		}
 	}
 
@@ -1080,22 +1176,18 @@ namespace geodesy::core::gcl {
 
 	void pipeline::raytrace(
 		VkCommandBuffer 											aCommandBuffer,
-		std::shared_ptr<image> 										aOutputImage
+		math::vec<uint, 3> 											aResolution
 	) {
-		VkStridedDeviceAddressRegionKHR RaygenShaderBindingTable;
-		VkStridedDeviceAddressRegionKHR MissShaderBindingTable;
-		VkStridedDeviceAddressRegionKHR HitShaderBindingTable;
-		VkStridedDeviceAddressRegionKHR CallableShaderBindingTable;
 		PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR = (PFN_vkCmdTraceRaysKHR)this->Context->FunctionPointer["vkCmdTraceRaysKHR"];
 		vkCmdTraceRaysKHR(
 			aCommandBuffer, 
-			&RaygenShaderBindingTable,
-			&MissShaderBindingTable,
-			&HitShaderBindingTable,
-			&CallableShaderBindingTable,
-			aOutputImage->CreateInfo.extent.width, 
-			aOutputImage->CreateInfo.extent.height, 
-			aOutputImage->CreateInfo.extent.depth
+			&this->ShaderBindingTable.Raygen,
+			&this->ShaderBindingTable.Miss,
+			&this->ShaderBindingTable.Hit,
+			&this->ShaderBindingTable.Callable,
+			aResolution[0], 
+			aResolution[1], 
+			aResolution[2]
 		);
 	}
 
@@ -1106,7 +1198,7 @@ namespace geodesy::core::gcl {
 		std::map<std::pair<int, int>, std::shared_ptr<image>> 		aSamplerImage
 	) {
 		VkResult Result = VK_SUCCESS;
-
+		// TODO: This is an immediate mode execution.
 		return Result;
 	}
 

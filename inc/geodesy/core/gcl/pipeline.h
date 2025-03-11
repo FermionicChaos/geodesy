@@ -171,10 +171,11 @@ namespace geodesy::core::gcl {
 			};
 
 			struct shader_binding_table {
-				std::shared_ptr<buffer> 		RaygenRegion;
-				std::shared_ptr<buffer> 		MissRegion;
-				std::shared_ptr<buffer> 		HitRegion;
-				std::shared_ptr<buffer> 		CallableRegion;
+				std::shared_ptr<buffer> 		Buffer;
+				VkStridedDeviceAddressRegionKHR Raygen;
+				VkStridedDeviceAddressRegionKHR Miss;
+				VkStridedDeviceAddressRegionKHR Hit;
+				VkStridedDeviceAddressRegionKHR Callable;
 			};
 
 			uint32_t 						MaxRecursionDepth;
@@ -279,7 +280,7 @@ namespace geodesy::core::gcl {
 
 		void raytrace(
 			VkCommandBuffer 											aCommandBuffer,
-			std::shared_ptr<image> 										aOutputImage
+			math::vec<uint, 3> 											aResolution
 		);
 		VkResult raytrace(
 			std::shared_ptr<image> 										aOutputImage,
