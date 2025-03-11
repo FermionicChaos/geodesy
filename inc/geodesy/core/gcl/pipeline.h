@@ -163,16 +163,22 @@ namespace geodesy::core::gcl {
 				// 	PROCEDURAL_HIT_GROUP 	= VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR,
 				// };
 
-				// type 													Type;
-				std::shared_ptr<shader> 								GeneralShader;
-				std::shared_ptr<shader> 								ClosestHitShader;
-				std::shared_ptr<shader> 								AnyHitShader;
-				std::shared_ptr<shader> 								IntersectionShader;
+				// type 						Type;
+				std::shared_ptr<shader> 		GeneralShader;
+				std::shared_ptr<shader> 		ClosestHitShader;
+				std::shared_ptr<shader> 		AnyHitShader;
+				std::shared_ptr<shader> 		IntersectionShader;
 			};
 
-			uint32_t 													MaxRecursionDepth;
-			std::vector<shader_group> 									ShaderGroup;
-			// VkPipelineDynamicStateCreateInfo							DynamicState;
+			struct shader_binding_table {
+				std::shared_ptr<buffer> 		RaygenRegion;
+				std::shared_ptr<buffer> 		MissRegion;
+				std::shared_ptr<buffer> 		HitRegion;
+				std::shared_ptr<buffer> 		CallableRegion;
+			};
+
+			uint32_t 						MaxRecursionDepth;
+			std::vector<shader_group> 		ShaderGroup;
 
 			raytracer();
 			raytracer(std::vector<shader_group> aShaderGroup, uint32_t aMaxRecursionDepth);
@@ -204,13 +210,16 @@ namespace geodesy::core::gcl {
 		// Pipline Construction.
 		std::shared_ptr<context>								Context;
 		std::vector<VkPipelineShaderStageCreateInfo> 			Stage;
-		VkRenderPass											RenderPass;
 		VkPipelineBindPoint 									BindPoint;
 		VkPipelineLayout 										Layout;
 		VkPipelineCache 										Cache;
 		VkPipeline 												Handle;
 		VkDescriptorPool 										DescriptorPool;
 		std::vector<VkDescriptorSetLayout> 						DescriptorSetLayout;
+		// Rasterizer Specific
+		VkRenderPass											RenderPass;
+		// Raytracer Specific
+		raytracer::shader_binding_table 						ShaderBindingTable;
 
 		pipeline();
 

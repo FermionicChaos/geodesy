@@ -828,7 +828,59 @@ namespace geodesy::core::gcl {
 		}
 
 		// Create Shader Binding Table.
-		if (Result == VK_SUCCESS) {}
+		if (Result == VK_SUCCESS) {
+			VkPhysicalDeviceRayTracingPipelinePropertiesKHR PDRTPP{};
+			PDRTPP.sType								= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR;
+			PDRTPP.pNext								= NULL;
+
+			VkPhysicalDeviceProperties2 PDP2{};
+			PDP2.sType									= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+			PDP2.pNext									= &PDRTPP;
+
+			// Get Physical Device Properties.
+			vkGetPhysicalDeviceProperties2(aContext->Device->Handle, &PDP2);
+
+			// Get Shader Group Handle Size.
+			uint32_t GroupHandleSize					= PDRTPP.shaderGroupHandleSize;
+			uint32_t GroupHandleAlignment				= PDRTPP.shaderGroupHandleAlignment;
+			uint32_t GroupCount							= (uint32_t)RSGCI.size();
+
+			// Get Shader Group Handles.
+			std::vector<uint8_t> ShaderGroupHandle(GroupCount * GroupHandleSize);
+			PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR = (PFN_vkGetRayTracingShaderGroupHandlesKHR)aContext->FunctionPointer["vkGetRayTracingShaderGroupHandlesKHR"];
+			Result = vkGetRayTracingShaderGroupHandlesKHR(aContext->Handle, this->Handle, 0, GroupCount, GroupHandleSize * GroupCount, ShaderGroupHandle.data());
+
+			// Get Shader Region Counts
+			uint32_t RayGenCount = 0, MissCount = 0, HitCount = 0, CallableCount = 0;
+			for (size_t i = 0; i < aRaytracer->Shader.size(); i++) {
+				switch (aRaytracer->Shader[i]->Stage) {
+				case shader::stage::RAYGEN:
+					RayGenCount++;
+					break;
+				case shader::stage::MISS:
+					MissCount++;
+					break;
+				case shader::stage::CLOSEST_HIT:
+				case shader::stage::ANY_HIT:
+				case shader::stage::INTERSECTION:
+					HitCount++;
+					break;
+				case shader::stage::CALLABLE:
+					CallableCount++;
+					break;
+				default:
+					break;
+				}
+			}
+
+			// Create Shader Binding Table.
+			buffer::create_info SBTCI{};
+			SBTCI.Usage = buffer::usage::SHADER_BINDING_TABLE_KHR | buffer::usage::SHADER_DEVICE_ADDRESS_KHR | buffer::usage::TRANSFER_DST | buffer::usage::TRANSFER_SRC;
+			SBTCI.Memory = device::memory::DEVICE_LOCAL;
+
+			// TODO: Figure out regions
+			
+		}
 	}
 
 	pipeline::pipeline(std::shared_ptr<context> aContext, std::shared_ptr<compute> aCompute) : pipeline() {
