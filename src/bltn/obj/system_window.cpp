@@ -18,7 +18,7 @@ namespace geodesy::bltn::obj {
 
 	using namespace core;
 	using namespace util;
-	using namespace gcl;
+	using namespace gpu;
 
 	// // Signals to update thread to create window handle
 	// // Needed backend for system window creation
@@ -51,7 +51,7 @@ namespace geodesy::bltn::obj {
 		this->Clipped 			= aCreateInfo.clipped;		
 	}
 
-	system_window::swapchain::swapchain(std::shared_ptr<core::gcl::context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain) : framechain(aContext, aProperty.FrameRate, aProperty.FrameCount) {
+	system_window::swapchain::swapchain(std::shared_ptr<core::gpu::context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain) : framechain(aContext, aProperty.FrameRate, aProperty.FrameCount) {
 		// TODO: Maybe change later to take in class?
 		VkResult Result = this->create_swapchain(aContext, aSurface, aProperty, aOldSwapchain);
 
@@ -121,7 +121,7 @@ namespace geodesy::bltn::obj {
 	VkResult system_window::swapchain::create_swapchain(std::shared_ptr<context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain) {
 		VkResult Result = VK_SUCCESS;
 
-        std::shared_ptr<gcl::device> aDevice                = aContext->Device;
+        std::shared_ptr<gpu::device> aDevice                = aContext->Device;
 		VkSurfaceCapabilitiesKHR SurfaceCapabilities		= aDevice->get_surface_capabilities(aSurface);
 		std::vector<VkSurfaceFormatKHR> SurfaceFormat	    = aDevice->get_surface_format(aSurface);
 		std::vector<VkPresentModeKHR> PresentMode		    = aDevice->get_surface_present_mode(aSurface);
@@ -257,7 +257,7 @@ namespace geodesy::bltn::obj {
 		return { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 	}
 
-	void system_window::check_present_support(core::gcl::device* aDevice) {
+	void system_window::check_present_support(core::gpu::device* aDevice) {
 		VkResult Result = VK_SUCCESS;
 		GLFWwindow* DummyWindow = NULL;
 		VkSurfaceKHR DummySurface = VK_NULL_HANDLE;
@@ -300,8 +300,8 @@ namespace geodesy::bltn::obj {
 			VkBool32 PresentSupport = VK_FALSE;
 			Result = vkGetPhysicalDeviceSurfaceSupportKHR(aDevice->Handle, i, DummySurface, &PresentSupport);
 			if (PresentSupport == VK_TRUE) {
-				aDevice->QueueFamilyProperty[i].OperationBitfield |= core::gcl::device::operation::PRESENT;
-				aDevice->QueueFamilyProperty[i].OperationList.push_back(core::gcl::device::operation::PRESENT);
+				aDevice->QueueFamilyProperty[i].OperationBitfield |= core::gpu::device::operation::PRESENT;
+				aDevice->QueueFamilyProperty[i].OperationList.push_back(core::gpu::device::operation::PRESENT);
 			}
 		}
 	}
@@ -341,7 +341,7 @@ namespace geodesy::bltn::obj {
 		this->Clipped			= true;
 	}
 
-	system_window::system_window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aSystemWindowCreator) : window(aContext, aStage, aSystemWindowCreator) {
+	system_window::system_window(std::shared_ptr<core::gpu::context> aContext, ecs::stage* aStage, creator* aSystemWindowCreator) : window(aContext, aStage, aSystemWindowCreator) {
 		VkResult Result = VK_SUCCESS;
 
 		// Create GLFW System Window.
@@ -371,7 +371,7 @@ namespace geodesy::bltn::obj {
 			SwapchainProperty.PresentMode		= aSystemWindowCreator->PresentMode;
 			SwapchainProperty.Clipped			= aSystemWindowCreator->Clipped;
 			std::shared_ptr<swapchain> Swapchain(new swapchain(aContext, this->SurfaceHandle, SwapchainProperty));
-			this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(Swapchain);
+			this->Framechain = std::dynamic_pointer_cast<core::gpu::framechain>(Swapchain);
 		}
 
 	}
@@ -390,7 +390,7 @@ namespace geodesy::bltn::obj {
 		this->Time += aDeltaTime;
 	}
 
-	core::gcl::submission_batch system_window::render(ecs::stage* aStage) {
+	core::gpu::submission_batch system_window::render(ecs::stage* aStage) {
 		VkResult Result = VK_SUCCESS;
 		// The next frame operation will both present previously drawn frame and acquire next
 		// frame. 
@@ -433,7 +433,7 @@ namespace geodesy::bltn::obj {
 			this->RenderingOperations += this->Framechain->predraw();
 	
 			// Iterate through all objects in the stage.
-			gcl::command_batch StageCommandBatch;
+			gpu::command_batch StageCommandBatch;
 			for (size_t i = 0; i < aStage->Object.size(); i++) {
 				// Draw object.
 				std::vector<std::shared_ptr<object::draw_call>> ObjectDrawCall = aStage->Object[i]->draw(this);
@@ -479,7 +479,7 @@ namespace geodesy::bltn::obj {
 				std::shared_ptr<swapchain> NewSwapchain = std::shared_ptr<swapchain>(new swapchain(this->Context, this->SurfaceHandle, swapchain::property(Swapchain->CreateInfo, Swapchain->FrameRate), Swapchain->Handle));
 		
 				// Use new swapchain to replace old.
-				this->Framechain = std::dynamic_pointer_cast<core::gcl::framechain>(NewSwapchain);
+				this->Framechain = std::dynamic_pointer_cast<core::gpu::framechain>(NewSwapchain);
 		
 				// Rebuild pipeline.
 				if (this->Pipeline->CreateInfo->BindPoint == pipeline::type::RASTERIZER) {

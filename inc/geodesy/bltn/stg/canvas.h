@@ -11,7 +11,7 @@ namespace geodesy::bltn::stg {
 	class canvas : public ecs::stage {
 	public:
 
-		canvas(std::shared_ptr<core::gcl::context> aContext, std::string aName, std::shared_ptr<obj::window> aWindow);
+		canvas(std::shared_ptr<core::gpu::context> aContext, std::string aName, std::shared_ptr<obj::window> aWindow);
 
 	};	
 

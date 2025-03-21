@@ -6,7 +6,7 @@ namespace geodesy::bltn::obj {
 
 	using namespace geodesy::core;
 	using namespace geodesy::core::gfx;
-	using namespace geodesy::core::gcl;
+	using namespace geodesy::core::gpu;
 
 	camera3d::uniform_data::uniform_data(
 		math::vec<float, 3> aPosition, 
@@ -164,7 +164,7 @@ namespace geodesy::bltn::obj {
 		}
 	}
 
-	camera3d::camera3d(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aCamera3DCreator) : ecs::subject(aContext, aStage, aCamera3DCreator) {
+	camera3d::camera3d(std::shared_ptr<core::gpu::context> aContext, ecs::stage* aStage, creator* aCamera3DCreator) : ecs::subject(aContext, aStage, aCamera3DCreator) {
 		VkResult Result = VK_SUCCESS;
 		engine* Engine = aContext->Device->Engine;
 		this->FOV 	= aCamera3DCreator->FOV;
@@ -193,9 +193,9 @@ namespace geodesy::bltn::obj {
 		this->Framechain = std::dynamic_pointer_cast<framechain>(std::make_shared<geometry_buffer>(aContext, aCamera3DCreator->Resolution, aCamera3DCreator->FrameRate, aCamera3DCreator->FrameCount));
 
 		// Grab shaders from asset list, compile, and link.
-		std::shared_ptr<gcl::shader> VertexShader = std::dynamic_pointer_cast<gcl::shader>(Asset[0]);
-		std::shared_ptr<gcl::shader> PixelShader = std::dynamic_pointer_cast<gcl::shader>(Asset[1]);
-		std::vector<std::shared_ptr<gcl::shader>> ShaderList = { VertexShader, PixelShader };
+		std::shared_ptr<gpu::shader> VertexShader = std::dynamic_pointer_cast<gpu::shader>(Asset[0]);
+		std::shared_ptr<gpu::shader> PixelShader = std::dynamic_pointer_cast<gpu::shader>(Asset[1]);
+		std::vector<std::shared_ptr<gpu::shader>> ShaderList = { VertexShader, PixelShader };
 		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::make_shared<pipeline::rasterizer>(ShaderList, aCamera3DCreator->Resolution);
 
 		// This code specifies how the vextex data is to be interpreted from the bound vertex buffers.
@@ -318,7 +318,7 @@ namespace geodesy::bltn::obj {
 	// this->RenderingOperations[6]: Post Processing to Final Color Output.
 	// this->RenderingOperations[7]: postdraw operations.
 	/*
-	core::gcl::submission_batch camera3d::render(ecs::stage* aStage) {
+	core::gpu::submission_batch camera3d::render(ecs::stage* aStage) {
 
 		// Get next frame.
 		VkResult Result = this->Framechain->next_frame();

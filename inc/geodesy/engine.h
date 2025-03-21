@@ -14,7 +14,7 @@
 #include "core/lgc.h"
 #include "core/phys.h"
 #include "core/hid.h"
-#include "core/gcl.h"
+#include "core/gpu.h"
 #include "core/gfx.h"
 #include "core/sfx.h"
 
@@ -96,18 +96,18 @@ namespace geodesy {
 
 		VkInstance																Handle;
 		std::vector<std::shared_ptr<bltn::obj::system_display>> 				Display;
-		std::vector<std::shared_ptr<core::gcl::device>>							Device;
+		std::vector<std::shared_ptr<core::gpu::device>>							Device;
 		std::shared_ptr<bltn::obj::system_display>								PrimaryDisplay;
-		std::shared_ptr<core::gcl::device>										PrimaryDevice;
-		std::set<std::shared_ptr<core::gcl::context>>							Context;
+		std::shared_ptr<core::gpu::device>										PrimaryDevice;
+		std::set<std::shared_ptr<core::gpu::context>>							Context;
 
 		engine();
 		engine(std::vector<const char*> aCommandLineArgumentList, std::set<std::string> aLayerList, std::set<std::string> aExtensionList);
 		~engine();
 
-		std::shared_ptr<core::gcl::context> create_device_context(std::shared_ptr<core::gcl::device> aDevice, std::vector<uint> aOperationBitfieldList, std::set<std::string> aLayerList = {}, std::set<std::string> aExtensionList = {});
-		void destroy_device_context(std::shared_ptr<core::gcl::context> aDeviceContext);
-		VkResult wait_on_device_context(std::vector<std::shared_ptr<core::gcl::context>> aDeviceContextList = {});
+		std::shared_ptr<core::gpu::context> create_device_context(std::shared_ptr<core::gpu::device> aDevice, std::vector<uint> aOperationBitfieldList, std::set<std::string> aLayerList = {}, std::set<std::string> aExtensionList = {});
+		void destroy_device_context(std::shared_ptr<core::gpu::context> aDeviceContext);
+		VkResult wait_on_device_context(std::vector<std::shared_ptr<core::gpu::context>> aDeviceContextList = {});
 
 		void run(ecs::app* aApp);
 		VkResult update_resources(ecs::app* aApp);

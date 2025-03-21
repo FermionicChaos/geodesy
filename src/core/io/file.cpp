@@ -9,8 +9,8 @@
 
 // Loadable Files.
 #include <geodesy/core/io/dynalib.h>
-#include <geodesy/core/gcl/image.h>
-#include <geodesy/core/gcl/shader.h>
+#include <geodesy/core/gpu/image.h>
+#include <geodesy/core/gpu/shader.h>
 #include <geodesy/core/gfx/font.h>
 #include <geodesy/core/gfx/model.h>
 
@@ -202,8 +202,8 @@ namespace geodesy::core::io {
 		switch (LoaderID) {
 		default: 			return nullptr;
 		case DYNALIB: 		return std::make_shared<dynalib>(aFilePath);
-		case IMAGE: 		return std::make_shared<gcl::image>(aFilePath);
-		case SHADER: 		return std::make_shared<gcl::shader>(aFilePath);
+		case IMAGE: 		return std::make_shared<gpu::image>(aFilePath);
+		case SHADER: 		return std::make_shared<gpu::shader>(aFilePath);
 		//case FONT: 			return std::make_shared<gfx::font>(aFilePath);
 		case MODEL: 		return std::shared_ptr<gfx::model>(new gfx::model(aFilePath, aFileManager));
 		}

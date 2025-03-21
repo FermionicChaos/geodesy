@@ -10,7 +10,7 @@
 #include "../core/lgc.h"
 #include "../core/phys.h"
 #include "../core/hid.h"
-#include "../core/gcl.h"
+#include "../core/gpu.h"
 #include "../core/gfx.h"
 #include "../core/sfx.h"
 
@@ -36,7 +36,7 @@ namespace geodesy::ecs {
 		~app();
 
 		template<typename T, typename... Args>
-		std::shared_ptr<T> create_stage(std::shared_ptr<core::gcl::context> aContext, std::string aName, Args&&... aArgs) {
+		std::shared_ptr<T> create_stage(std::shared_ptr<core::gpu::context> aContext, std::string aName, Args&&... aArgs) {
 			std::shared_ptr<T> NewStage(new T(
 				aContext,
 				std::move(aName),
@@ -50,8 +50,8 @@ namespace geodesy::ecs {
 		void init();
 		virtual void run() = 0;
 		
-		std::map<std::shared_ptr<core::gcl::context>, core::gcl::submission_batch> update(double aDeltaTime);
-		std::map<std::shared_ptr<core::gcl::context>, core::gcl::submission_batch> render();
+		std::map<std::shared_ptr<core::gpu::context>, core::gpu::submission_batch> update(double aDeltaTime);
+		std::map<std::shared_ptr<core::gpu::context>, core::gpu::submission_batch> render();
 
 	};
 

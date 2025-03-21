@@ -51,7 +51,7 @@ namespace geodesy::bltn::obj {
 		core::math::vec<float, 2> 			Size;
 		std::shared_ptr<ecs::subject> 		SubjectSource; 		// ! Change to std::weak_ptr
 
-		subject_window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aSubjectWindowCreator);
+		subject_window(std::shared_ptr<core::gpu::context> aContext, ecs::stage* aStage, creator* aSubjectWindowCreator);
 
 		std::vector<std::shared_ptr<draw_call>> draw(ecs::subject* aSubject) override;
 

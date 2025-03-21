@@ -9,7 +9,7 @@
 #include "../core/util.h"
 #include "../core/lgc.h"
 #include "../core/hid.h"
-#include "../core/gcl.h"
+#include "../core/gpu.h"
 #include "../core/gfx.h"
 #include "../core/sfx.h"
 
@@ -47,9 +47,9 @@ namespace geodesy::ecs {
 		struct draw_call {
 			float 													DistanceFromSubject;
 			core::gfx::material::transparency 						TransparencyMode;
-			std::shared_ptr<core::gcl::context> 					Context;
-			std::shared_ptr<core::gcl::framebuffer> 				Framebuffer;
-			std::shared_ptr<core::gcl::descriptor::array> 			DescriptorArray;
+			std::shared_ptr<core::gpu::context> 					Context;
+			std::shared_ptr<core::gpu::framebuffer> 				Framebuffer;
+			std::shared_ptr<core::gpu::descriptor::array> 			DescriptorArray;
 			VkCommandBuffer 										DrawCommand;
 			draw_call();
 		};
@@ -117,13 +117,13 @@ namespace geodesy::ecs {
 		// ! ----- Device Data ----- ! //
 		// ^ This is the data that exists on the GPU.
 
-		std::shared_ptr<core::gcl::context> 										Context;
+		std::shared_ptr<core::gpu::context> 										Context;
 		std::shared_ptr<core::phys::mesh>											CollisionBox;
 		std::shared_ptr<core::gfx::model>											Model;
-		std::shared_ptr<core::gcl::buffer> 											UniformBuffer;
+		std::shared_ptr<core::gpu::buffer> 											UniformBuffer;
 		std::map<subject*, std::shared_ptr<renderer>>								Renderer;
 
-		object(std::shared_ptr<core::gcl::context> aContext, stage* aStage, creator* aCreator);
+		object(std::shared_ptr<core::gpu::context> aContext, stage* aStage, creator* aCreator);
 		~object();
 
 		virtual bool is_subject();

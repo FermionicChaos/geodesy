@@ -13,7 +13,7 @@ namespace geodesy {
 	//using namespace bltn::app;
 
 	using namespace util;
-	using namespace gcl;
+	using namespace gpu;
 	using namespace lgc;
 	using namespace gfx;
 
@@ -141,7 +141,7 @@ namespace geodesy {
 		}
 
 		// Query system for existing GPGPU capable devices.
-		gcl::device::get_system_devices(this);
+		gpu::device::get_system_devices(this);
 		if (this->Device.size() == 0) {
 			Logger << log::message(log::GEODESY, log::ERROR, log::INITIALIZATION_FAILED, "Error: No Vulkan capable devices detected on system!");
 			throw Logger;
@@ -160,18 +160,18 @@ namespace geodesy {
 
 	}
 
-	std::shared_ptr<core::gcl::context> engine::create_device_context(std::shared_ptr<core::gcl::device> aDevice, std::vector<uint> aOperationBitfieldList, std::set<std::string> aLayerList, std::set<std::string> aExtensionList) {
-		std::shared_ptr<core::gcl::context> NewDeviceContext = std::make_shared<core::gcl::context>(aDevice, aOperationBitfieldList, aLayerList, aExtensionList);
+	std::shared_ptr<core::gpu::context> engine::create_device_context(std::shared_ptr<core::gpu::device> aDevice, std::vector<uint> aOperationBitfieldList, std::set<std::string> aLayerList, std::set<std::string> aExtensionList) {
+		std::shared_ptr<core::gpu::context> NewDeviceContext = std::make_shared<core::gpu::context>(aDevice, aOperationBitfieldList, aLayerList, aExtensionList);
 		Context.insert(NewDeviceContext);
 		return NewDeviceContext;
 	}
 
-	void engine::destroy_device_context(std::shared_ptr<core::gcl::context> aDeviceContext) {
+	void engine::destroy_device_context(std::shared_ptr<core::gpu::context> aDeviceContext) {
 		Context.erase(aDeviceContext);
 		// Should I delete all contexts everywhere, or allow resoure deallocation until?
 	}
 
-	VkResult engine::wait_on_device_context(std::vector<std::shared_ptr<core::gcl::context>> aDeviceContextList) {
+	VkResult engine::wait_on_device_context(std::vector<std::shared_ptr<core::gpu::context>> aDeviceContextList) {
 		VkResult Result = VK_SUCCESS;
 		if (aDeviceContextList.size() == 0) {
 			for (auto& Ctx : Context) {
@@ -194,7 +194,7 @@ namespace geodesy {
 
 	VkResult engine::update_resources(ecs::app* aApp) {
 		VkResult Result = VK_SUCCESS;
-		std::map<std::shared_ptr<context>, core::gcl::submission_batch> UpdateOperations;
+		std::map<std::shared_ptr<context>, core::gpu::submission_batch> UpdateOperations;
 
 		aApp->Mutex.lock();
 
@@ -223,7 +223,7 @@ namespace geodesy {
 
 	VkResult engine::execute_render_operations(ecs::app* aApp) {
 		VkResult Result = VK_SUCCESS;
-		std::map<std::shared_ptr<context>, core::gcl::submission_batch> RenderInfo;
+		std::map<std::shared_ptr<context>, core::gpu::submission_batch> RenderInfo;
 
 		aApp->Mutex.lock();
 

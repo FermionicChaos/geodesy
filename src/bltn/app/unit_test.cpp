@@ -12,7 +12,7 @@ namespace geodesy::bltn {
 	using namespace core;
 	using namespace ecs;
 
-	using namespace gcl;
+	using namespace gpu;
 	using namespace obj;
 	using namespace lgc;
 

@@ -1,4 +1,4 @@
-Module: gcl/gfx
+Module: gpu/gfx
     - Finish up mesh instance sorter for camera3d.cpp.
     - Implement mip map for base image.cpp class.
     - Implement method for handling in built textures to model class.

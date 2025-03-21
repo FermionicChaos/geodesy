@@ -6,9 +6,9 @@
 
 #include "../phys/mesh.h"
 
-#include "../gcl/context.h"
-#include "../gcl/buffer.h"
-#include "../gcl/pipeline.h"
+#include "../gpu/context.h"
+#include "../gpu/buffer.h"
+#include "../gpu/pipeline.h"
 
 struct aiMesh;
 
@@ -27,13 +27,13 @@ namespace geodesy::core::gfx {
 			uint 							MaterialIndex;		// Yes, this is tied to the instance rather than the mesh object.
 
 			// Device Memory Objects
-			std::shared_ptr<gcl::context> 	Context;
-			std::shared_ptr<gcl::buffer> 	VertexWeightBuffer;
-			std::shared_ptr<gcl::buffer> 	UniformBuffer;
+			std::shared_ptr<gpu::context> 	Context;
+			std::shared_ptr<gpu::buffer> 	VertexWeightBuffer;
+			std::shared_ptr<gpu::buffer> 	UniformBuffer;
 
 			instance();
 			instance(int aMeshIndex, math::mat<float, 4, 4> aTransform, uint aVertexCount, const std::vector<bone>& aBoneData, uint aMaterialIndex);
-			instance(std::shared_ptr<gcl::context> aContext, const instance& aInstance);
+			instance(std::shared_ptr<gpu::context> aContext, const instance& aInstance);
 
 			void update(double DeltaTime);
 			
@@ -43,19 +43,19 @@ namespace geodesy::core::gfx {
 		std::weak_ptr<mesh> 							HostMesh;
 
 		// Device Memory Objects
-		std::shared_ptr<gcl::context> 					Context;
-		std::shared_ptr<gcl::buffer> 					VertexBuffer;
-		std::shared_ptr<gcl::buffer>					IndexBuffer;
-		std::shared_ptr<gcl::acceleration_structure> 	AccelerationStructure;
+		std::shared_ptr<gpu::context> 					Context;
+		std::shared_ptr<gpu::buffer> 					VertexBuffer;
+		std::shared_ptr<gpu::buffer>					IndexBuffer;
+		std::shared_ptr<gpu::acceleration_structure> 	AccelerationStructure;
 
 		mesh();
 		mesh(const aiMesh* aMesh);
-		// mesh(std::shared_ptr<gcl::context> aContext, const std::vector<vertex>& aVertexData, const topology& aTopologyData);
-		mesh(std::shared_ptr<gcl::context> aContext, std::shared_ptr<mesh> aMesh);
+		// mesh(std::shared_ptr<gpu::context> aContext, const std::vector<vertex>& aVertexData, const topology& aTopologyData);
+		mesh(std::shared_ptr<gpu::context> aContext, std::shared_ptr<mesh> aMesh);
 
-		// void draw(VkCommandBuffer aCommandBuffer, std::shared_ptr<gcl::pipeline> aPipeline, std::shared_ptr<gcl::framebuffer> aFramebuffer, std::shared_ptr<gcl::descriptor::array> aDescriptorArray);
+		// void draw(VkCommandBuffer aCommandBuffer, std::shared_ptr<gpu::pipeline> aPipeline, std::shared_ptr<gpu::framebuffer> aFramebuffer, std::shared_ptr<gpu::descriptor::array> aDescriptorArray);
 
-		// void draw(std::vector<std::shared_ptr<gcl::image>> aOutput, std::shared_ptr<gcl::pipeline> aPipeline, std::shared_ptr<material> aMaterial);
+		// void draw(std::vector<std::shared_ptr<gpu::image>> aOutput, std::shared_ptr<gpu::pipeline> aPipeline, std::shared_ptr<material> aMaterial);
 
 	};
 

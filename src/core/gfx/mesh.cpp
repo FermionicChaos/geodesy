@@ -12,7 +12,7 @@
 
 namespace geodesy::core::gfx {
 
-	using namespace gcl;
+	using namespace gpu;
 
 	namespace {
 
@@ -118,7 +118,7 @@ namespace geodesy::core::gfx {
 		}
 	}
 
-	mesh::instance::instance(std::shared_ptr<gcl::context> aContext, const instance& aInstance) {
+	mesh::instance::instance(std::shared_ptr<gpu::context> aContext, const instance& aInstance) {
 		this->Index 		= aInstance.Index;
 		this->Transform 	= aInstance.Transform;
 		this->Vertex 		= aInstance.Vertex;
@@ -258,17 +258,17 @@ namespace geodesy::core::gfx {
 		}
 	}
 	
-	mesh::mesh(std::shared_ptr<gcl::context> aContext, std::shared_ptr<mesh> aMesh) {
+	mesh::mesh(std::shared_ptr<gpu::context> aContext, std::shared_ptr<mesh> aMesh) {
 		this->HostMesh = aMesh;
 		this->Context = aContext;
 		if ((aContext != nullptr) && (aMesh != nullptr)) {
 			// Vertex Buffer Creation Info
-			gcl::buffer::create_info VBCI;
+			gpu::buffer::create_info VBCI;
 			VBCI.Memory = device::memory::DEVICE_LOCAL;
 			VBCI.Usage = buffer::usage::VERTEX | buffer::usage::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR | buffer::usage::SHADER_DEVICE_ADDRESS | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 			VBCI.ElementCount = aMesh->Vertex.size();
 			// Index buffer Create Info
-			gcl::buffer::create_info IBCI;
+			gpu::buffer::create_info IBCI;
 			IBCI.Memory = device::memory::DEVICE_LOCAL;
 			IBCI.Usage = buffer::usage::INDEX | buffer::usage::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR | buffer::usage::SHADER_DEVICE_ADDRESS | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 			IBCI.ElementCount = aMesh->Topology.Data16.size() > 0 ? aMesh->Topology.Data16.size() : aMesh->Topology.Data32.size();

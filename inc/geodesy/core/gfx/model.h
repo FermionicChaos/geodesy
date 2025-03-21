@@ -28,19 +28,19 @@ namespace geodesy::core::gfx {
 		double 											Time;
 
 		// Resources
-		std::shared_ptr<gcl::context> 					Context;
+		std::shared_ptr<gpu::context> 					Context;
 		node											Hierarchy;			// Root Node Hierarchy 
 		std::vector<animation> 							Animation; 			// Overrides Bind Pose Transform
 		std::vector<std::shared_ptr<mesh>> 				Mesh;
 		std::vector<std::shared_ptr<material>> 			Material;
-		std::vector<std::shared_ptr<gcl::image>> 		Texture;
+		std::vector<std::shared_ptr<gpu::image>> 		Texture;
 		// std::vector<std::shared_ptr<light>> 			Light;				// Not Relevant To Model, open as stage.
 		// std::vector<std::shared_ptr<camera>> 		Camera;			// Not Relevant To Model, open as stage.
-		// std::shared_ptr<gcl::buffer> 					UniformBuffer;
+		// std::shared_ptr<gpu::buffer> 					UniformBuffer;
 
 		model();
 		model(std::string aFilePath, file::manager* aFileManager = nullptr);
-		model(std::shared_ptr<gcl::context> aContext, std::shared_ptr<model> aModel, gcl::image::create_info aCreateInfo = {});
+		model(std::shared_ptr<gpu::context> aContext, std::shared_ptr<model> aModel, gpu::image::create_info aCreateInfo = {});
 		~model();
 
 		void update(double aDeltaTime, const std::vector<float>& aAnimationWeights);

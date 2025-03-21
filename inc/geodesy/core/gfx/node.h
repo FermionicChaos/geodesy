@@ -28,7 +28,7 @@ namespace geodesy::core::gfx {
 
 		node();
 		node(const aiScene* aScene, const aiNode* aNode);
-		node(std::shared_ptr<gcl::context> aContext, const node& aNode);
+		node(std::shared_ptr<gpu::context> aContext, const node& aNode);
 		node(const node& aInput);
 		node(node&& aInput) noexcept;
 		~node();

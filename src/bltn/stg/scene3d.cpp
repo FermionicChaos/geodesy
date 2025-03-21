@@ -4,7 +4,7 @@ namespace geodesy::bltn::stg {
 
 	using namespace core;
 
-	scene3d::scene3d(std::shared_ptr<core::gcl::context> aContext, std::string aName) : ecs::stage(aContext, aName) {
+	scene3d::scene3d(std::shared_ptr<core::gpu::context> aContext, std::string aName) : ecs::stage(aContext, aName) {
 		// Create Info for stage camera.
 		obj::camera3d::creator CameraCreateInfo;
 		CameraCreateInfo.Name 				= "Camera3D";

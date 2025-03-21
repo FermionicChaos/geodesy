@@ -10,7 +10,7 @@
 #include "../core/lgc.h"
 #include "../core/phys.h"
 #include "../core/hid.h"
-#include "../core/gcl.h"
+#include "../core/gpu.h"
 #include "../core/gfx.h"
 #include "../core/sfx.h"
 
@@ -29,20 +29,20 @@ namespace geodesy::ecs {
 			creator();
 		};
 
-		std::shared_ptr<core::gcl::framechain> 						Framechain;
-		std::shared_ptr<core::gcl::pipeline> 						Pipeline;
-		std::shared_ptr<core::gcl::command_pool>					CommandPool;
-		std::shared_ptr<core::gcl::semaphore_pool> 					SemaphorePool;
-		std::vector<core::gcl::command_batch>						RenderingOperations;
+		std::shared_ptr<core::gpu::framechain> 						Framechain;
+		std::shared_ptr<core::gpu::pipeline> 						Pipeline;
+		std::shared_ptr<core::gpu::command_pool>					CommandPool;
+		std::shared_ptr<core::gpu::semaphore_pool> 					SemaphorePool;
+		std::vector<core::gpu::command_batch>						RenderingOperations;
 		VkSemaphore 												NextFrameSemaphore;
 		VkSemaphore 												PresentFrameSemaphore;
 
-		subject(std::shared_ptr<core::gcl::context> aContext, stage* aStage, creator* aSubjectCreator);
+		subject(std::shared_ptr<core::gpu::context> aContext, stage* aStage, creator* aSubjectCreator);
 		~subject();
 
 		virtual bool is_subject() override;
 		virtual std::shared_ptr<renderer> default_renderer(object* aObject);
-		virtual core::gcl::submission_batch render(stage* aStage);
+		virtual core::gpu::submission_batch render(stage* aStage);
 
 	};
 

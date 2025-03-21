@@ -27,7 +27,7 @@
 //#include <glslang/SPIRV/SPVRemapper.h>
 
 //// Included for compiling
-//#include "../gcl/ResourceLimits.h"
+//#include "../gpu/ResourceLimits.h"
 
 // Font Loading
 #include <ft2build.h>

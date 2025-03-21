@@ -9,7 +9,7 @@ namespace geodesy::bltn::obj {
 	class camera3d : public ecs::subject {
 	public:
 
-		class geometry_buffer : public core::gcl::framechain {
+		class geometry_buffer : public core::gpu::framechain {
 		public:
 			/*
 			The Geometry Buffer contains the Following Attachments.
@@ -26,7 +26,7 @@ namespace geodesy::bltn::obj {
 			// --- Ray Traced Deferred Shading Output --- //
 			// --- Translucent Ray Tracing Layer --- //
 			*/
-			geometry_buffer(std::shared_ptr<core::gcl::context> aContext, core::math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount);
+			geometry_buffer(std::shared_ptr<core::gpu::context> aContext, core::math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount);
 		};
 
 		struct uniform_data {
@@ -68,16 +68,16 @@ namespace geodesy::bltn::obj {
 		};
 
 		float FOV, Near, Far;
-		std::shared_ptr<core::gcl::buffer> 	CameraUniformBuffer;
+		std::shared_ptr<core::gpu::buffer> 	CameraUniformBuffer;
 
-		camera3d(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aCamera3DCreator);
+		camera3d(std::shared_ptr<core::gpu::context> aContext, ecs::stage* aStage, creator* aCamera3DCreator);
 		~camera3d();
 
 		// Implement input
 		void input(const core::hid::input& aInput) override;
 		void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f }) override;
 		std::shared_ptr<renderer> default_renderer(ecs::object* aObject) override;
-		// core::gcl::submission_batch render(ecs::stage* aStage) override;
+		// core::gpu::submission_batch render(ecs::stage* aStage) override;
 
 	};
 

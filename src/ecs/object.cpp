@@ -4,7 +4,7 @@
 namespace geodesy::ecs {
 
 	using namespace core;
-	using namespace gcl;
+	using namespace gpu;
 
 	object::uniform_data::uniform_data(
 		math::vec<float, 3> aPosition, 
@@ -63,7 +63,7 @@ namespace geodesy::ecs {
 		return this->DrawCallList[aIndex];
 	}
 
-	object::object(std::shared_ptr<core::gcl::context> aContext, stage* aStage, creator* aCreator) {
+	object::object(std::shared_ptr<core::gpu::context> aContext, stage* aStage, creator* aCreator) {
 		this->Name 				= aCreator->Name;
 		this->Stage 			= aStage;
 		this->Engine 			= aContext->Device->Engine;

@@ -16,11 +16,11 @@ namespace geodesy::bltn::obj {
 			*/
 		};
 
-		class geometry_buffer : public core::gcl::framechain {
+		class geometry_buffer : public core::gpu::framechain {
 
 		};
 
-		cameravr(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aCreator);
+		cameravr(std::shared_ptr<core::gpu::context> aContext, ecs::stage* aStage, creator* aCreator);
 
 	};
 

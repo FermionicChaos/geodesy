@@ -12,7 +12,7 @@ namespace geodesy::ecs {
 
 	using namespace core;
 
-	stage::stage(std::shared_ptr<gcl::context> aContext, std::string aName) {
+	stage::stage(std::shared_ptr<gpu::context> aContext, std::string aName) {
 		this->Name		= aName;
 		this->Context	= aContext;
 	}
@@ -22,8 +22,8 @@ namespace geodesy::ecs {
 	}
 
 	// Does Nothing by default.
-	gcl::submission_batch stage::update(double aDeltaTime) {
-		gcl::submission_batch StageUpdateInfo;
+	gpu::submission_batch stage::update(double aDeltaTime) {
+		gpu::submission_batch StageUpdateInfo;
 #ifdef ENABLE_MULTITHREADED_PROCESSING
 
 		/*
@@ -67,8 +67,8 @@ namespace geodesy::ecs {
 		return StageUpdateInfo;
 	}
 
-	gcl::submission_batch stage::render() {
-		gcl::submission_batch RenderInfo;
+	gpu::submission_batch stage::render() {
+		gpu::submission_batch RenderInfo;
 
 		// Generate list of render targets in this stage.
 		std::vector<subject*> RenderTargetList = stage::purify_by_subject(this->Object);
@@ -80,7 +80,7 @@ namespace geodesy::ecs {
 			if (!RenderTarget->Framechain->ready_to_render()) continue;
 
 			// Clear out previous rendering operations.
-			RenderTarget->RenderingOperations = std::vector<gcl::command_batch>();
+			RenderTarget->RenderingOperations = std::vector<gpu::command_batch>();
 
 			// Reset semaphore pool.
 			RenderTarget->SemaphorePool->reset();

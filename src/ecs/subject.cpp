@@ -4,7 +4,7 @@
 namespace geodesy::ecs {
 
 	using namespace core;
-	using namespace gcl;
+	using namespace gpu;
 
 	subject::creator::creator() {
 		this->Resolution = { 1920, 1080, 1 };
@@ -13,10 +13,10 @@ namespace geodesy::ecs {
 		this->ImageUsage = image::usage::COLOR_ATTACHMENT | image::usage::SAMPLED | image::usage::TRANSFER_DST | image::usage::TRANSFER_SRC;
 	}
 
-	subject::subject(std::shared_ptr<core::gcl::context> aContext, stage* aStage, creator* aSubjectCreator) : object(aContext, aStage, aSubjectCreator) {
+	subject::subject(std::shared_ptr<core::gpu::context> aContext, stage* aStage, creator* aSubjectCreator) : object(aContext, aStage, aSubjectCreator) {
 
-		this->CommandPool = std::make_shared<gcl::command_pool>(aContext, gcl::device::operation::GRAPHICS_AND_COMPUTE);
-		this->SemaphorePool = std::make_shared<gcl::semaphore_pool>(aContext, 100); // ^Can be changed later
+		this->CommandPool = std::make_shared<gpu::command_pool>(aContext, gpu::device::operation::GRAPHICS_AND_COMPUTE);
+		this->SemaphorePool = std::make_shared<gpu::semaphore_pool>(aContext, 100); // ^Can be changed later
 		// this->Timer;
 		this->NextFrameSemaphore = VK_NULL_HANDLE;
 		this->PresentFrameSemaphore = VK_NULL_HANDLE;
@@ -44,7 +44,7 @@ namespace geodesy::ecs {
 		this->RenderingOperations += this->Framechain->predraw();
 
 		// Iterate through all objects in the stage.
-		gcl::command_batch StageCommandBatch;
+		gpu::command_batch StageCommandBatch;
 		for (size_t i = 0; i < aStage->Object.size(); i++) {
 			// Draw object.
 			std::vector<std::shared_ptr<object::draw_call>> ObjectDrawCall = aStage->Object[i]->draw(this);

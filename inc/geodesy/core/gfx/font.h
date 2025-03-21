@@ -7,7 +7,7 @@
 #include "../../config.h"
 
 #include "../io/file.h"
-#include "../gcl/image.h"
+#include "../gpu/image.h"
 
 namespace geodesy::core::gfx {
 
@@ -58,7 +58,7 @@ namespace geodesy::core::gfx {
 		float* ax;
 		float* ay;
 
-		gcl::image Symbol;
+		gpu::image Symbol;
 
 		void zero_out();
 

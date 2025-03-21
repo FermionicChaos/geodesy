@@ -3,7 +3,7 @@
 namespace geodesy::bltn::obj {
 
 	using namespace core;
-	using namespace gcl;
+	using namespace gpu;
 	using namespace gfx;
 
 	namespace {
@@ -35,7 +35,7 @@ namespace geodesy::bltn::obj {
 	) {
 		// Get references for readability.
 		VkResult Result = VK_SUCCESS;
-		std::shared_ptr<gcl::context> Context = aObject->Context;
+		std::shared_ptr<gpu::context> Context = aObject->Context;
 		std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[aMeshInstance->Index];
 		std::shared_ptr<material> Material = aObject->Model->Material[aMeshInstance->MaterialIndex];
 
@@ -95,7 +95,7 @@ namespace geodesy::bltn::obj {
 		Hovered			= true;
 	}
 
-	window::window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aWindowCreator) : ecs::subject(aContext, aStage, aWindowCreator) {
+	window::window(std::shared_ptr<core::gpu::context> aContext, ecs::stage* aStage, creator* aWindowCreator) : ecs::subject(aContext, aStage, aWindowCreator) {
 		// The default renderer of window is that it takes an image and samples it.
 		// Uses only a quad for basic shaping features, and window parameters. Mostly used for 2D graphics.
 		// Load in shaders for rendering.

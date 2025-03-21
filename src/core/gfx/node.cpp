@@ -110,7 +110,7 @@ namespace geodesy::core::gfx {
 		load_mesh_instance_data(aScene, *this, aNode);
 	}
 
-	node::node(std::shared_ptr<gcl::context> aContext, const node& aNode) : node() {
+	node::node(std::shared_ptr<gpu::context> aContext, const node& aNode) : node() {
 		// TODO: Fix recursive node hierarchy copy.
 		this->Name 				= aNode.Name;
 		this->Transformation 	= aNode.Transformation;

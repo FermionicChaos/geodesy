@@ -23,7 +23,7 @@ namespace geodesy::bltn::obj {
 		};
 
 		struct creator : subject::creator {
-			core::gcl::image::format 	PixelFormat;
+			core::gpu::image::format 	PixelFormat;
 			bool 						Resizable;		
 			bool 						Decorated;		
 			bool 						UserFocused;	
@@ -42,9 +42,9 @@ namespace geodesy::bltn::obj {
 			creator();
 		};
 
-		std::shared_ptr<core::gcl::buffer> WindowUniformBuffer;
+		std::shared_ptr<core::gpu::buffer> WindowUniformBuffer;
 
-		window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aWindowCreator);
+		window(std::shared_ptr<core::gpu::context> aContext, ecs::stage* aStage, creator* aWindowCreator);
 
 		std::shared_ptr<renderer> default_renderer(ecs::object* aObject) override;
 		

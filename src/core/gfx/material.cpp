@@ -2,9 +2,9 @@
 
 #include <vector>
 
-#include <geodesy/core/gcl/context.h>
-#include <geodesy/core/gcl/shader.h>
-#include <geodesy/core/gcl/image.h>
+#include <geodesy/core/gpu/context.h>
+#include <geodesy/core/gpu/shader.h>
+#include <geodesy/core/gpu/image.h>
 
 // Model Loading
 #include <assimp/Importer.hpp>
@@ -13,14 +13,14 @@
 
 namespace geodesy::core::gfx {
 
-	using namespace gcl;
+	using namespace gpu;
 
 	namespace {
 
 		struct texture_type_database {
 			std::string Name;
 			std::vector<aiTextureType> Type;
-			std::shared_ptr<gcl::image> DefaultTexture;
+			std::shared_ptr<gpu::image> DefaultTexture;
 		};
 
 	}
@@ -41,20 +41,20 @@ namespace geodesy::core::gfx {
 	static const unsigned char DefaultClearCoatData[4] 		= {0, 0, 0, 255}; 			// No clear coat
 
 	static std::vector<texture_type_database> TextureTypeDatabase = {
-		{ "Color", 					{ aiTextureType_DIFFUSE, aiTextureType_BASE_COLOR }, 			std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultColorData), (void*)DefaultColorData) 			},
-		{ "Specular", 				{ aiTextureType_SPECULAR }, 									std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultSpecularData), (void*)DefaultSpecularData) 		},	
-		{ "AmbientLighting" , 		{ aiTextureType_AMBIENT }, 										std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultAmbientData), (void*)DefaultAmbientData) 		},
-		{ "Emissive", 				{ aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR }, 		std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultEmissiveData), (void*)DefaultEmissiveData) 		},
-		{ "Height", 				{ aiTextureType_HEIGHT, aiTextureType_DISPLACEMENT }, 			std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultHeightData), (void*)DefaultHeightData) 			},
-		{ "Normal", 				{ aiTextureType_NORMALS /*, aiTextureType_NORMAL_CAMERA*/ }, 	std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultNormalData), (void*)DefaultNormalData) 			},
-		{ "Shininess", 				{ aiTextureType_SHININESS }, 									std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultShininessData), (void*)DefaultShininessData) 	},
-		{ "Opacity", 				{ aiTextureType_OPACITY, aiTextureType_TRANSMISSION }, 			std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultOpacityData), (void*)DefaultOpacityData) 		},
-		{ "AmbientOcclusion", 		{ aiTextureType_LIGHTMAP, aiTextureType_AMBIENT_OCCLUSION }, 	std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultAOData), (void*)DefaultAOData) 					},
+		{ "Color", 					{ aiTextureType_DIFFUSE, aiTextureType_BASE_COLOR }, 			std::make_shared<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultColorData), (void*)DefaultColorData) 			},
+		{ "Specular", 				{ aiTextureType_SPECULAR }, 									std::make_shared<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultSpecularData), (void*)DefaultSpecularData) 		},	
+		{ "AmbientLighting" , 		{ aiTextureType_AMBIENT }, 										std::make_shared<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultAmbientData), (void*)DefaultAmbientData) 		},
+		{ "Emissive", 				{ aiTextureType_EMISSIVE, aiTextureType_EMISSION_COLOR }, 		std::make_shared<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultEmissiveData), (void*)DefaultEmissiveData) 		},
+		{ "Height", 				{ aiTextureType_HEIGHT, aiTextureType_DISPLACEMENT }, 			std::make_shared<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultHeightData), (void*)DefaultHeightData) 			},
+		{ "Normal", 				{ aiTextureType_NORMALS /*, aiTextureType_NORMAL_CAMERA*/ }, 	std::make_shared<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultNormalData), (void*)DefaultNormalData) 			},
+		{ "Shininess", 				{ aiTextureType_SHININESS }, 									std::make_shared<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultShininessData), (void*)DefaultShininessData) 	},
+		{ "Opacity", 				{ aiTextureType_OPACITY, aiTextureType_TRANSMISSION }, 			std::make_shared<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultOpacityData), (void*)DefaultOpacityData) 		},
+		{ "AmbientOcclusion", 		{ aiTextureType_LIGHTMAP, aiTextureType_AMBIENT_OCCLUSION }, 	std::make_shared<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultAOData), (void*)DefaultAOData) 					},
 		// { "Reflection", 			{ aiTextureType_REFLECTION }, 									nullptr },
-		{ "Metallic", 				{ aiTextureType_METALNESS }, 									std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultMetallicData), (void*)DefaultMetallicData) 		},
-		{ "Roughness", 				{ aiTextureType_DIFFUSE_ROUGHNESS }, 							std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultRoughnessData), (void*)DefaultRoughnessData) 	},
-		{ "Sheen", 					{ aiTextureType_SHEEN }, 										std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultSheenData), (void*)DefaultSheenData) 			},
-		{ "ClearCoat", 				{ aiTextureType_CLEARCOAT }, 									std::make_shared<gcl::image>(gcl::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultClearCoatData), (void*)DefaultClearCoatData) 	}
+		{ "Metallic", 				{ aiTextureType_METALNESS }, 									std::make_shared<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultMetallicData), (void*)DefaultMetallicData) 		},
+		{ "Roughness", 				{ aiTextureType_DIFFUSE_ROUGHNESS }, 							std::make_shared<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultRoughnessData), (void*)DefaultRoughnessData) 	},
+		{ "Sheen", 					{ aiTextureType_SHEEN }, 										std::make_shared<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultSheenData), (void*)DefaultSheenData) 			},
+		{ "ClearCoat", 				{ aiTextureType_CLEARCOAT }, 									std::make_shared<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultClearCoatData), (void*)DefaultClearCoatData) 	}
    };
    // ! TODO: Metallic, Roughness, and AO are some times packed into the same file, so find a way to work with this data backend and shader wise.
 
@@ -73,15 +73,15 @@ namespace geodesy::core::gfx {
 		return TexturePath;
 	}
 
-	static std::shared_ptr<gcl::image> load_texture(io::file::manager* aFileManager, std::string aModelPath, const aiMaterial *aMaterial, std::vector<aiTextureType> aTextureTypeList) {
+	static std::shared_ptr<gpu::image> load_texture(io::file::manager* aFileManager, std::string aModelPath, const aiMaterial *aMaterial, std::vector<aiTextureType> aTextureTypeList) {
 		std::string TexturePath = absolute_texture_path(aModelPath, aMaterial, aTextureTypeList);
 		if (TexturePath.length() == 0) return nullptr;
 		if (aFileManager != nullptr) {
 			// Use file manager to load texture
-			return std::dynamic_pointer_cast<gcl::image>(aFileManager->open(TexturePath));
+			return std::dynamic_pointer_cast<gpu::image>(aFileManager->open(TexturePath));
 		} 
 		else {
-			return std::make_shared<gcl::image>(TexturePath);
+			return std::make_shared<gpu::image>(TexturePath);
 		}
 	}
 
@@ -215,7 +215,7 @@ namespace geodesy::core::gfx {
 
 		// Get Material Textures.
 		for (const auto& TextureType : TextureTypeDatabase) {
-			std::shared_ptr<gcl::image> LoadedTexture = load_texture(aFileManager, aDirectory, Mat, TextureType.Type);
+			std::shared_ptr<gpu::image> LoadedTexture = load_texture(aFileManager, aDirectory, Mat, TextureType.Type);
 			if (LoadedTexture != nullptr) {
 				// Texture Loaded Successfully
 				this->Texture[TextureType.Name] = LoadedTexture;
@@ -282,7 +282,7 @@ namespace geodesy::core::gfx {
 		}
 	}
 
-	material::material(std::shared_ptr<gcl::context> aContext, gcl::image::create_info aCreateInfo, std::shared_ptr<material> aMaterial) : material() {
+	material::material(std::shared_ptr<gpu::context> aContext, gpu::image::create_info aCreateInfo, std::shared_ptr<material> aMaterial) : material() {
 		this->Name              = aMaterial->Name;
 		this->UniformData       = aMaterial->UniformData;
 
@@ -296,7 +296,7 @@ namespace geodesy::core::gfx {
 
 		// Copy over and create GPU instance textures.
 		for (auto& Texture : aMaterial->Texture) {
-			this->Texture[Texture.first] = std::make_shared<gcl::image>(aContext, aCreateInfo, Texture.second);
+			this->Texture[Texture.first] = std::make_shared<gpu::image>(aContext, aCreateInfo, Texture.second);
 		}
 	}
 

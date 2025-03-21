@@ -43,7 +43,7 @@ namespace geodesy {
 
 	class engine;
 	namespace core {
-		namespace gcl {
+		namespace gpu {
 			class device;
 			class command_pool;
 			class semaphore_pool;

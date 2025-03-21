@@ -5,7 +5,7 @@
 namespace geodesy::bltn::obj {
 
 	using namespace core;
-	using namespace gcl;
+	using namespace gpu;
 
 	subject_window::forward_draw_call::forward_draw_call(
 		object* 							aObject, 
@@ -17,11 +17,11 @@ namespace geodesy::bltn::obj {
 	) {
 		// Get references for readability.
 		VkResult Result = VK_SUCCESS;
-		std::shared_ptr<core::gcl::context> Context = aObject->Context;
+		std::shared_ptr<core::gpu::context> Context = aObject->Context;
 		std::shared_ptr<gfx::mesh> Mesh = aObject->Model->Mesh[aMeshInstance->Index];
 		std::shared_ptr<gfx::material> Material = aObject->Model->Material[aMeshInstance->MaterialIndex];
 
-		std::vector<std::shared_ptr<gcl::image>> ImageOutputList = {
+		std::vector<std::shared_ptr<gpu::image>> ImageOutputList = {
 			aSubjectTarget->Framechain->Image[aTargetFrameIndex]["Color"],
 		};
 		// Acquire Mesh Vertex Buffer, and Mesh Instance Vertex Weight Buffer.
@@ -91,7 +91,7 @@ namespace geodesy::bltn::obj {
 		this->Subject = nullptr;
 	}
 
-	subject_window::subject_window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aSubjectWindowCreator) : ecs::object(aContext, aStage, aSubjectWindowCreator) {
+	subject_window::subject_window(std::shared_ptr<core::gpu::context> aContext, ecs::stage* aStage, creator* aSubjectWindowCreator) : ecs::object(aContext, aStage, aSubjectWindowCreator) {
 		this->SubjectSource = aSubjectWindowCreator->Subject;
 	}
 

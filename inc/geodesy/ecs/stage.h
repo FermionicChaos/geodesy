@@ -54,11 +54,11 @@ namespace geodesy::ecs {
 		};
 
 		std::string											Name;
-		std::shared_ptr<core::gcl::context> 				Context;
+		std::shared_ptr<core::gpu::context> 				Context;
 		std::vector<std::shared_ptr<object>>				Object;
 		std::map<std::string, std::shared_ptr<object>> 		ObjectLookup;
 
-		stage(std::shared_ptr<core::gcl::context> aContext, std::string aName);
+		stage(std::shared_ptr<core::gpu::context> aContext, std::string aName);
 		~stage();
 
 		// This is a helper utility function that helps create arbitrary objects.
@@ -74,8 +74,8 @@ namespace geodesy::ecs {
 			return NewObject;
 		}
 
-		virtual core::gcl::submission_batch update(double aDeltaTime);
-		virtual core::gcl::submission_batch render();
+		virtual core::gpu::submission_batch update(double aDeltaTime);
+		virtual core::gpu::submission_batch render();
 
 		static std::vector<subject*> purify_by_subject(const std::vector<std::shared_ptr<object>>& aObjectList);
 		static std::vector<workload> determine_thread_workload(size_t aElementCount, size_t aThreadCount);

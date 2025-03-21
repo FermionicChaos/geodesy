@@ -148,7 +148,7 @@ namespace geodesy::core::gfx {
 		}
 
 		// TODO: Implement direct texture loader later.
-		// this->Texture = std::vector<std::shared_ptr<gcl::image>>(Scene->mNumTextures);
+		// this->Texture = std::vector<std::shared_ptr<gpu::image>>(Scene->mNumTextures);
 
 		// std::vector<node*> LinearHierarchy = this->Hierarchy.linearize();
 
@@ -185,7 +185,7 @@ namespace geodesy::core::gfx {
 		ModelImporter->FreeScene();
 	}
 
-	model::model(std::shared_ptr<gcl::context> aContext, std::shared_ptr<model> aModel, gcl::image::create_info aCreateInfo) : model() {
+	model::model(std::shared_ptr<gpu::context> aContext, std::shared_ptr<model> aModel, gpu::image::create_info aCreateInfo) : model() {
 		this->Name = aModel->Name;
 		this->Context = aContext;
 
@@ -208,9 +208,9 @@ namespace geodesy::core::gfx {
 		}
 
 		// Load textures into GPU memory.
-		this->Texture = std::vector<std::shared_ptr<gcl::image>>(aModel->Texture.size());
+		this->Texture = std::vector<std::shared_ptr<gpu::image>>(aModel->Texture.size());
 		for (std::size_t i = 0; i < aModel->Texture.size(); i++) {
-			this->Texture[i] = std::shared_ptr<gcl::image>(new gcl::image(aContext, aCreateInfo, aModel->Texture[i]));
+			this->Texture[i] = std::shared_ptr<gpu::image>(new gpu::image(aContext, aCreateInfo, aModel->Texture[i]));
 		}
 
 	}
