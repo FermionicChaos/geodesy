@@ -15,7 +15,7 @@ namespace geodesy::bltn::obj {
 	class system_window : public window {
 	public:
 
-		class swapchain : public core::gpu::framechain {
+		class swapchain : public framechain {
 		public:
 
 			enum colorspace {

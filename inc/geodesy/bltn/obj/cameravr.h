@@ -16,7 +16,7 @@ namespace geodesy::bltn::obj {
 			*/
 		};
 
-		class geometry_buffer : public core::gpu::framechain {
+		class geometry_buffer : public framechain {
 
 		};
 

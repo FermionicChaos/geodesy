@@ -21,6 +21,35 @@ namespace geodesy::ecs {
 	class subject : public object {
 	public:
 
+		class framechain {
+		public:
+		
+			core::math::vec<uint, 3>													Resolution;
+			uint32_t																	ReadIndex;
+			uint32_t																	DrawIndex;
+			double																		FrameRate;
+			core::lgc::timer 															Timer;
+			std::shared_ptr<core::gpu::context> 										Context;
+			std::vector<std::map<std::string, std::shared_ptr<core::gpu::image>>> 		Image;
+			std::vector<core::gpu::command_batch> 										PredrawFrameOperation;
+			std::vector<core::gpu::command_batch> 										PostdrawFrameOperation;
+		
+			framechain(std::shared_ptr<core::gpu::context> aContext, double aFrameRate, uint32_t aFrameCount);
+			~framechain();
+		
+			std::map<std::string, std::shared_ptr<core::gpu::image>> read_frame();
+			std::map<std::string, std::shared_ptr<core::gpu::image>> draw_frame();
+			bool ready_to_render();
+			VkResult next_frame_now();
+			VkResult present_frame_now();
+		
+			// This function is special because it presents, and acquires next frame.
+			virtual VkResult next_frame(VkSemaphore aPresentFrameSemaphore = VK_NULL_HANDLE, VkSemaphore aNextFrameSemaphore = VK_NULL_HANDLE, VkFence aNextFrameFence = VK_NULL_HANDLE);
+			virtual std::vector<core::gpu::command_batch> predraw();
+			virtual std::vector<core::gpu::command_batch> postdraw();
+		
+		}; 	
+
 		struct creator : object::creator {
 			core::math::vec<uint, 3> 		Resolution;
 			uint 							FrameCount;
@@ -29,7 +58,7 @@ namespace geodesy::ecs {
 			creator();
 		};
 
-		std::shared_ptr<core::gpu::framechain> 						Framechain;
+		std::shared_ptr<framechain> 								Framechain;
 		std::shared_ptr<core::gpu::pipeline> 						Pipeline;
 		std::shared_ptr<core::gpu::command_pool>					CommandPool;
 		std::shared_ptr<core::gpu::semaphore_pool> 					SemaphorePool;

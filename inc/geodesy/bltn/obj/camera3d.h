@@ -9,7 +9,7 @@ namespace geodesy::bltn::obj {
 	class camera3d : public ecs::subject {
 	public:
 
-		class geometry_buffer : public core::gpu::framechain {
+		class geometry_buffer : public framechain {
 		public:
 			/*
 			The Geometry Buffer contains the Following Attachments.

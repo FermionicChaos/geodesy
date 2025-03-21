@@ -371,7 +371,7 @@ namespace geodesy::bltn::obj {
 			SwapchainProperty.PresentMode		= aSystemWindowCreator->PresentMode;
 			SwapchainProperty.Clipped			= aSystemWindowCreator->Clipped;
 			std::shared_ptr<swapchain> Swapchain(new swapchain(aContext, this->SurfaceHandle, SwapchainProperty));
-			this->Framechain = std::dynamic_pointer_cast<core::gpu::framechain>(Swapchain);
+			this->Framechain = std::dynamic_pointer_cast<framechain>(Swapchain);
 		}
 
 	}
@@ -479,7 +479,7 @@ namespace geodesy::bltn::obj {
 				std::shared_ptr<swapchain> NewSwapchain = std::shared_ptr<swapchain>(new swapchain(this->Context, this->SurfaceHandle, swapchain::property(Swapchain->CreateInfo, Swapchain->FrameRate), Swapchain->Handle));
 		
 				// Use new swapchain to replace old.
-				this->Framechain = std::dynamic_pointer_cast<core::gpu::framechain>(NewSwapchain);
+				this->Framechain = std::dynamic_pointer_cast<framechain>(NewSwapchain);
 		
 				// Rebuild pipeline.
 				if (this->Pipeline->CreateInfo->BindPoint == pipeline::type::RASTERIZER) {
