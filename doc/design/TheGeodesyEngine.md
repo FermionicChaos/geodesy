@@ -132,6 +132,7 @@ This sample illustrates the Geodesy Engine’s code conventions:
 - Public members are clearly separated from protected/private ones.
 - Header guards use `#pragma once`.
 - Includes are minimal and module-specific.
+- You can name stack variables what ever you like.&#x20;
 
 Further examples for more complex systems will follow as modules are built.
 
@@ -140,6 +141,19 @@ Further examples for more complex systems will follow as modules are built.
 ## 2. Core Utilities
 
 The core utilities of the Geodesy serve as the base elements which objects are constructed from. For instance, the gfx::model class is built on the gpu::buffer class, and there is certainly some hierarchy to the core modules. The gfx::model class serves as the graphical model of the object in rendering. The math module serves as the base module class for vectors, matrices, quaternions, and a specialized field class for vector fields. An object position is a math::vec\<float, 3>.
+
+Core Engine Sub-modules
+
+- io (File input/output & Asset management)
+- math (Mathematics)
+- lgc (Logic Primitives)
+- phys (Physics)
+- hid (Human Interface Device)
+- gpu (GPU Hardware Interface API)
+- gfx (Rendering & Graphics Module)
+- sfx (Sound Effects & Processing)
+
+The io.h submodule is the template code for loading in different assets types into the engine at runtime. It comes with a io::file is the base class for all host memory loaded assets. This could be sound files, this could be single images, this could be shader source code, it could be 3d models, it could be font/type face data, it doesn't matter. io::file is extensible for different file types, and there is a file::manager class which uses shared pointers so the same asset doesn't get loaded into host memory twice. Considering how big games are now of days. There is a plan to tie unique host memory file pointers to how they are loaded into device memory. I was thinking a map of weak host memory pointers leading to gpu memory allocations. The goal is to have it where you can load in a host asset, load it into device memory, and clear the host memory copy to save RAM. That will be noted later in the gpu::context section.
 
 ### `math` Module
 
@@ -203,72 +217,68 @@ All `gpu` types are intended to be constructed through `gpu::device` factories a
 
 ## 3. Geodesy Runtime
 
-Explanation of Object/Subject/Stage/App. The runtime primitives recognized and processed by the engine are the base class object, subject, stage, and app.
+Explanation of Object/Subject/Stage/App. The runtime primitives recognized and processed by the engine are the base classes object, subject, stage, and app. Some of the methods of these classes can be overridden when developing an app from the engine base code. The base object class is the world primitive that exists. It has qualities such as position, orientation, and scale.
 
+The option table is a table of runtime options of how object gets processed by the geodesy engine.
 
+option
 
-This section outlines how the engine interprets and processes the runtime layer—how `runtime::stage`, `runtime::object`, `runtime::subject`, and `runtime::app` are executed during engine operation.
+- IsRenderable
+- IsCollidable
 
-### Runtime Processing Flow
+object
 
-1. **App Startup**
+- World
+- Motion {STATIC, DYNAMIC, KINEMATIC, ANIMATED}
+- Option
+- Time
+- Mass
+- Position
+- Orientation
+- Scale
+- Linear Momentum
+- Angular Momentum
+- Behavior
+- Model
+- input(?)
+- update(DeltaTime)
+- draw(Subject)
 
-   - A `runtime::app` instance is created.
-   - The app initializes its `runtime::stage` instances (e.g., GUI, 3D world).
-   - Input devices, render targets, and window contexts are bound.
+Subject is a special type of object that renders the stage it exists in. For example, a camera3d is a type of subject that renders 3d environments. A system\_window is a type of window which renders mostly 2d GUI graphics, but utilizes the same rendering API to do so.
 
-2. **Stage Execution**
+subject : object
 
-   - Each `stage` runs its internal simulation loop independently.
-   - All `object` and `subject` instances within the stage are updated according to the logic thread.
-   - `subject` entities execute logic trees or compiled runtime code.
+- A subject is a special type of object capable of perceiving and rendering its surrounding environment.
+- It is **not** necessarily the player or agent—it may be a camera, a debug tool, a VR headset feed, or a window-based rendering system.
+- The term 'subject' refers to its role in projecting the scene, not controlling it.
+- A subject may have behavior logic, but it is not inherently interactive.
+- Rendering in Geodesy is modular—each subject may define its own render target and method (e.g., offscreen render, GUI stage render, VR compositor).
+- The engine may contain multiple subjects in one or many stages, each observing or displaying the same or different views of the world.
 
-3. **Update Thread**
+The way the Geodesy Engine processes these primitives is as follows. There exists the update thread which is logically the main game loop of the engine. It polls user input, processes user input, executes game logic, updates all stages in existence, and all objects in these stages. It then performs the proper physics such as collision.&#x20;
 
-   - A centralized logic thread updates all stages at a fixed time step.
-   - Logic is deterministic and independent of frame rate.
-   - Game state changes, physics calculations, AI decisions, and resource updates happen here.
+Update Thread (Main Thread)
 
-4. **Render Dispatch**
+1. **Poll User Input** – Platform-specific input polling (mouse, keyboard, gamepad, VR, etc.).
+2. **Distribute Input** – Input is forwarded to objects marked `input()`.
+3. **Apply Game Logic** – Each `stage` is updated:
+   - Calls `update(dt)` for all `object`s.
+   - Executes attached behaviors and timers.
+   - Processes queued or conditional events (e.g., health-based transitions).
+4. **Apply Motion Updates** – Transform updates are applied based on game logic outputs.
+5. **Run Physics Simulation** – Physics engine computes:
+   - Collision detection
+   - Rigid body dynamics
+   - Constraint resolution
+   - Trigger volume overlaps
+6. **Dispatch Collision Events** – `on_collision_enter`, `on_trigger_enter`, etc., are dispatched.
+7. **Update GPU Resources** – Synchronizes host-side data with GPU state:
+   - Uploads new transforms, materials, animation states, etc.
+   - Finalizes staging buffers and descriptor writes for rendering.
 
-   - `runtime::subject` instances with rendering capability submit draw calls.
-   - A `render_graph` schedules all draw calls and manages synchronization.
-   - Render passes are submitted asynchronously relative to the logic thread.
+Render Thread (Main Thread)
 
-5. **Stage Composability**
-
-   - Multiple stages can coexist (e.g., GUI + 3D environment).
-   - Each stage defines its own collection of `object`s and their renderers.
-   - A stage may also be offscreen or intermediate (e.g., shadow map stage).
-
-6. **Observer vs Participant**
-
-   - `subject`s may either affect the simulation or purely observe (e.g., camera, debug probe).
-   - Rendering stages are often attached to observers, like a `camera3d` or `system_window`.
-
-### Summary
-
-- Runtime simulation is decoupled from rendering.
-- Engine logic drives object evolution, while renderers submit frames based on their target frame rate.
-- This separation allows for VR, desktop, GUI, and custom visual targets to coexist.
-- The engine is structured to support multi-view, multi-device, multi-threaded execution as a native feature.
-
----
-
-## 4. Execution Model
-
-- **Frame Loop**: Systems iterate over objects each frame.
-- **Runtime Logic**: Defined using compiled scripting or graph-based logic.
-- **Parallelism**: Wherever possible, systems execute concurrently.
-- **GPU Submissions**: Handled by a `render_graph` with dependency resolution.
-
----
-
-## 5. Visual Scripting and Runtime Behavior
-
-- Logic trees or behavior graphs define dynamic behaviors.
-- Editor runs logic in an interpreter.
-- Final builds convert graphs into native C++.
+The render thread is a completely seperate thread, and unlike the update thread, has no fixed time step. Instead the render thread is called repeatably to check on every render target (subject) in existence in each stage. It checks each render target (subject) to see if it is ready to perform rendering operations and then aggregates all GPU command buffers to be submitted and executed on the proper parent GPU. It iterates though each stage, and each render target (subject) in each stage for rendering operations.
 
 ---
 
