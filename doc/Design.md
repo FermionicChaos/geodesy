@@ -152,20 +152,100 @@ Core Engine Sub-modules
 - gfx (Rendering & Graphics Module)
 - sfx (Sound Effects & Processing)
 
-The io.h submodule is the template code for loading in different assets types into the engine at runtime. It comes with a io::file is the base class for all host memory loaded assets. This could be sound files, this could be single images, this could be shader source code, it could be 3d models, it could be font/type face data, it doesn't matter. io::file is extensible for different file types, and there is a file::manager class which uses shared pointers so the same asset doesn't get loaded into host memory twice. Considering how big games are now of days. There is a plan to tie unique host memory file pointers to how they are loaded into device memory. I was thinking a map of weak host memory pointers leading to gpu memory allocations. The goal is to have it where you can load in a host asset, load it into device memory, and clear the host memory copy to save RAM. That will be noted later in the gpu::context section.
+### `io` Module
+
+The `io` module is the runtime-facing asset loader system of the Geodesy Engine. It is built to support a wide variety of host-resident asset types, while maintaining efficiency through shared memory control and future hooks for GPU residency.
+
+#### `io::file` (Base File Interface)
+
+- All runtime asset types are extensions of `io::file`.
+- This includes:
+  - 3D models
+  - Shader source code
+  - Image files (textures)
+  - Sound files
+  - Fonts / typeface definitions
+  - Any other loadable file asset
+- Each file is loaded into **host RAM** and kept in managed `weak_ptr` form.
+- Derived file types implement custom loaders to parse and populate internal memory.
+
+#### `gpu::image` and `gpu::shader` Derivation
+
+- Both `gpu::image` and `gpu::shader` classes **inherit from ****`io::file`**.
+- This provides a consistent interface for asset memory handling.
+- Once loaded into host memory, they can be staged into device memory using the `gpu::context` system.
+
+#### `io::file::manager`
+
+- Central registry that ensures host assets are not loaded redundantly.
+- Uses shared pointers to guarantee a single copy of any unique file.
+- Allows multiple systems to refer to the same file without conflict.
+
+#### Planned: Host ↔ GPU Residency Map
+
+- The design anticipates a future feature linking loaded host assets with GPU memory.
+- A **map of weak pointers** to file assets will link to their GPU-side allocations.
+- This enables automatic unloading of host assets from RAM once uploaded to device memory (via `gpu::context`).
+- Ideal for large games where RAM conservation is essential.
+
+#### Design Philosophy
+
+- Asset-type agnostic
+- Smart memory reuse
+- Prepared for staged host→device transitions
+- Extensible: loading logic is delegated to derived file types
+
+The `io` module is the runtime-facing asset loader system of the Geodesy Engine. It is built to support a wide variety of host-resident asset types, while maintaining efficiency through shared memory control and future hooks for GPU residency.
+
+#### `io::file` (Base File Interface)
+
+- All runtime asset types are extensions of `io::file`.
+- This includes:
+  - 3D models
+  - Shader source code
+  - Image files (textures)
+  - Sound files
+  - Fonts / typeface definitions
+  - Any other loadable file asset
+- Each file is loaded into **host RAM** and kept in managed `weak_ptr` form.
+
+#### `io::file::manager`
+
+- Central registry that ensures host assets are not loaded redundantly.
+- Uses shared pointers to guarantee a single copy of any unique file.
+- Allows multiple systems to refer to the same file without conflict.
+
+#### Planned: Host ↔ GPU Residency Map
+
+- The design anticipates a future feature linking loaded host assets with GPU memory.
+- A **map of weak pointers** to file assets will link to their GPU-side allocations.
+- This enables automatic unloading of host assets from RAM once uploaded to device memory (via `gpu::context`).
+- Ideal for large games where RAM conservation is essential.
+
+#### Design Philosophy
+
+- Asset-type agnostic
+- Smart memory reuse
+- Prepared for staged host→device transitions
+
+The `io` system ensures robust runtime asset handling and memory conservation, forming the bridge between disk and device.
+
+---
 
 ### `math` Module
 
 The `math` module provides the foundational numeric and geometric types for all simulation, rendering, and spatial operations in the Geodesy Engine. It is designed to be lean, readable, and performant, avoiding unnecessary overhead while retaining clarity and usability.
 
 #### Core Features
+
 - `vec<T, N>`: Generic N-dimensional vector template with overloaded arithmetic, dot/cross products, normalization, and swizzle operations.
 - `mat<T, N>`: N×N matrix template supporting affine transforms, rotations, inverses, and multiplication.
-- `quat<T>`: Quaternion representation with normalization, rotation application, and spherical interpolation.
+- `quaternion<T>`: Quaternion representation with normalization, rotation application, and spherical interpolation.
 - `field<T>`: A templated field class representing N-dimensional domains of data. Used for modeling scalar/vector fields like heightmaps or 3D volumes.
 - `complex<T>`: Complex number type useful for 2D transformations or frequency domain calculations.
 
 #### Module Details
+
 - All types are fully templated and designed to be interoperable (e.g. `mat<float, 3>` can multiply `vec<float, 3>`).
 - Vector types (`vec`) are frequently used in objects for position, orientation (as `quat`), momentum, and forces.
 - Matrix operations (`mat`) are used extensively in the GPU pipeline for camera, model, and projection transforms.
@@ -174,11 +254,13 @@ The `math` module provides the foundational numeric and geometric types for all 
 - The library defines type aliases such as `vec3f`, `mat4f`, and `quatf` for convenience.
 
 #### Internal Utilities
+
 - `config.h`: Controls internal type precision (e.g. `math::real` resolves to `float` or `double`).
 - `type.h`: Defines internal base types and mathematical traits.
 - `func.h`: Contains numerical functions like `clamp()`, `lerp()`, `smoothstep()`.
 
 #### Design Philosophy
+
 - Deterministic and low-overhead math for simulation.
 - Templated for flexibility but designed with clarity.
 - Interoperable with Vulkan coordinate systems and GPU buffer types.
@@ -235,6 +317,20 @@ The `lgc` module defines the behavioral logic system in Geodesy. It provides the
 - Custom serialization for debugging, replay, and AI training.
 
 ### HID
+
+The `hid` module (Human Interface Devices) will manage all platform-specific input code, abstracting access to:
+
+- Mouse
+- Keyboard
+- Gamepad
+- VR controllers
+- Other user-driven or sensor-based input devices
+
+This module is highly platform-dependent and will eventually bridge native OS input handling to Geodesy's internal event system.
+
+#### Implementation Status:
+
+This section is currently a placeholder. A full input routing and forwarding system—where runtime `object`s can receive and respond to input—has yet to be designed. Input event forwarding, focus control, and input mapping are future features to be specified in later revisions.
 
 - Abstract input layer for mouse, keyboard, gamepad, and VR input.
 - Event system decouples input from objects.
