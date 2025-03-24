@@ -1,7 +1,6 @@
 # The Geodesy Engine
 
-> **File:** `/docs/design/TheGeodesyEngine.md`
-> **Purpose:** This is the authoritative logic and architecture specification for the Geodesy Engine. It is intended to guide both human development and AI-assisted code generation.
+> **File:** `/docs/design/TheGeodesyEngine.md` **Purpose:** This is the authoritative logic and architecture specification for the Geodesy Engine. It is intended to guide both human development and AI-assisted code generation.
 
 ---
 
@@ -157,56 +156,83 @@ The io.h submodule is the template code for loading in different assets types in
 
 ### `math` Module
 
+The `math` module provides the foundational numeric and geometric types for all simulation, rendering, and spatial operations in the Geodesy Engine. It is designed to be lean, readable, and performant, avoiding unnecessary overhead while retaining clarity and usability.
+
+#### Core Features
+- `vec<T, N>`: Generic N-dimensional vector template with overloaded arithmetic, dot/cross products, normalization, and swizzle operations.
+- `mat<T, N>`: N×N matrix template supporting affine transforms, rotations, inverses, and multiplication.
+- `quat<T>`: Quaternion representation with normalization, rotation application, and spherical interpolation.
+- `field<T>`: A templated field class representing N-dimensional domains of data. Used for modeling scalar/vector fields like heightmaps or 3D volumes.
+- `complex<T>`: Complex number type useful for 2D transformations or frequency domain calculations.
+
+#### Module Details
+- All types are fully templated and designed to be interoperable (e.g. `mat<float, 3>` can multiply `vec<float, 3>`).
+- Vector types (`vec`) are frequently used in objects for position, orientation (as `quat`), momentum, and forces.
+- Matrix operations (`mat`) are used extensively in the GPU pipeline for camera, model, and projection transforms.
+- Quaternion logic (`quat`) provides robust 3D rotation handling without suffering from gimbal lock.
+- Constants like `PI`, `E`, and `TAU` are defined in `constants.h`.
+- The library defines type aliases such as `vec3f`, `mat4f`, and `quatf` for convenience.
+
+#### Internal Utilities
+- `config.h`: Controls internal type precision (e.g. `math::real` resolves to `float` or `double`).
+- `type.h`: Defines internal base types and mathematical traits.
+- `func.h`: Contains numerical functions like `clamp()`, `lerp()`, `smoothstep()`.
+
+#### Design Philosophy
+- Deterministic and low-overhead math for simulation.
+- Templated for flexibility but designed with clarity.
+- Interoperable with Vulkan coordinate systems and GPU buffer types.
+
+The math module is considered stable and will only be revised for clarity, optimization, or bug fixing. It forms the bedrock of all vector/matrix/quaternion computations in the engine.
+
 - `vec`, `mat`, `quat` implementations.
 - Coordinate transforms and matrix operations.
 
-### `gpu` Module
+### lgc (Logic Primitives)
 
-The `gpu` namespace provides high-level, RAII-based abstractions over Vulkan, enabling developers to interact with GPU resources without direct management of raw Vulkan handles. It is explicitly designed to expose Vulkan functionality while maintaining safe memory management and code clarity.
+The `lgc` module defines the behavioral logic system in Geodesy. It provides the foundation for object-based and stage-aware simulation logic. At its core lies the `behavior` class, which all runtime logic derives from.
 
-#### `gpu::context`
+#### `behavior` (Base Logic Interface)
 
-- Manages the global Vulkan instance, surface, debug layers, and device selection.
-- Responsible for initializing the Vulkan environment and maintaining compatibility with validation layers.
-- Owns the primary `gpu::device` and acts as the root object for all Vulkan operations.
+- Defines overridable virtual functions for runtime events:
+  - `on_creation(object*, stage*)`
+  - `on_update(object*, stage*, float dt)`
+  - `on_event(const event&, object*, stage*)`
+  - `on_destruction(object*, stage*)`
+- Attached to any `runtime::object` or `runtime::subject`.
+- Receives simulation time updates, physics events, custom messages, and stage lifecycle triggers.
 
-#### `gpu::device`
+#### `scripted_behavior` (Derived Logic Implementation)
 
-- Wraps a Vulkan logical device (`VkDevice`) and its associated physical device.
-- Manages queues (graphics, compute, transfer) and queue families.
-- Provides creation functions for GPU resources like buffers, images, and pipelines.
-- Owns a `VmaAllocator` for memory management using Vulkan Memory Allocator.
+- Inherits from `behavior`.
+- Loads runtime logic from external sources such as Lua scripts or visual graph representations.
+- Implements all base callbacks by executing script-defined behavior logic.
+- Exposes internal state and engine hooks to scripting backend via registered bindings.
 
-#### `gpu::buffer`
+##### Use Case:
 
-- Represents GPU memory used for storage, vertex, index, or uniform buffers.
-- Created through `gpu::device`, with parameters specifying usage and memory residency.
-- Exposes mapping/unmapping operations for CPU-GPU synchronization.
-- Backed by `VmaAllocation`, enabling efficient suballocation and defragmentation.
+- Rapid prototyping.
+- Hot-reloadable behaviors.
+- Visual node graph editing.
 
-#### `gpu::image`
+#### `compiled_behavior` (Transpiled Graph Logic)
 
-- Encapsulates Vulkan images used for color, depth, or sampling.
-- Supports attachment formats, mipmaps, and sampler creation.
-- Allows direct texture uploads with optional staging buffers.
-- Manages image views and layout transitions internally.
+- Also derived from `behavior`.
+- Generated from visual scripting graphs or logic DSLs.
+- Transpiled into C++ code during build step for native performance.
 
-#### `gpu::pipeline`
+#### Design Philosophy:
 
-- Represents a graphics pipeline composed of shader stages, render pass compatibility, and vertex input configuration.
-- Reflects shader uniform blocks and descriptor set layouts.
-- Created with awareness of the rendering context (e.g., multisampling, blend state).
-- Acts as a bridge between shader modules and draw command recording.
+- All behavior logic is ultimately unified under the `behavior` interface.
+- The engine does not distinguish between scripted, visual, or compiled logic at runtime—it simply calls the correct virtual methods.
+- This supports experimentation in scripting and graph systems, while enabling promotion to native code for optimized builds.
 
-All `gpu` types are intended to be constructed through `gpu::device` factories and stored in smart pointers for shared access across subsystems. The design ensures explicit Vulkan control while offering convenience and safety guarantees through C++ RAII idioms.
+#### Future Concepts:
 
-- Abstractions over Vulkan: `gpu::buffer`, `gpu::image`, `gpu::pipeline`, etc.
-- Smart-pointer-wrapped GPU resource management.
-
-### Asset and File Systems
-
-- `asset_manager` handles loading, reference counting, and unloading.
-- File paths are virtualized and resolved through an internal mount system.
+- Logic composition via behavior stacks or chains.
+- Behavior registries for dynamic loading.
+- A node graph editor producing `scripted_behavior` DSLs or Lua scripts.
+- Custom serialization for debugging, replay, and AI training.
 
 ### HID
 
