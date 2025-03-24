@@ -8,7 +8,7 @@
 
 I have been working on a game engine myself on and off, for just shy of a decade at this point. What has lead to the development of the Geodesy Engine is that the ideas surrounding the engine are unorthodox enough that it warrants its own creation because of its distinction alone. This is not to say that existing solutions such as Unreal, Unity, and Godot are not excellent engines themselves, it's that we feel that our ideas in architecture are different enough that they warrant the creation of the geodesy engine. There would be no Godot Engine if the developers of the Godot engine said "why make an engine when Unreal and Unity already exist?".
 
-That begs the question, what are the features that I am proposing that warrant the creation of an entirely new engine? For instance, one could say that if a feature is a bad feature, then there is a reason why such a feature hasn't already been implemented in an already existing engine. If a feature is a "good" feature, then what is stopping Epic Games from having it implemented in the Unreal Engine? That is a question worthy of a dignified response. One has to think of a code base as like a forest, and at one point a forest becomes so overgrown that changing it would require burning down the forest and starting all over again. As a code base gets larger and larger, it becomes exponentially more difficult to change the most core aspects of an engine without breaking a build entirely. This is because so much of the code base is reliant on that core code. Thus a developer team becomes entrenched in the code base that already exists. When a code base becomes too large, it becomes far to difficult in time, energy, and ultimately money to change a feature of a code base. In such rare cases the only way to implement a features is to quite literally burn down the whole forest and build an entirely new framework to support said feature.&#x20;
+That begs the question, what are the features that I am proposing that warrant the creation of an entirely new engine? For instance, one could say that if a feature is a bad feature, then there is a reason why such a feature hasn't already been implemented in an already existing engine. If a feature is a "good" feature, then what is stopping Epic Games from having it implemented in the Unreal Engine? That is a question worthy of a dignified response. One has to think of a code base as like a forest, and at one point a forest becomes so overgrown that changing it would require burning down the forest and starting all over again. As a code base gets larger and larger, it becomes exponentially more difficult to change the most core aspects of an engine without breaking a build entirely. This is because so much of the code base is reliant on that core code. Thus a developer team becomes entrenched in the code base that already exists. When a code base becomes too large, it becomes far too difficult in time, energy, and ultimately money to change a feature of a code base. In such rare cases the only way to implement a features is to quite literally burn down the whole forest and build an entirely new framework to support said feature.&#x20;
 
 One has to look no further than the developmental differences between the OpenGL API and the Vulkan API. When the specification for OpenGL was first released in the 90s, vertices were streamed to the GPU on a frame by frame basis. It wasn't until the late 2000s did framebuffers, the ability to select other sets of targets to be rendered to for off screen rendering and post processing. Up into the late 2010s, most of the logical primitives of the OpenGL were Ad-hoc. The OpenGL context is tied to a particular system window, and it was agnostic to what GPU on the host system these rendering operations being performed on. It became better to start from scratch with a new API standard provided by AMD (Mantle), and influenced by OpenCL, that could allow high performance usage of GPU hardware.
 
@@ -26,7 +26,7 @@ Because of the modularity of rendering system, it also leaves room for the devel
 
 It should be noted that the intended update thread where all game logic is executed operates on its own time step rather than a fixed frame rate set by any particular render target. This is another perk of the Geodesy Engine over other engines. This allows for multiple render targets (subjects) in each stage to exist independently and be processed at their respective times. Full disclosure, the intention is to have an update thread perform all logic and host operation, then GPU resource updates at a fixed time step (not frame rate), while the render thread acts entirely asynchronously merely only executing to honor the set frame rates of all render targets (subjects) in all stages. We will see if this translates into the desired performance, if we finish the engine in the first place.
 
-I won't lie, I have found an massive appeal in AI. I have spent many years studying game engine design, and poured a good amount of time making this engine. The problem has been scalability. A single man can't continue to write every line of code, and then spend hours of time debugging finding simple errors. That's not time feasible. One thing I have noticed about AI, is it's precise execution of what you ask it to do. It is really good at concretizing well thought out logic into hard code, or&#x20;
+I won't lie, I have found an massive appeal in AI. I have spent many years studying game engine design, and poured a good amount of time making this engine. The problem has been scalability. A single man can't continue to write every line of code, and then spend hours of time debugging finding simple errors. That's not time feasible. One thing I have noticed about AI, is it's precise execution of what you ask it to do. It is really good at concretizing well thought out logic into hard code.
 
 Language at the end of the day is meant to express an idea, not be a substitute for good ideas. On top of that most guidelines for AI seem to encourage using pseudo code to generate actual code. Code is only as good as the ideas it comes from. This document serves a two fold purpose. The first it shall contain the logic of the engine in a human readable format to be translated into code later, and second to resolve the contextual loss between user sessions with most AIs available. Context loss seems to be the largest barrier in large scale code development. This document is merely to test the limits of AI in large scale software development. As a lone man I want to finish this project by any means necessary and put it behind me. I've worked on this long enough. I want to move on to other projects in my life.
 
@@ -171,7 +171,7 @@ The `io` module is the runtime-facing asset loader system of the Geodesy Engine.
 
 #### `gpu::image` and `gpu::shader` Derivation
 
-- Both `gpu::image` and `gpu::shader` classes **inherit from ****`io::file`**.
+- Both `gpu::image` and `gpu::shader` classes **inherit from \*\*\*\*\*\*\*\*\*\*\*\***\`\`.
 - This provides a consistent interface for asset memory handling.
 - Once loaded into host memory, they can be staged into device memory using the `gpu::context` system.
 
@@ -316,6 +316,46 @@ The `lgc` module defines the behavioral logic system in Geodesy. It provides the
 - A node graph editor producing `scripted_behavior` DSLs or Lua scripts.
 - Custom serialization for debugging, replay, and AI training.
 
+### phys (Physics Submodule)
+
+The `phys` module defines the physical representation of objects in the engine and governs their interaction with space, forces, and collisions. Its structure is built upon a recursive node hierarchy to match that of the `gfx` module, ensuring a unified spatial system for both rendering and physics.
+
+### `phys::node`
+
+- Defines spatial hierarchy for physics objects.
+- Contains:
+  - `Position`: math::vec3
+  - `Orientation`: math::quat
+  - `Scale`: math::vec3
+  - `Parent` and `Children` pointers
+  - Cached `WorldTransform`
+- Used for recursive transform updates, physics hierarchy processing, and attachment logic.
+
+### `phys::mesh`
+
+- A CPU-side physics mesh representation used for collision detection and structural analysis.
+- Contains an internal `vertex` struct that defines the **Geodesy Engine's standard vertex format**, including:
+  - Position (math::vec3)
+  - Normal (math::vec3)
+  - Tangent (math::vec3)
+  - Bitangent (math::vec3)
+  - Texture Coordinates (math::vec2)
+  - Bone Weights (float[4])
+  - Bone Indices (int[4])
+- Mesh data includes triangle indices and vertex lists, used for both rendering and physics.
+- Bone data enables skeletal deformation support and is defined per vertex.
+- This format is shared between `phys::mesh` and `gfx::mesh` to ensure seamless translation between CPU simulation and GPU rendering.
+
+### Design Intent
+
+- `gfx::mesh` and `gfx::node` are derived from `phys::mesh` and `phys::node`, respectively.
+- This allows render-facing objects to inherit all physical positioning and hierarchy logic.
+- `object` will store its instance transform tree using `gfx::node` instances, which carry physics structure through `phys::node`.
+
+The `phys` module provides the foundational spatial logic for all simulation and rendering integration. Future expansion will incorporate rigid body dynamics, constraint solvers, and scene collision structures.
+
+---
+
 ### HID
 
 The `hid` module (Human Interface Devices) will manage all platform-specific input code, abstracting access to:
@@ -338,6 +378,29 @@ This section is currently a placeholder. A full input routing and forwarding sys
 ---
 
 ## 3. Geodesy Runtime
+
+### Physics Integration
+
+After all gameplay logic has been applied and each object in the stage is evolved forward in time (via input, behavior, and other simulation), the next natural step in the update thread is the **physics resolution stage**.
+
+At this point, all forces, velocities, and position updates have already been applied. This is the ideal time to evaluate **physical interactions** such as:
+
+- **Collision Detection**: Checking if any objects have intersected after motion.
+- **Constraint Resolution**: Resolving overlapping objects and applying response forces.
+- **Trigger Volumes**: Detecting entry or exit from defined zones.
+- **Impulse Response**: Updating momentum or state based on collisions.
+
+This separation of logic-then-physics ensures that behavior-driven motion does not conflict with physical laws, and that the engine can process a clean, deterministic collision state.
+
+The physics pass is stateless between frames except for persistent dynamics (e.g., velocity and forces), and it generates **collision events** that are dispatched to the `behavior` system or other relevant callbacks.
+
+Future expansions of the `phys` module may include:
+
+- Rigid body simulation
+- Kinematic constraints
+- Gravity zones
+- Soft body or fluid models
+- VR collision proxy integration
 
 Explanation of Object/Subject/Stage/App. The runtime primitives recognized and processed by the engine are the base classes object, subject, stage, and app. Some of the methods of these classes can be overridden when developing an app from the engine base code. The base object class is the world primitive that exists. It has qualities such as position, orientation, and scale.
 
@@ -370,12 +433,12 @@ Subject is a special type of object that renders the stage it exists in. For exa
 
 subject : object
 
+- Subject should be synonymous with render target. That's all the subject class is.
 - A subject is a special type of object capable of perceiving and rendering its surrounding environment.
-- It is **not** necessarily the player or agent—it may be a camera, a debug tool, a VR headset feed, or a window-based rendering system.
-- The term 'subject' refers to its role in projecting the scene, not controlling it.
-- A subject may have behavior logic, but it is not inherently interactive.
+- It is **not** necessarily the player or agent—it may be a camera, a VR headset feed, or a window-based rendering system.
+- The term 'subject' refers to its role in rendering the scene.
 - Rendering in Geodesy is modular—each subject may define its own render target and method (e.g., offscreen render, GUI stage render, VR compositor).
-- The engine may contain multiple subjects in one or many stages, each observing or displaying the same or different views of the world.
+- The engine may contain multiple subjects in one or many stages, each observing or displaying the same or different views of the world, and sharing its render results in other stages.
 
 The way the Geodesy Engine processes these primitives is as follows. There exists the update thread which is logically the main game loop of the engine. It polls user input, processes user input, executes game logic, updates all stages in existence, and all objects in these stages. It then performs the proper physics such as collision.&#x20;
 
@@ -400,7 +463,7 @@ Update Thread (Main Thread)
 
 Render Thread (Main Thread)
 
-The render thread is a completely seperate thread, and unlike the update thread, has no fixed time step. Instead the render thread is called repeatably to check on every render target (subject) in existence in each stage. It checks each render target (subject) to see if it is ready to perform rendering operations and then aggregates all GPU command buffers to be submitted and executed on the proper parent GPU. It iterates though each stage, and each render target (subject) in each stage for rendering operations.
+The render thread is a completely separate thread, and unlike the update thread, has no fixed time step. Instead the render thread is called repeatably to check on every render target (subject) in existence in each stage. It checks each render target (subject) to see if it is ready to perform rendering operations and then aggregates all GPU command buffers to be submitted and executed on the proper parent GPU. It iterates though each stage, and each render target (subject) in each stage for rendering operations.
 
 ---
 
@@ -410,7 +473,7 @@ The render thread is a completely seperate thread, and unlike the update thread,
 
 - Creating a new `core::app`
 - Building and populating `core::stage`
-- Attaching behaviors to `core::subject`
+- Defining custom rendering systems in `core::subject`
 - Integrating raw Vulkan calls
 - Editing logic via visual scripting
 - Compiling runtime logic to native code
