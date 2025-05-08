@@ -9,7 +9,7 @@
 
 namespace geodesy::bltn {
 
-	class unit_test : public ecs::app {
+	class unit_test : public runtime::app {
 	public:
 
 		std::shared_ptr<core::gpu::context> 		DeviceContext; 		// Device Context which will be used for all gfx and computation operations.

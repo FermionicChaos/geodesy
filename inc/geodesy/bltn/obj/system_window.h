@@ -114,10 +114,10 @@ namespace geodesy::bltn::obj {
 		GLFWwindow* 							WindowHandle;
 		VkSurfaceKHR 							SurfaceHandle;
 
-		system_window(std::shared_ptr<core::gpu::context> aContext, ecs::stage* aStage, creator* aSystemWindowCreator);
+		system_window(std::shared_ptr<core::gpu::context> aContext, runtime::stage* aStage, creator* aSystemWindowCreator);
 		~system_window();
 
-		core::gpu::submission_batch render(ecs::stage* aStage) override;
+		core::gpu::submission_batch render(runtime::stage* aStage) override;
 		void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f }) override;
 
 	private:

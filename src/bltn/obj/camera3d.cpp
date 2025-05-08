@@ -150,7 +150,7 @@ namespace geodesy::bltn::obj {
 		Result = Context->end(DrawCommand);
 	}
 
-	camera3d::deferred_renderer::deferred_renderer(object* aObject, camera3d* aCamera3D) : ecs::object::renderer(aObject, aCamera3D) {
+	camera3d::deferred_renderer::deferred_renderer(object* aObject, camera3d* aCamera3D) : runtime::object::renderer(aObject, aCamera3D) {
 		// Gather list of mesh instances throughout model hierarchy.
 		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy.gather_mesh_instances();
 
@@ -164,7 +164,7 @@ namespace geodesy::bltn::obj {
 		}
 	}
 
-	camera3d::camera3d(std::shared_ptr<core::gpu::context> aContext, ecs::stage* aStage, creator* aCamera3DCreator) : ecs::subject(aContext, aStage, aCamera3DCreator) {
+	camera3d::camera3d(std::shared_ptr<core::gpu::context> aContext, runtime::stage* aStage, creator* aCamera3DCreator) : runtime::subject(aContext, aStage, aCamera3DCreator) {
 		VkResult Result = VK_SUCCESS;
 		engine* Engine = aContext->Device->Engine;
 		this->FOV 	= aCamera3DCreator->FOV;
@@ -304,8 +304,8 @@ namespace geodesy::bltn::obj {
 		);
 	}
 
-	std::shared_ptr<ecs::object::renderer> camera3d::default_renderer(object* aObject) {
-		return std::dynamic_pointer_cast<ecs::object::renderer>(std::make_shared<deferred_renderer>(aObject, this));
+	std::shared_ptr<runtime::object::renderer> camera3d::default_renderer(object* aObject) {
+		return std::dynamic_pointer_cast<runtime::object::renderer>(std::make_shared<deferred_renderer>(aObject, this));
 	}
 
 	// ----- Geodesy Default 3D Real Time Rendering System ----- //
@@ -318,7 +318,7 @@ namespace geodesy::bltn::obj {
 	// this->RenderingOperations[6]: Post Processing to Final Color Output.
 	// this->RenderingOperations[7]: postdraw operations.
 	/*
-	core::gpu::submission_batch camera3d::render(ecs::stage* aStage) {
+	core::gpu::submission_batch camera3d::render(runtime::stage* aStage) {
 
 		// Get next frame.
 		VkResult Result = this->Framechain->next_frame();

@@ -18,7 +18,7 @@
 #include "subject.h"
 #include "stage.h"
 
-namespace geodesy::ecs {
+namespace geodesy::runtime {
 
 	class app {
 	public:

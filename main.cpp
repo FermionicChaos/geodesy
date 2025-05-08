@@ -42,11 +42,11 @@ int main(int aCmdArgCount, char* aCmdArgList[]) {
 	{
 		geodesy::engine Engine(CommandLineArguments, LayerList, ExtensionList);
 		{
-				// Initialize User App
-				bltn::unit_test UnitTest(&Engine);
+			// Initialize User App
+			bltn::unit_test UnitTest(&Engine);
 
-				// Run User App
-				Engine.run(&UnitTest);
+			// Run User App
+			Engine.run(&UnitTest);
 		}
 	}
 

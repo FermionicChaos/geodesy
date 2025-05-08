@@ -4,7 +4,7 @@ namespace geodesy::bltn::stg {
 
 	using namespace core;
 
-	scene3d::scene3d(std::shared_ptr<core::gpu::context> aContext, std::string aName) : ecs::stage(aContext, aName) {
+	scene3d::scene3d(std::shared_ptr<core::gpu::context> aContext, std::string aName) : runtime::stage(aContext, aName) {
 		// Create Info for stage camera.
 		obj::camera3d::creator CameraCreateInfo;
 		CameraCreateInfo.Name 				= "Camera3D";
@@ -18,9 +18,9 @@ namespace geodesy::bltn::stg {
 		CameraCreateInfo.Far 				= 2000.0f;
 
 		// Create Temp Array of objects to be created..
-		std::vector<ecs::object::creator> ObjectList;
+		std::vector<runtime::object::creator> ObjectList;
 
-		// ecs::object::creator Box;
+		// runtime::object::creator Box;
 		// Box.Name 							= "Box";
 		// Box.ModelPath 						= "../glTF-Sample-Models/2.0/Box/glTF/Box.gltf";
 		// Box.Position 						= { 0.0f, 0.0f, 0.0f };
@@ -28,7 +28,7 @@ namespace geodesy::bltn::stg {
 		// Box.Scale 							= { 5.0f, 5.0f, 5.0f };
 		// ObjectList.push_back(Box);
 
-		// ecs::object::creator BoxTextured;
+		// runtime::object::creator BoxTextured;
 		// BoxTextured.Name 					= "BoxTextured";
 		// BoxTextured.ModelPath 				= "../glTF-Sample-Models/2.0/BoxTextured/glTF/BoxTextured.gltf";
 		// BoxTextured.Position 				= { 10.0f, 0.0f, 0.0f };
@@ -36,7 +36,7 @@ namespace geodesy::bltn::stg {
 		// BoxTextured.Scale 					= { 5.0f, 5.0f, 5.0f };
 		// ObjectList.push_back(BoxTextured);
 
-		ecs::object::creator Lantern;
+		runtime::object::creator Lantern;
 		Lantern.Name 						= "Lantern";
 		Lantern.ModelPath 					= "../glTF-Sample-Models/2.0/Lantern/glTF/Lantern.gltf";
 		Lantern.Position 					= { 00.0f, 0.0f, 0.0f };
@@ -44,7 +44,7 @@ namespace geodesy::bltn::stg {
 		Lantern.Scale 						= { 1.0f, 1.0f, 1.0f };
 		ObjectList.push_back(Lantern);
 
-		ecs::object::creator Sponza;
+		runtime::object::creator Sponza;
 		Sponza.Name 						= "Sponza";
 		Sponza.ModelPath 					= "../glTF-Sample-Models/2.0/Sponza/glTF/Sponza.gltf";
 		Sponza.Position 					= { 0.0f, 0.0f, 0.0f };
@@ -52,7 +52,7 @@ namespace geodesy::bltn::stg {
 		Sponza.Scale 						= { 75.0f, 75.0f, 75.0f };
 		ObjectList.push_back(Sponza);
 
-		// ecs::object::creator CesiumMilkTruck;
+		// runtime::object::creator CesiumMilkTruck;
 		// CesiumMilkTruck.Name 				= "CesiumMilkTruck";
 		// CesiumMilkTruck.ModelPath 			= "../glTF-Sample-Models/2.0/CesiumMilkTruck/glTF/CesiumMilkTruck.gltf";
 		// CesiumMilkTruck.Position 			= { 0.0f, 30.0f, 0.0f };
@@ -61,7 +61,7 @@ namespace geodesy::bltn::stg {
 		// CesiumMilkTruck.AnimationWeights 	= { 0.0f, 1.0f };
 		// ObjectList.push_back(CesiumMilkTruck);
 
-		// ecs::object::creator Pigwithanimation;
+		// runtime::object::creator Pigwithanimation;
 		// Pigwithanimation.Name 				= "Pigwithanimation";
 		// Pigwithanimation.ModelPath 			= "assets/models/Pigwithanimation.gltf";
 		// Pigwithanimation.Position 			= { -40.0f, 30.0f, 0.0f };
@@ -70,7 +70,7 @@ namespace geodesy::bltn::stg {
 		// Pigwithanimation.AnimationWeights 	= { 1.0f, 0.0f };
 		// ObjectList.push_back(Pigwithanimation);
 
-		ecs::object::creator BrainStem;
+		runtime::object::creator BrainStem;
 		BrainStem.Name 						= "BrainStem";
 		BrainStem.ModelPath 				= "../glTF-Sample-Models/2.0/BrainStem/glTF/BrainStem.gltf";
 		BrainStem.Position 					= { 10.0f, 00.0f, 0.0f };
@@ -79,7 +79,7 @@ namespace geodesy::bltn::stg {
 		BrainStem.AnimationWeights 			= { 0.0f, 1.0f };
 		ObjectList.push_back(BrainStem);
 
-		ecs::object::creator CesiumMan;
+		runtime::object::creator CesiumMan;
 		CesiumMan.Name 						= "CesiumMan";
 		CesiumMan.ModelPath 				= "../glTF-Sample-Models/2.0/CesiumMan/glTF/CesiumMan.gltf";
 		CesiumMan.Position 					= { -10.0f, 0.0f, 0.0f };
@@ -88,7 +88,7 @@ namespace geodesy::bltn::stg {
 		CesiumMan.AnimationWeights 			= { 0.0f, 1.0f };
 		ObjectList.push_back(CesiumMan);
 
-		// ecs::object::creator ParallaxPlane;
+		// runtime::object::creator ParallaxPlane;
 		// ParallaxPlane.Name 					= "ParallaxPlane";
 		// ParallaxPlane.ModelPath 			= "assets/models/bricks2/bricks2.gltf";
 		// ParallaxPlane.Position 				= { 0.0f, 0.0f, 5.0f };
@@ -100,7 +100,7 @@ namespace geodesy::bltn::stg {
 		this->create_object<obj::camera3d>(&CameraCreateInfo);
 		// Create objects.
 		for (size_t i = 0; i < ObjectList.size(); i++) {
-			this->create_object<ecs::object>(&ObjectList[i]);
+			this->create_object<runtime::object>(&ObjectList[i]);
 		}
 
 	}

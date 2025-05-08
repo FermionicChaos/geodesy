@@ -8,7 +8,7 @@
 
 namespace geodesy::bltn::stg {
 
-	class scene3d : public ecs::stage {
+	class scene3d : public runtime::stage {
 	public:
 
 		scene3d(std::shared_ptr<core::gpu::context> aContext, std::string aName);

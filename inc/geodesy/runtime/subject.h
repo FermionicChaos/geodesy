@@ -16,7 +16,7 @@
 
 #include "object.h"
 
-namespace geodesy::ecs {
+namespace geodesy::runtime {
 	
 	class subject : public object {
 	public:

@@ -341,7 +341,7 @@ namespace geodesy::bltn::obj {
 		this->Clipped			= true;
 	}
 
-	system_window::system_window(std::shared_ptr<core::gpu::context> aContext, ecs::stage* aStage, creator* aSystemWindowCreator) : window(aContext, aStage, aSystemWindowCreator) {
+	system_window::system_window(std::shared_ptr<core::gpu::context> aContext, runtime::stage* aStage, creator* aSystemWindowCreator) : window(aContext, aStage, aSystemWindowCreator) {
 		VkResult Result = VK_SUCCESS;
 
 		// Create GLFW System Window.
@@ -390,7 +390,7 @@ namespace geodesy::bltn::obj {
 		this->Time += aDeltaTime;
 	}
 
-	core::gpu::submission_batch system_window::render(ecs::stage* aStage) {
+	core::gpu::submission_batch system_window::render(runtime::stage* aStage) {
 		VkResult Result = VK_SUCCESS;
 		// The next frame operation will both present previously drawn frame and acquire next
 		// frame. 

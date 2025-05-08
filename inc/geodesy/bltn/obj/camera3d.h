@@ -6,7 +6,7 @@
 
 namespace geodesy::bltn::obj {
 
-	class camera3d : public ecs::subject {
+	class camera3d : public runtime::subject {
 	public:
 
 		class geometry_buffer : public framechain {
@@ -70,14 +70,14 @@ namespace geodesy::bltn::obj {
 		float FOV, Near, Far;
 		std::shared_ptr<core::gpu::buffer> 	CameraUniformBuffer;
 
-		camera3d(std::shared_ptr<core::gpu::context> aContext, ecs::stage* aStage, creator* aCamera3DCreator);
+		camera3d(std::shared_ptr<core::gpu::context> aContext, runtime::stage* aStage, creator* aCamera3DCreator);
 		~camera3d();
 
 		// Implement input
 		void input(const core::hid::input& aInput) override;
 		void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f }) override;
-		std::shared_ptr<renderer> default_renderer(ecs::object* aObject) override;
-		// core::gpu::submission_batch render(ecs::stage* aStage) override;
+		std::shared_ptr<renderer> default_renderer(runtime::object* aObject) override;
+		// core::gpu::submission_batch render(runtime::stage* aStage) override;
 
 	};
 

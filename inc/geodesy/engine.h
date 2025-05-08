@@ -19,10 +19,10 @@
 #include "core/sfx.h"
 
 // Base objects which the game engine processes.
-#include "ecs/object.h"
-#include "ecs/subject.h"
-#include "ecs/stage.h"
-#include "ecs/app.h"
+#include "runtime/object.h"
+#include "runtime/subject.h"
+#include "runtime/stage.h"
+#include "runtime/app.h"
 
 // The geodesy engine is an engine that is a multi-threaded high performance engine
 // designed for high performance games and simulations. The resources and data the
@@ -109,9 +109,9 @@ namespace geodesy {
 		void destroy_device_context(std::shared_ptr<core::gpu::context> aDeviceContext);
 		VkResult wait_on_device_context(std::vector<std::shared_ptr<core::gpu::context>> aDeviceContextList = {});
 
-		void run(ecs::app* aApp);
-		VkResult update_resources(ecs::app* aApp);
-		VkResult execute_render_operations(ecs::app* aApp);
+		void run(runtime::app* aApp);
+		VkResult update_resources(runtime::app* aApp);
+		VkResult execute_render_operations(runtime::app* aApp);
 
 	};
 

@@ -10,13 +10,13 @@
 namespace geodesy::bltn {
 
 	using namespace core;
-	using namespace ecs;
+	using namespace runtime;
 
 	using namespace gpu;
 	using namespace obj;
 	using namespace lgc;
 
-	unit_test::unit_test(engine* aEngine) : ecs::app(aEngine, "geodesy-unit-test", { 1, 0, 0 }) {
+	unit_test::unit_test(engine* aEngine) : runtime::app(aEngine, "geodesy-unit-test", { 1, 0, 0 }) {
 		TimeStep = 1.0 / 100.0;
 		Window = nullptr;
 		// I want my device context to support these operation types.
@@ -68,7 +68,7 @@ namespace geodesy::bltn {
 		SubjectWindowCreator.Position 		= { 0.0f, 0.0f, 0.5f };
 		SubjectWindowCreator.Direction 		= { 180.0f, 0.0f };
 		SubjectWindowCreator.Scale 			= { 1.0f, 1.0f, 1.0f };
-		SubjectWindowCreator.Subject 		= std::dynamic_pointer_cast<ecs::subject>(this->StageLookup["3D Rendering Testing"]->ObjectLookup["Camera3D"]);
+		SubjectWindowCreator.Subject 		= std::dynamic_pointer_cast<runtime::subject>(this->StageLookup["3D Rendering Testing"]->ObjectLookup["Camera3D"]);
 
 		// Create System Window.
 		Window = this->StageLookup["Window Testing"]->create_object<obj::system_window>(&SystemWindowCreator);

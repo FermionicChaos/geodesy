@@ -43,7 +43,7 @@ virtual_window is a type of render target that can be used to share inputs and o
 //       /
 //      +X
 
-namespace geodesy::ecs {
+namespace geodesy::runtime {
 	
 	class stage {
 	public:

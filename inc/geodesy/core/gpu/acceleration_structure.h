@@ -27,7 +27,7 @@ namespace geodesy::core::gpu {
 		// Build Bottom Level AS (Mesh Geometry Data).
 		acceleration_structure(std::shared_ptr<context> aContext, const gfx::mesh* aDeviceMesh, const gfx::mesh* aHostMesh);
 		// Build Top Level AS (Mesh Instances).
-		acceleration_structure(std::shared_ptr<context> aContext, const ecs::stage* aStage);
+		acceleration_structure(std::shared_ptr<context> aContext, const runtime::stage* aStage);
 		// Clear out resources
 		~acceleration_structure();
 

@@ -6,7 +6,7 @@
 
 namespace geodesy::bltn::obj {
 
-	class window : public ecs::subject {
+	class window : public runtime::subject {
 	public:
 
 		struct window_draw_call : object::draw_call {
@@ -18,8 +18,8 @@ namespace geodesy::bltn::obj {
 			);
 		};
 
-		struct window_renderer : ecs::object::renderer {
-			window_renderer(ecs::object* aObject, window* aWindow);
+		struct window_renderer : runtime::object::renderer {
+			window_renderer(runtime::object* aObject, window* aWindow);
 		};
 
 		struct creator : subject::creator {
@@ -44,9 +44,9 @@ namespace geodesy::bltn::obj {
 
 		std::shared_ptr<core::gpu::buffer> WindowUniformBuffer;
 
-		window(std::shared_ptr<core::gpu::context> aContext, ecs::stage* aStage, creator* aWindowCreator);
+		window(std::shared_ptr<core::gpu::context> aContext, runtime::stage* aStage, creator* aWindowCreator);
 
-		std::shared_ptr<renderer> default_renderer(ecs::object* aObject) override;
+		std::shared_ptr<renderer> default_renderer(runtime::object* aObject) override;
 		
 	};
 

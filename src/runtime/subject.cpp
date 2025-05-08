@@ -1,7 +1,7 @@
-#include <geodesy/ecs/stage.h>
-#include <geodesy/ecs/subject.h>
+#include <geodesy/runtime/stage.h>
+#include <geodesy/runtime/subject.h>
 
-namespace geodesy::ecs {
+namespace geodesy::runtime {
 
 	using namespace core;
 	using namespace gpu;
@@ -86,7 +86,7 @@ namespace geodesy::ecs {
 		return true;
 	}
 
-	std::shared_ptr<ecs::object::renderer> subject::default_renderer(object* aObject) {
+	std::shared_ptr<runtime::object::renderer> subject::default_renderer(object* aObject) {
 		std::shared_ptr<renderer> DefaultRenderer;
 		return DefaultRenderer;
 	}

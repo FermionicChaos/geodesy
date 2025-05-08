@@ -1,7 +1,7 @@
 #include <geodesy/engine.h>
-#include <geodesy/ecs/object.h>
+#include <geodesy/runtime/object.h>
 
-namespace geodesy::ecs {
+namespace geodesy::runtime {
 
 	using namespace core;
 	using namespace gpu;

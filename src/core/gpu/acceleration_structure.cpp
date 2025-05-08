@@ -4,8 +4,8 @@
 #include <geodesy/core/gfx/mesh.h>
 #include <geodesy/core/gfx/node.h>
 #include <geodesy/core/gfx/model.h>
-#include <geodesy/ecs/object.h>
-#include <geodesy/ecs/stage.h>
+#include <geodesy/runtime/object.h>
+#include <geodesy/runtime/stage.h>
 
 namespace geodesy::core::gpu {
 
@@ -128,7 +128,7 @@ namespace geodesy::core::gpu {
 		}
 	}
 
-	acceleration_structure::acceleration_structure(std::shared_ptr<context> aContext, const ecs::stage* aStage) {
+	acceleration_structure::acceleration_structure(std::shared_ptr<context> aContext, const runtime::stage* aStage) {
 		// TLAS will have to iterate through every objects model to gather its mesh instances.
 
 		// Vulkan mesh instance list over entire stage.

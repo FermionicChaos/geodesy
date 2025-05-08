@@ -13,7 +13,7 @@
 #include "../core/gfx.h"
 #include "../core/sfx.h"
 
-namespace geodesy::ecs {
+namespace geodesy::runtime {
 	
 	class object {
 	public:

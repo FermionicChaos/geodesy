@@ -65,7 +65,7 @@ namespace geodesy {
 			class model;
 		}
 	}
-	namespace ecs {
+	namespace runtime {
 		class object;
 		class subject;
 		class stage;

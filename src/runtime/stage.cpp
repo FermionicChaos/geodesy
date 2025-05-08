@@ -1,4 +1,4 @@
-#include <geodesy/ecs/stage.h>
+#include <geodesy/runtime/stage.h>
 
 // #define ENABLE_MULTITHREADED_PROCESSING
 
@@ -8,7 +8,7 @@
 
 #include <iostream>
 
-namespace geodesy::ecs {
+namespace geodesy::runtime {
 
 	using namespace core;
 

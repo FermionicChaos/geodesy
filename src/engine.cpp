@@ -186,13 +186,13 @@ namespace geodesy {
 		return Result;
 	}
 
-	void engine::run(ecs::app* aApp) {
+	void engine::run(runtime::app* aApp) {
 
 		aApp->init();
 
 	}
 
-	VkResult engine::update_resources(ecs::app* aApp) {
+	VkResult engine::update_resources(runtime::app* aApp) {
 		VkResult Result = VK_SUCCESS;
 		std::map<std::shared_ptr<context>, core::gpu::submission_batch> UpdateOperations;
 
@@ -221,7 +221,7 @@ namespace geodesy {
 		return Result;
 	}
 
-	VkResult engine::execute_render_operations(ecs::app* aApp) {
+	VkResult engine::execute_render_operations(runtime::app* aApp) {
 		VkResult Result = VK_SUCCESS;
 		std::map<std::shared_ptr<context>, core::gpu::submission_batch> RenderInfo;
 

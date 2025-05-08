@@ -2,7 +2,7 @@
 
 #include <omp.h>
 
-namespace geodesy::ecs {
+namespace geodesy::runtime {
 
 	using namespace core;
 
