@@ -105,6 +105,60 @@ namespace geodesy::core::math {
 		    }
 		}
 
+		//--------------------------------------------------------------------
+		//  In mat.h  — inside template<class T,std::size_t M,std::size_t N> struct mat
+		//  Works for any square size ≥ 3×3.
+		//  Access pattern:  q[0] = real  ‖  q[1] q[2] q[3] = x y z
+		//--------------------------------------------------------------------
+		mat(const quaternion<T>& q) {
+			//tex:
+			// In quaternion notation, a rotation is of the form
+			// $$ \vec{r}^{'} = q\vec{r}q^{-1} $$
+			// Where 
+			// $ q = e^{\phi} $
+			// and $\phi$ is
+			// $$ \phi = \frac{\theta}{2} \hat{u} $$
+			// $\theta$ is the angle of rotation, and $\hat{u}$ is the vector
+			// which the object is rotated around.
+			// $$ s = \frac{1}{|q|^{2}} $$
+			// The matrix below is to be used in the following way $\vec{r}^{'} = R \vec{r}$
+			// and is equivalent to $ \vec{r}^{'} = q \vec{r} q^{-1} $.
+			// $$ R = 
+			// \begin{bmatrix}
+			// 1 - s(c^{2} + d^{2}) & 2s(bc - da) & 2s(bd + ca) \\ 
+			// 2s(bc + da) & 1 - 2s(b^{2} + d^{2}) & 2s(cd - ba) \\
+    		// 2s(bd - ca) & 2s(cd + ba) & 1 - 2s(b^{2} + c^{2})
+			// \end{bmatrix}    
+			// $$
+			// Citation: http://www.faqs.org/faqs/gfx/algorithms-faq/
+		    
+			// Initialize the matrix to the identity matrix
+		    for (std::size_t r = 0; r < M; ++r)
+		        for (std::size_t c = 0; c < N; ++c)
+		            (*this)(r, c) = (r == c ? T{1} : T{0});
+		
+		    // Load quaternion components.
+		    const T w = q[0]; // Real Component
+		    const T x = q[1];
+		    const T y = q[2];
+		    const T z = q[3];
+		
+		    const T xx = x * x,  yy = y * y,  zz = z * z;
+		    const T xy = x * y,  xz = x * z,  yz = y * z;
+		    const T wx = w * x,  wy = w * y,  wz = w * z;
+		
+			// Load the upper 3x3 of the matrix.
+		    (*this)(0,0) = 1.0 - 2.0 * (yy + zz);
+		    (*this)(0,1) =       2.0 * (xy - wz);
+		    (*this)(0,2) =       2.0 * (xz + wy);
+		    (*this)(1,0) =       2.0 * (xy + wz);
+		    (*this)(1,1) = 1.0 - 2.0 * (xx + zz);
+		    (*this)(1,2) =       2.0 * (yz - wx);
+		    (*this)(2,0) =       2.0 * (xz - wy);
+		    (*this)(2,1) =       2.0 * (yz + wx);
+		    (*this)(2,2) = 1.0 - 2.0 * (xx + yy);
+		}
+
 		// Accessor functions, default memory interpretation is column-major
 		const T operator()(std::size_t aRow, std::size_t aColumn) const {
 			return (*this)[aRow + aColumn * M];
@@ -259,59 +313,6 @@ namespace geodesy::core::math {
 	        }
 	    }
 	    return I;                                                    // now A⁻¹
-	}
-
-	// Generates a rotation matrix from a quaternion for an arbitrary vector.
-	template <typename T> inline 
-	mat<T, 4, 4> rotation(quaternion<T> aQuaternion) {
-		//tex:
-		// In quaternion notation, a rotation is of the form
-		// $$ \vec{r}^{'} = q\vec{r}q^{-1} $$
-		// Where 
-		// $ q = e^{\phi} $
-		// and $\phi$ is
-		// $$ \phi = \frac{\theta}{2} \hat{u} $$
-		// $\theta$ is the angle of rotation, and $\hat{u}$ is the vector
-		// which the object is rotated around.
-		// $$ s = \frac{1}{|q|^{2}} $$
-		// The matrix below is to be used in the following way $\vec{r}^{'} = R \vec{r}$
-		// and is equivalent to $ \vec{r}^{'} = q \vec{r} q^{-1} $.
-		// $$ R = 
-		// \begin{bmatrix}
-		// 1 - s(c^{2} + d^{2}) & 2s(bc - da) & 2s(bd + ca) \\ 
-		// 2s(bc + da) & 1 - 2s(b^{2} + d^{2}) & 2s(cd - ba) \\
-    	// 2s(bd - ca) & 2s(cd + ba) & 1 - 2s(b^{2} + c^{2})
-		// \end{bmatrix}    
-		// $$
-		// Citation: http://www.faqs.org/faqs/gfx/algorithms-faq/
-
-		quaternion<T> q = aQuaternion;
-		T qs = abs2(q);
-		if (qs < std::numeric_limits<T>::epsilon()) {
-			return mat<T, 4, 4>(
-				1.0, 0.0, 0.0, 0.0,
-				0.0, 1.0, 0.0, 0.0,
-				0.0, 0.0, 1.0, 0.0,
-				0.0, 0.0, 0.0, 1.0
-			);
-		}
-		T s = 1.0 / qs;
-		T qa = q[0], qb = q[1], qc = q[2], qd = q[3];
-		return mat<T, 4, 4>(
-			1.0 - 2.0 * s * (qc * qc + qd * qd), 	2.0 * s * (qb * qc - qd * qa), 			2.0 * s * (qb * qd + qc * qa), 			0.0,
-			2.0 * s * (qb * qc + qd * qa), 			1.0 - 2.0 * s * (qb * qb + qd * qd), 	2.0 * s * (qc * qd - qb * qa), 			0.0,
-			2.0 * s * (qb * qd - qc * qa), 			2.0 * s * (qc * qd + qb * qa), 			1.0 - 2.0 * s * (qb * qb + qc * qc), 	0.0,
-			0.0, 									0.0, 									0.0, 									1.0
-		);
-	}
-
-	// Generates a rotation matrix from an angle amount to rotate and arbitrary vector around aAxis vector.
-    template <typename T> inline 
-	mat<T, 4, 4> rotation(T aAngle, vec<T, 3> aAxis) {
-		vec<T, 3> UnitAxis = normalize(aAxis);
-		quaternion<T> a = (T)(aAngle / 2.0) * quaternion<T>(0.0, UnitAxis[0], UnitAxis[1], UnitAxis[2]);
-		quaternion<T> q = exp(a);
-		return rotation(q);
 	}
 
 	// Generates a projection matrix

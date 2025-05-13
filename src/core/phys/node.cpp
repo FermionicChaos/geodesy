@@ -22,7 +22,7 @@ namespace geodesy::core::phys {
 		this->Position += (this->LinearMomentum / this->Mass) * aDeltaTime;
 
 		// Invert the inertia tensor to get the angular velocity.
-		math::vec<float, 3> AngularVelocity = this->AngularMomentum;// * math::inverse(this->InertiaTensor);
+		math::vec<float, 3> AngularVelocity = math::inverse(this->InertiaTensor) * this->AngularMomentum;
 
 		// Update the orientation using quaternion rotation.
 		//this->Orientation = math::quaternion<float>::rotate(this->Orientation, AngularVelocity, aDeltaTime);

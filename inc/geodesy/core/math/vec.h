@@ -175,6 +175,14 @@ namespace geodesy::core::math {
 		);
 	}
 
+	template <typename T> inline
+	quaternion<T> rotation(T aAngle, vec<T, 3> aNormalizedAxis) {
+		// Create Rotator Quaternion.
+		quaternion<T> Rotator = ((T)(aAngle / 2.0)) * quaternion<T>(0.0, aNormalizedAxis[0], aNormalizedAxis[1], aNormalizedAxis[2]);
+		// Exponentiate to procure proper rotation quaternion.
+		return exp(Rotator);
+	}
+
 	// Arbitrary rotation of a vector around an axis by an angle.
 	template <typename T> inline
 	vec<T, 3> rotate(vec<T, 3> aInput, T aAngle, vec<T, 3> aAxis) {
