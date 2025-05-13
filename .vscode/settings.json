@@ -98,7 +98,14 @@
         "expected": "cpp",
         "shared_mutex": "cpp",
         "cfenv": "cpp",
-        "text_encoding": "cpp"
+        "text_encoding": "cpp",
+        "__bit_reference": "cpp",
+        "__functional_03": "cpp",
+        "__hash_table": "cpp",
+        "__mutex_base": "cpp",
+        "__node_handle": "cpp",
+        "__tree": "cpp",
+        "__tuple": "cpp"
     },
     "dotnet.defaultSolution": "geodesy.sln",
     "cmake.configureOnOpen": false,

@@ -6,6 +6,8 @@
 #include "../../config.h"
 // Include include math.
 #include "../math.h"
+// Include physics mesh. (Needed for collisions)
+#include "mesh.h"
 
 namespace geodesy::core::phys {
 
@@ -17,29 +19,44 @@ namespace geodesy::core::phys {
 	shader, and finally a root node can be an object which the engine processes and applies physics to.
 	*/
 
-	/*
+	///*
 	class node {
-		public:
+	public:
+
+		// Node Types to identify runtime node.
+		enum type {
+			PHYSICS,
+			GRAPHICS,
+			BONE,
+			OBJECT,
+		};
+
+		enum motion {
+			STATIC,			// Node doesn't move in world space
+			DYNAMIC,		// Node moves, but based on physical forces applied.
+			ANIMATED,		// Node moves based on predetermined animation path data.
+		};
 		
 		// Node metadata/hierarchy.
-		std::string             	Name;       		// Node name
-		node*                   	Root;       		// Root node in hierarchy
-		node*                   	Parent;     		// Parent node in hierarchy
-		std::vector<node>       	Child;      		// Child nodes in hierarchy
+		std::string             			Name;       		// Node name
+		node*                   			Root;       		// Root node in hierarchy
+		node*                   			Parent;     		// Parent node in hierarchy
+		std::vector<node*>       			Child;      		// Child nodes in hierarchy
 		
 		// Node Data
-		float						Time;				// Second 			[s]
-		float 						DeltaTime; 			// Second 			[s]
-		float						Mass;				// Kilogram			[kg]
-		math::vec<float, 3>			Position;			// Meter			[m]
-		float 						Theta, Phi;			// Radians			[rad]
-		math::vec<float, 3>			DirectionRight;		// Right			[Normalized]
-		math::vec<float, 3>			DirectionUp;		// Up				[Normalized]
-		math::vec<float, 3>			DirectionFront;		// Backward			[Normalized]
-		math::vec<float, 3> 		Scale;				// Scaling Factor	[N/A]
-		math::mat<float, 4, 4> 		Transformation; 	// Node transformation matrix
-		math::vec<float, 3>			LinearMomentum;		// Linear Momentum	[kg*m/s]
-		math::vec<float, 3>			AngularMomentum;	// Angular Momentum [kg*m/s]
+		float								Time;				// Second 			[s]
+		float 								DeltaTime; 			// Second 			[s]
+		float								Mass;				// Kilogram			[kg]
+		math::vec<float, 3>					Position;			// Meter			[m]
+		float 								Theta, Phi;			// Radians			[rad]
+		math::vec<float, 3>					DirectionRight;		// Right			[Normalized]
+		math::vec<float, 3>					DirectionUp;		// Up				[Normalized]
+		math::vec<float, 3>					DirectionFront;		// Backward			[Normalized]
+		math::vec<float, 3> 				Scale;				// Scaling Factor	[Dimensionless]
+		math::mat<float, 4, 4> 				Transformation; 	// Node transformation matrix
+		math::vec<float, 3>					LinearMomentum;		// Linear Momentum	[kg*m/s]
+		math::vec<float, 3>					AngularMomentum;	// Angular Momentum [kg*m/s]
+		std::shared_ptr<phys::mesh>			CollisionMesh;		// Mesh Data
 		
 		node();
 		node(const node& aInput);
@@ -48,9 +65,13 @@ namespace geodesy::core::phys {
 		
 		node& operator=(const node& aRhs);
 		node& operator=(node&& aRhs) noexcept;
+
+		virtual void copy(const node* aInput);
+		virtual void swap(node* aInput);
+		virtual void update(float aDeltaTime);
 		
 	};
-	*/
+	//*/
 	
 }
 
