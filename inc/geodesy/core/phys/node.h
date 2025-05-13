@@ -38,25 +38,23 @@ namespace geodesy::core::phys {
 		};
 		
 		// Node metadata/hierarchy.
-		std::string             			Name;       		// Node name
-		node*                   			Root;       		// Root node in hierarchy
-		node*                   			Parent;     		// Parent node in hierarchy
-		std::vector<node*>       			Child;      		// Child nodes in hierarchy
+		std::string             				Name;       		// Node name
+		node*                   				Root;       		// Root node in hierarchy
+		node*                   				Parent;     		// Parent node in hierarchy
+		std::vector<std::shared_ptr<node>>      Child;      		// Child nodes in hierarchy
 		
 		// Node Data
-		float								Time;				// Second 			[s]
-		float 								DeltaTime; 			// Second 			[s]
-		float								Mass;				// Kilogram			[kg]
-		math::vec<float, 3>					Position;			// Meter			[m]
-		float 								Theta, Phi;			// Radians			[rad]
-		math::vec<float, 3>					DirectionRight;		// Right			[Normalized]
-		math::vec<float, 3>					DirectionUp;		// Up				[Normalized]
-		math::vec<float, 3>					DirectionFront;		// Backward			[Normalized]
-		math::vec<float, 3> 				Scale;				// Scaling Factor	[Dimensionless]
-		math::mat<float, 4, 4> 				Transformation; 	// Node transformation matrix
-		math::vec<float, 3>					LinearMomentum;		// Linear Momentum	[kg*m/s]
-		math::vec<float, 3>					AngularMomentum;	// Angular Momentum [kg*m/s]
-		std::shared_ptr<phys::mesh>			CollisionMesh;		// Mesh Data
+		float									Time;				// Second 			[s]
+		float 									DeltaTime; 			// Second 			[s]
+		float									Mass;				// Kilogram			[kg]
+		math::mat<float, 3, 3>					InertiaTensor;		// Inertia Tensor	[kg*m^2]
+		math::vec<float, 3>						Position;			// Meter			[m]
+		math::quaternion<float>					Orientation;		// Quaternion		[Dimensionless]
+		math::vec<float, 3> 					Scale;				// Scaling Factor	[Dimensionless]
+		math::vec<float, 3>						LinearMomentum;		// Linear Momentum	[kg*m/s]
+		math::vec<float, 3>						AngularMomentum;	// Angular Momentum [kg*m/s]
+		math::mat<float, 4, 4> 					Transformation; 	// Node transformation matrix
+		std::shared_ptr<phys::mesh>				CollisionMesh;		// Mesh Data
 		
 		node();
 		node(const node& aInput);
