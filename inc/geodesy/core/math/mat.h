@@ -177,31 +177,88 @@ namespace geodesy::core::math {
 		return Result;
 	}
 
-	// !BUG: Still doesn't work, fix later. Study LU decomposition.
-	template <typename T, std::size_t N> inline
-	T determinant(const mat<T, N, N>& aMatrix) {
-	    // Create working copy
-	    mat<T, N, N> LU = aMatrix;
-	    T Det = T(1);
-	
-	    // Perform LU decomposition without pivoting
-	    // The determinant will be the product of diagonal elements
-	    for(std::size_t i = 0; i < N; ++i) {
-	        if(std::abs(LU(i,i)) < std::numeric_limits<T>::epsilon()) {
-	            return T(0);  // Matrix is singular
+	/*======================================================================
+	 |  Determinant via LU  (constexpr, O(N³))
+	 *====================================================================*/
+	template<typename T, std::size_t N> inline
+	constexpr T determinant(mat<T,N,N> A) {
+	    T   detSign = T{1};
+	    for (std::size_t k = 0; k < N; ++k) {
+	        /* --- partial pivot ------------------------------------------------ */
+	        std::size_t piv = k;
+	        T maxAbs = std::abs(A(k,k));
+	        for (std::size_t r = k+1; r < N; ++r) {
+	            T v = std::abs(A(r,k));
+	            if (v > maxAbs) { maxAbs = v; piv = r; }
 	        }
-	
-	        Det *= LU(i,i);
-	
-	        for(std::size_t j = i + 1; j < N; ++j) {
-	            T Factor = LU(j,i) / LU(i,i);
-	            for(std::size_t k = i + 1; k < N; ++k) {
-	                LU(j,k) -= Factor * LU(i,k);
+	        if (maxAbs < std::numeric_limits<T>::epsilon())
+	            return T{0};                                         // singular
+
+	        if (piv != k) {                                          // row swap
+	            for (std::size_t c = 0; c < N; ++c)
+	                std::swap(A(k,c), A(piv,c));
+	            detSign = -detSign;
+	        }
+
+	        /* --- elimination below pivot ------------------------------------- */
+	        for (std::size_t r = k+1; r < N; ++r) {
+	            T factor = A(r,k) / A(k,k);
+	            A(r,k) = T{0};                                       // exact zero
+	            for (std::size_t c = k+1; c < N; ++c)
+	                A(r,c) -= factor * A(k,c);
+	        }
+	    }
+
+	    T det = detSign;
+	    for (std::size_t i = 0; i < N; ++i) det *= A(i,i);           // product diag
+	    return det;
+	}
+
+	/*======================================================================
+	 |  Inverse via Gauss-Jordan  (constexpr, O(N³))
+	 *====================================================================*/
+	template<typename T, std::size_t N> inline
+	constexpr mat<T,N,N> inverse(mat<T,N,N> A) {
+	    mat<T,N,N> I{};                                              // identity
+	    for (std::size_t i = 0; i < N; ++i) I(i,i) = T{1};
+
+	    for (std::size_t k = 0; k < N; ++k) {
+	        /* --- pivot selection --------------------------------------------- */
+	        std::size_t piv = k;
+	        T maxAbs = std::abs(A(k,k));
+	        for (std::size_t r = k+1; r < N; ++r) {
+	            T v = std::abs(A(r,k));
+	            if (v > maxAbs) { maxAbs = v; piv = r; }
+	        }
+	        if (maxAbs < std::numeric_limits<T>::epsilon())
+	            throw std::domain_error("inverse(): singular matrix");
+
+	        /* --- swap pivot row into place (both A and I) --------------------- */
+	        if (piv != k) {
+	            for (std::size_t c = 0; c < N; ++c) {
+	                std::swap(A(k,c), A(piv,c));
+	                std::swap(I(k,c), I(piv,c));
+	            }
+	        }
+
+	        /* --- scale pivot row to make pivot = 1 ---------------------------- */
+	        const T invPivot = T{1} / A(k,k);
+	        for (std::size_t c = 0; c < N; ++c) {
+	            A(k,c) *= invPivot;
+	            I(k,c) *= invPivot;
+	        }
+
+	        /* --- eliminate other rows ---------------------------------------- */
+	        for (std::size_t r = 0; r < N; ++r) if (r != k) {
+	            const T f = A(r,k);
+	            if (f == T{}) continue;
+	            for (std::size_t c = 0; c < N; ++c) {
+	                A(r,c) -= f * A(k,c);
+	                I(r,c) -= f * I(k,c);
 	            }
 	        }
 	    }
-	
-	    return Det;
+	    return I;                                                    // now A⁻¹
 	}
 
 	// Generates a rotation matrix from a quaternion for an arbitrary vector.
