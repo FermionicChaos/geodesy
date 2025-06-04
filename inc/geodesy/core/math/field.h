@@ -54,22 +54,25 @@ namespace geodesy::core::math {
 
 		// Multidimensional constructor.
 		field(vec<X, N> aLowerBound, vec<X, N> aUpperBound, vec<std::size_t, N> aElementCount, std::ptrdiff_t aDomainType = 0) {
-
 			// TODO: Check element count is valid.
+
+			this->ElementCount = aElementCount;
+			this->LowerBound = aLowerBound;
+			this->UpperBound = aUpperBound;
 
 			// Initialize the the memory for the field, and zero the values.
 			std::size_t ElementCountTotal = 1;
 			for (std::size_t i = 0; i < N; i++) {
-				ElementCountTotal *= ElementCount[i];
+				ElementCountTotal *= aElementCount[i];
 			}
 			this->resize(ElementCountTotal, Y());
 
 			// Check if domain needs to be generated.
 			if ((aDomainType > 0) && (aDomainType <= N)) {
 				// ds is the step size for each dimension.
-				vec<X, N> ds = (UpperBound - LowerBound);
+				vec<X, N> ds = (aUpperBound - aLowerBound);
 				for (std::size_t i = 0; i < N; i++) {
-					ds[i] /= ElementCount[i] - 1;
+					ds[i] /= aElementCount[i] - 1;
 				}
 
 				// Generate the field values based on the domain type.
@@ -77,7 +80,7 @@ namespace geodesy::core::math {
 					// This is to generate numerical dimensions along each axis, which can be used for numerical functions.
 					// ds is the step which will be used to generate the value at each sample point in the domain.
 					vec<std::size_t, N> Index = this->convert_to_dimensional_index(i);
-					(*this)[i] = ds[aDomainType - 1] * Index[aDomainType - 1] + LowerBound[aDomainType - 1];
+					(*this)[i] = ds[aDomainType - 1] * Index[aDomainType - 1] + aLowerBound[aDomainType - 1];
 				}
 			}
 		}
@@ -156,7 +159,7 @@ namespace geodesy::core::math {
 
 		// Single dimension access.
 		Y operator()(const X& aX) {
-			return (*this)(vec<X, 1>(aX));
+			return (*this)(vec<X, 1>{aX});
 		}
 
 		// Determines the union bounds of the two fields.
@@ -241,6 +244,14 @@ namespace geodesy::core::math {
 				Out[i] = (*this)(Position) / aRhs(Position);
 			}
 			return Out;
+		}
+
+		field<X, N, Y>& operator=(const Y& aRhs) {
+			#pragma omp parallel for
+			for (std::ptrdiff_t i = 0; i < this->size(); i++) {
+				(*this)[i] = aRhs;
+			}
+			return *this;
 		}
 
 		field<X, N, Y>& operator+=(const field<X, N, Y>& aRhs) {
