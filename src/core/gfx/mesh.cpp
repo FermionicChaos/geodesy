@@ -14,47 +14,35 @@ namespace geodesy::core::gfx {
 
 	using namespace gpu;
 
-	namespace {
-
-		struct mesh_instance_ubo_data {
-			alignas(16) math::mat<float, 4, 4> Transform;
-			alignas(16) math::mat<float, 4, 4> BoneTransform[MAX_BONE_COUNT];
-			alignas(16) math::mat<float, 4, 4> BoneOffset[MAX_BONE_COUNT];
-			mesh_instance_ubo_data();
-			mesh_instance_ubo_data(const mesh::instance* aInstance);
+	mesh::instance::uniform_data::uniform_data() {
+		Transform = {
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
 		};
-
-		mesh_instance_ubo_data::mesh_instance_ubo_data() {
-			Transform = {
+		for (size_t i = 0; i < MAX_BONE_COUNT; i++) {
+			BoneTransform[i] = {
 				1.0f, 0.0f, 0.0f, 0.0f,
 				0.0f, 1.0f, 0.0f, 0.0f,
 				0.0f, 0.0f, 1.0f, 0.0f,
 				0.0f, 0.0f, 0.0f, 1.0f
 			};
-			for (size_t i = 0; i < MAX_BONE_COUNT; i++) {
-				BoneTransform[i] = {
-					1.0f, 0.0f, 0.0f, 0.0f,
-					0.0f, 1.0f, 0.0f, 0.0f,
-					0.0f, 0.0f, 1.0f, 0.0f,
-					0.0f, 0.0f, 0.0f, 1.0f
-				};
-				BoneOffset[i] = {
-					1.0f, 0.0f, 0.0f, 0.0f,
-					0.0f, 1.0f, 0.0f, 0.0f,
-					0.0f, 0.0f, 1.0f, 0.0f,
-					0.0f, 0.0f, 0.0f, 1.0f
-				};
-			}
+			BoneOffset[i] = {
+				1.0f, 0.0f, 0.0f, 0.0f,
+				0.0f, 1.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, 1.0f, 0.0f,
+				0.0f, 0.0f, 0.0f, 1.0f
+			};
 		}
+	}
 
-		mesh_instance_ubo_data::mesh_instance_ubo_data(const mesh::instance* aInstance) {
+		mesh::instance::uniform_data::uniform_data(const mesh::instance* aInstance) {
 			this->Transform = aInstance->Transform;
 			for (size_t i = 0; i < aInstance->Bone.size(); i++) {
 				this->BoneTransform[i] = aInstance->Bone[i].Transform;
-				this->BoneOffset[i] = aInstance->Bone[i].Offset;
-			}
+			this->BoneOffset[i] = aInstance->Bone[i].Offset;
 		}
-
 	}
 
 	mesh::instance::instance() {
@@ -137,14 +125,14 @@ namespace geodesy::core::gfx {
 		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
 		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 
-		mesh_instance_ubo_data MeshInstanceUBOData = mesh_instance_ubo_data(this);
-		this->UniformBuffer = Context->create_buffer(UBCI, sizeof(mesh_instance_ubo_data), &MeshInstanceUBOData);
-		this->UniformBuffer->map_memory(0, sizeof(mesh_instance_ubo_data));
+		uniform_data MeshInstanceUBOData = uniform_data(this);
+		this->UniformBuffer = Context->create_buffer(UBCI, sizeof(uniform_data), &MeshInstanceUBOData);
+		this->UniformBuffer->map_memory(0, sizeof(uniform_data));
 	}
 
 	void mesh::instance::update(double DeltaTime) {
 		// Convert uniform buffer pointer into data structure for writing.
-		mesh_instance_ubo_data* MeshInstanceUBOData = (mesh_instance_ubo_data*)this->UniformBuffer->Ptr;
+		uniform_data* MeshInstanceUBOData = (uniform_data*)this->UniformBuffer->Ptr;
 		// Carry over mesh instance node transform.
 		MeshInstanceUBOData->Transform = this->Transform;
 		// Transfer all bone transformations to the uniform buffer.

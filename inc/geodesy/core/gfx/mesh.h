@@ -10,6 +10,8 @@
 #include "../gpu/buffer.h"
 #include "../gpu/pipeline.h"
 
+#define MAX_BONE_COUNT 256
+
 struct aiMesh;
 
 namespace geodesy::core::gfx {
@@ -18,6 +20,14 @@ namespace geodesy::core::gfx {
 	public:
 
 		struct instance {
+
+			struct uniform_data {
+				alignas(16) math::mat<float, 4, 4> Transform;
+				alignas(16) math::mat<float, 4, 4> BoneTransform[MAX_BONE_COUNT];
+				alignas(16) math::mat<float, 4, 4> BoneOffset[MAX_BONE_COUNT];
+				uniform_data();
+				uniform_data(const mesh::instance* aInstance);
+			};
 
 			// Host Memory Objects
 			int 							Index;
