@@ -36,7 +36,7 @@ namespace geodesy::bltn::obj {
 		// Get references for readability.
 		VkResult Result = VK_SUCCESS;
 		std::shared_ptr<gpu::context> Context = aObject->Context;
-		std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[aMeshInstance->Index];
+		std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[aMeshInstance->MeshIndex];
 		std::shared_ptr<material> Material = aObject->Model->Material[aMeshInstance->MaterialIndex];
 
 		// Get image outputs and vertex inputs.
@@ -65,7 +65,7 @@ namespace geodesy::bltn::obj {
 
 	window::window_renderer::window_renderer(runtime::object* aObject, window* aWindow) : runtime::object::renderer(aObject, aWindow) {
 		// Gather list of mesh instances throughout model hierarchy.
-		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy.gather_mesh_instances();
+		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy->gather_instances();
 
 		std::vector<std::vector<draw_call>> Renderer(aWindow->Framechain->Image.size(), std::vector<draw_call>(MeshInstance.size()));
 

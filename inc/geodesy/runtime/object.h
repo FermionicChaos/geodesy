@@ -15,19 +15,8 @@
 
 namespace geodesy::runtime {
 	
-	class object {
+	class object : public core::gfx::node {
 	public:
-
-		// Uniform Buffer Data
-		// Derived Framechain Info
-		// Derived Draw Call & Renderer Specification.
-		// Creation Info
-
-		enum motion {
-			STATIC,			// Object doesn't move in world space
-			DYNAMIC,		// Object moves, but based on physical forces applied.
-			ANIMATED,		// Object moves based on predetermined animation path data.
-		};
 
 		struct uniform_data {
 			alignas(16) core::math::vec<float, 3> 					Position;
@@ -87,38 +76,22 @@ namespace geodesy::runtime {
 		// ^ This data exists in Host memory.
 
 		// * Object Metadata
-		std::string																	Name;
 		stage*																		Stage;
 		engine*																		Engine;
 		std::mutex																	Mutex;
 
 		// * Object Input and Physics
-		float																		Time;				// Second 			[s]
-		float 																		DeltaTime; 			// Second 			[s]
-		float																		Mass;				// Kilogram			[kg]
-		core::math::vec<float, 3>													Position;			// Meter			[m]
 		float 																		Theta, Phi;			// Radians			[rad]
 		core::math::vec<float, 3>													DirectionRight;		// Right			[Normalized]
 		core::math::vec<float, 3>													DirectionUp;		// Up				[Normalized]
 		core::math::vec<float, 3>													DirectionFront;		// Backward			[Normalized]
-		core::math::vec<float, 3> 													Scale;				// Scaling Factor	[N/A]
-		core::math::vec<float, 3>													LinearMomentum;		// Linear Momentum	[kg*m/s]
-		core::math::vec<float, 3>													AngularMomentum;	// Angular Momentum [kg*m/s]
-
-		// * Object Modes:
-		// * This section controls the broader
 		std::vector<float> 															AnimationWeights;
-		motion 																		Motion;				// Informs how the phys engine will treat the object.
-		bool 																		Gravity;			// Determines if the object is affected by gravity.
-		bool 																		Collision;			// Determines if object is affected by collisions.
-
 		std::vector<std::shared_ptr<core::io::file>> 								Asset;
 
 		// ! ----- Device Data ----- ! //
 		// ^ This is the data that exists on the GPU.
 
 		std::shared_ptr<core::gpu::context> 										Context;
-		std::shared_ptr<core::phys::mesh>											CollisionBox;
 		std::shared_ptr<core::gfx::model>											Model;
 		std::shared_ptr<core::gpu::buffer> 											UniformBuffer;
 		std::map<subject*, std::shared_ptr<renderer>>								Renderer;

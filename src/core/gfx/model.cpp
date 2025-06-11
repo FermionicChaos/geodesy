@@ -126,13 +126,13 @@ namespace geodesy::core::gfx {
 		// Get Name of Model.
 		this->Name = Scene->mName.C_Str();
 
-		// Extract Scene Hiearchy
-		this->Hierarchy = node(Scene, Scene->mRootNode);
+		// Check if root node has meshes, and choose node constructor.
+		this->Hierarchy = std::shared_ptr<gfx::node>(new gfx::node(Scene, Scene->mRootNode));
 
 		// Load animation tracks.
-		this->Animation = std::vector<animation>(Scene->mNumAnimations);
+		this->Animation = std::vector<phys::animation>(Scene->mNumAnimations);
 		for (size_t i = 0; i < this->Animation.size(); i++) {
-			this->Animation[i] = animation(Scene->mAnimations[i]);
+			this->Animation[i] = phys::animation(Scene->mAnimations[i]);
 		}
 
 		// Cleaner way to load meshes.
@@ -190,7 +190,7 @@ namespace geodesy::core::gfx {
 		this->Context = aContext;
 
 		// Create Node Hierarchy for GPU.
-		this->Hierarchy = node(aContext, aModel->Hierarchy);
+		this->Hierarchy = std::shared_ptr<gfx::node>(new gfx::node(aContext, aModel->Hierarchy.get()));
 
 		// Load node animations.
 		this->Animation = aModel->Animation;
@@ -222,7 +222,7 @@ namespace geodesy::core::gfx {
 	void model::update(double aDeltaTime, const std::vector<float>& aAnimationWeights) {
 		this->Time += aDeltaTime;
 		// Choose animation here.
-		this->Hierarchy.update(aAnimationWeights, this->Animation, this->Time);
+		this->Hierarchy->update(aAnimationWeights, this->Animation, this->Time);
 	}
 
 }

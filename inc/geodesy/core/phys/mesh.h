@@ -51,7 +51,6 @@ namespace geodesy::core::phys {
 			};
 			std::string						Name;
 			std::vector<weight>				Vertex;
-			math::mat<float, 4, 4> 			Transform;
 			math::mat<float, 4, 4>			Offset;
 		};
 

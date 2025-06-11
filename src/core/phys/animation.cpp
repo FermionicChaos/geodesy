@@ -1,4 +1,4 @@
-#include <geodesy/core/gfx/animation.h>
+#include <geodesy/core/phys/animation.h>
 
 #include <string>
 #include <vector>
@@ -13,7 +13,7 @@
 
 // using namespace std;
 
-namespace geodesy::core::gfx {
+namespace geodesy::core::phys {
 
 	using namespace math;
 

@@ -2,6 +2,9 @@
 #ifndef GEODESY_CONFIG_H
 #define GEODESY_CONFIG_H
 
+// --------------- C Standard Library Includes --------------- //
+
+// --------------- C++ Standard Library Includes --------------- //
 #include <memory>
 #include <string>
 #include <vector>
@@ -10,19 +13,12 @@
 #include <set>
 #include <map>
 #include <list>
-
 #include <mutex>
 #include <thread>
-#include <memory>
 
 #define GEODESY_ENGINE_VERSION_MAJOR 0
 #define GEODESY_ENGINE_VERSION_MINOR 1
 #define GEODESY_ENGINE_VERSION_PATCH 5
-
-// Disables Terminal Window, for windows only
-#if defined(_WIN32) || defined(_WIN64)
-//#pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
-#endif
 
 // Forward Declarations of Core Objects.
 namespace geodesy {
@@ -33,16 +29,13 @@ namespace geodesy {
     	return std::shared_ptr<T>(new T(std::forward<Args>(args)...));
 	}
 
-	// Recursive case for higher dimensions
-	template <typename T, typename... Sizes>
-	auto make_multi_vector(std::size_t size, Sizes... sizes) {
-	    return std::vector<decltype(make_multi_vector<T>(sizes...))>(
-	        size, make_multi_vector<T>(sizes...)
-	    );
-	}
-
-	class engine;
 	namespace core {
+		namespace io {};
+		namespace math {};
+		namespace util {};
+		namespace lgc {};
+		namespace phys {};
+		namespace hid {};
 		namespace gpu {
 			class device;
 			class command_pool;
@@ -64,12 +57,14 @@ namespace geodesy {
 			class node;
 			class model;
 		}
+		namespace sfx {};
 	}
 	namespace runtime {
 		class object;
 		class subject;
 		class stage;
 	}
+	class engine;
 	namespace bltn {
 		namespace obj {
 			class system_display;

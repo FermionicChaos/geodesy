@@ -137,10 +137,10 @@ namespace geodesy::core::gpu {
 		// Iterate through all objects in the stage.
 		for (const auto& Object : aStage->Object) {
 			// Get list of mesh instances per object model.
-			std::vector<gfx::mesh::instance*> MeshInstanceList = Object->Model->Hierarchy.gather_mesh_instances();
+			std::vector<gfx::mesh::instance*> MeshInstanceList = Object->gather_instances();
 			for (gfx::mesh::instance* MeshInstance : MeshInstanceList) {
 				VkAccelerationStructureInstanceKHR ASI{};
-				gfx::mesh* Mesh = Object->Model->Mesh[MeshInstance->Index].get();
+				gfx::mesh* Mesh = Object->Model->Mesh[MeshInstance->MeshIndex].get();
 
 				// ! Object Transformation Info.
 				// Create Translation Matrix.
@@ -167,7 +167,7 @@ namespace geodesy::core::gpu {
 				math::mat<float, 4, 4> ObjectTransform = ObjectTranslation * ObjectOrientation * ObjectScale;
 
 				// Matrix Transform, get global transform to world space. (Include Object Transform.)
-				math::mat<float, 4, 4> WorldTransform = ObjectTransform * MeshInstance->Transform;
+				math::mat<float, 4, 4> WorldTransform = ObjectTransform;// * MeshInstance->Transform;
 				for (int Row = 0; Row < 3; Row++) {
 					for (int Col = 0; Col < 4; Col++) {
 						// Convert from memory internal format to vulkan using proper accessors.

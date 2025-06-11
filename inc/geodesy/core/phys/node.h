@@ -8,6 +8,11 @@
 #include "../math.h"
 // Include physics mesh. (Needed for collisions)
 #include "mesh.h"
+// Include animation.
+#include "animation.h"
+
+struct aiScene;
+struct aiNode;
 
 namespace geodesy::core::phys {
 
@@ -19,7 +24,6 @@ namespace geodesy::core::phys {
 	shader, and finally a root node can be an object which the engine processes and applies physics to.
 	*/
 
-	///*
 	class node {
 	public:
 
@@ -27,7 +31,6 @@ namespace geodesy::core::phys {
 		enum type {
 			PHYSICS,
 			GRAPHICS,
-			BONE,
 			OBJECT,
 		};
 
@@ -37,13 +40,14 @@ namespace geodesy::core::phys {
 			ANIMATED,		// Node moves based on predetermined animation path data.
 		};
 		
-		// Node metadata/hierarchy.
-		std::string             				Name;       		// Node name
+		// Node traversal/hierarchy data.
 		node*                   				Root;       		// Root node in hierarchy
 		node*                   				Parent;     		// Parent node in hierarchy
-		std::vector<std::shared_ptr<node>>      Child;      		// Child nodes in hierarchy
+		std::vector<node*> 						Child;      		// Child nodes in hierarchy
 		
 		// Node Data
+		std::string             				Name;       		// Node name
+		type 									Type;       		// Node type
 		float									Time;				// Second 			[s]
 		float 									DeltaTime; 			// Second 			[s]
 		float									Mass;				// Kilogram			[kg]
@@ -57,19 +61,26 @@ namespace geodesy::core::phys {
 		std::shared_ptr<phys::mesh>				CollisionMesh;		// Mesh Data
 		
 		node();
-		node(const node& aInput);
-		node(node&& aInput) noexcept;
 		~node();
-		
-		node& operator=(const node& aRhs);
-		node& operator=(node&& aRhs) noexcept;
 
-		virtual void copy(const node* aInput);
-		virtual void swap(node* aInput);
-		virtual void update(float aDeltaTime);
+		// For this node, it will calculate the model transform for a node at a particular time.
+		math::mat<float, 4, 4> transform(const std::vector<float>& aAnimationWeight = { 1.0f }, const std::vector<animation>& aPlaybackAnimation = {}, double aTime = 0.0f) const;
+
+		// Returns the node with the given name in the hierarchy. Will return
+		// nullptr if the node is not found in the hierarchy.
+		node* find(std::string aName);
+
+		// Creates a linearized list of nodes in the hierarchy.
+		std::vector<node*> linearize();
+
+		// Returns the count of nodes in the hierarchy starting from this node.
+		size_t node_count() const;
+
+		// Overridable node data copy function.
+		virtual void copy_data(const node* aNode);
+		virtual void update(const std::vector<float>& aAnimationWeight = { 1.0f }, const std::vector<animation>& aPlaybackAnimation = {}, double aTime = 0.0f);
 		
 	};
-	//*/
 	
 }
 

@@ -1,34 +1,166 @@
 #include <geodesy/core/phys/node.h>
 
+#include <geodesy/core/gfx/node.h>
+
+// Model Loading
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
+
 namespace geodesy::core::phys {
 
-	// This function deep copies the other node tree.
-	void node::copy(const node* aInput) {
-
+	// Default constructor, zero out all data.
+	node::node() {
+		this->Name 				= "";
+		this->Type 				= node::PHYSICS; // Default type to PHYSICS.
+		this->Root 				= this;
+		this->Parent 			= nullptr;
+		this->Time 				= 0.0f;
+		this->DeltaTime 		= 0.0f;
+		this->Mass 				= 1.0f; // Default mass to 1 kg.
+		this->InertiaTensor 	= {
+			1.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 1.0f
+		};
+		this->Position 			= { 0.0f, 0.0f, 0.0f }; // Default position to origin.
+		this->Orientation 		= { 1.0f, 0.0f, 0.0f, 0.0f }; // Default orientation to identity quaternion.
+		this->Scale 			= { 1.0f, 1.0f, 1.0f }; // Default scale to 1 in all dimensions.
+		this->LinearMomentum 	= { 0.0f, 0.0f, 0.0f }; // Default linear momentum to zero.
+		this->AngularMomentum 	= { 0.0f, 0.0f, 0.0f }; // Default angular momentum to zero.
+		this->Transformation 	= {
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
+		};
 	}
 
-	// This function is used to swap the contents of two nodes.
-	void node::swap(node* aInput) {
-
+	node::~node() {
+		// Clear all child nodes memory.
+		for (auto& C : this->Child) {
+			delete C; // Delete each child node.
+		}
 	}
 
-	void node::update(float aDeltaTime) {
-		// The actual physics done on the node based on applied forces. (After Collision Detection, and response forces).
+	// The main transform function that calculates the model transform for this node.
+	math::mat<float, 4, 4> node::transform(const std::vector<float>& aAnimationWeight, const std::vector<phys::animation>& aPlaybackAnimation, double aTime) const {
+		// This calculates the global transform of the node which it is
+		// being called from. If there are no animations associated with 
+		// the node hierarchy, the bind pose transformations will be used
+		// instead. If there are animations associated with the node hierarchy,
+		// Then the animation transformations will be used in a weighted average.
 
-		// Update Linear & Angular Momentum.
+		//tex:
+		// It is the responsibility of the model class to insure that the sum of the contribution
+		// factors (weights) is equal to 1.
+		// $$ 1 = w^{b} + \sum_{\forall A \in Anim} w_{i} $$
+		// $$ T = T^{base} \cdot w^{base} + \sum_{\forall i \in A} T_{i}^{A} \cdot w_{i}^{A} $$ 
+		//
 
+		// Bind Pose Transform
+		math::mat<float, 4, 4> NodeTransform = (this->Transformation * aAnimationWeight[0]);
 
-		// Update the node's position, rotation, and scale.
-		this->Position += (this->LinearMomentum / this->Mass) * aDeltaTime;
+		// TODO: Figure out how to load animations per node. Also incredibly slow right now. Optimize Later.
+		// Overrides/Averages Animation Transformations with Bind Pose Transform based on weights.
+		for (size_t i = 0; i < aPlaybackAnimation.size(); i++) {
+			// Check if Animation Data exists for this node, if not, use bind pose.
+			if (aPlaybackAnimation[i][this->Name].exists()) {
+				// Animation Data Exists
+				double TickerTime = std::fmod(aTime * aPlaybackAnimation[i].TicksPerSecond, aPlaybackAnimation[i].Duration);
+				if (this->Root == this) {
+					NodeTransform += this->Transformation * aPlaybackAnimation[i][this->Name][TickerTime] * aAnimationWeight[i + 1];
+				}
+				else {
+					NodeTransform += aPlaybackAnimation[i][this->Name][TickerTime] * aAnimationWeight[i + 1];
+				}
+			}
+			else {
+				// Animation Data Does Not Exist, use bind pose animation.
+				NodeTransform += this->Transformation * aAnimationWeight[i + 1];
+			}
+		}
 
-		// Invert the inertia tensor to get the angular velocity.
-		math::vec<float, 3> AngularVelocity = math::inverse(this->InertiaTensor) * this->AngularMomentum;
+		// Recursively apply parent transformations.
+		if (this->Root != this) {
+			return this->Parent->transform(aAnimationWeight, aPlaybackAnimation, aTime) * NodeTransform;
+		}
+		else {
+			return NodeTransform;
+		}
+	}
 
-		// Update the orientation using quaternion rotation.
-		//this->Orientation = math::quaternion<float>::rotate(this->Orientation, AngularVelocity, aDeltaTime);
+	node* node::find(std::string aName) {
+		// Find the node with the given name in the hierarchy.
+		if (this->Name == aName) {
+			return this;
+		}
+		for (const auto& child : this->Child) {
+			node* FoundNode = child->find(aName);
+			if (FoundNode != nullptr) {
+				return FoundNode;
+			}
+		}
+		return nullptr; // Return nullptr if not found.
+	}
 
-		// Calculate final node transformation matrix.
-		//this->Orientation *= math::rotation(math::length(AngularVelocity) * aDeltaTime, AngularVelocity);
+	std::vector<node*> node::linearize() {
+		std::vector<node*> Nodes;
+		Nodes.push_back(this);
+		for (auto Chd : this->Child) {
+			std::vector<node*> CNodes = Chd->linearize();
+			Nodes.insert(Nodes.end(), CNodes.begin(), CNodes.end());
+		}
+		return Nodes;
+	}
+
+	size_t node::node_count() const {
+		size_t TotalCount = 1;
+		for (auto Chd : Child) {
+			TotalCount += Chd->node_count();
+		}
+		return TotalCount;
+	}
+
+	void node::copy_data(const node* aNode) {
+		// This function simply copies all data not related to the hierarchy.
+		// This is used to copy data from one node to another.
+		this->Name = aNode->Name;
+		this->Type = aNode->Type;
+		this->Time = aNode->Time;
+		this->DeltaTime = aNode->DeltaTime;
+		this->Mass = aNode->Mass;
+		this->InertiaTensor = aNode->InertiaTensor;
+		this->Position = aNode->Position;
+		this->Orientation = aNode->Orientation;
+		this->Scale = aNode->Scale;
+		this->LinearMomentum = aNode->LinearMomentum;
+		this->AngularMomentum = aNode->AngularMomentum;
+		this->Transformation = aNode->Transformation;
+		this->CollisionMesh = aNode->CollisionMesh; // Copy the collision mesh if it exists.
+	}
+
+	void node::update(const std::vector<float>& aAnimationWeight, const std::vector<phys::animation>& aPlaybackAnimation, double aTime) {
+		// Work done here will start at the root
+		// of the node hierarchy.
+
+		// For each mesh instance, and for each bone, update the 
+		// bone transformations according to their respective
+		// animation object.
+		// for (mesh::instance& MI : MeshInstance) {
+		// 	// This is only used to tranform mesh instance vertices without bone animation.
+		// 	// Update Bone Buffer Date GPU side.
+		// 	mesh::instance::uniform_data* UniformData = (mesh::instance::uniform_data*)MI.UniformBuffer->Ptr;
+		// 	UniformData->Transform = this->transform(aAnimationWeight, aPlaybackAnimation, aTime);
+		// 	for (size_t i = 0; i < MI.Bone.size(); i++) {
+		// 		UniformData->BoneTransform[i] = this->Root->find(MI.Bone[i].Name)->transform(aAnimationWeight, aPlaybackAnimation, aTime);
+		// 	}
+		// }
+
+		// Go to child nodes and update children nodes.
+		for (auto Chd : this->Child) {
+			Chd->update(aAnimationWeight, aPlaybackAnimation, aTime);
+		}
 	}
 	
 }

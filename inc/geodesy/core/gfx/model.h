@@ -8,9 +8,10 @@
 
 #include "../io/file.h"
 
+#include "../phys.h"
+
 #include "mesh.h"
 #include "material.h"
-#include "animation.h"
 #include "node.h"
 
 namespace geodesy::core::gfx {
@@ -29,8 +30,8 @@ namespace geodesy::core::gfx {
 
 		// Resources
 		std::shared_ptr<gpu::context> 					Context;
-		node											Hierarchy;			// Root Node Hierarchy 
-		std::vector<animation> 							Animation; 			// Overrides Bind Pose Transform
+		std::shared_ptr<gfx::node>						Hierarchy;			// Root Node Hierarchy 
+		std::vector<phys::animation> 					Animation; 			// Overrides Bind Pose Transform
 		std::vector<std::shared_ptr<mesh>> 				Mesh;
 		std::vector<std::shared_ptr<material>> 			Material;
 		std::vector<std::shared_ptr<gpu::image>> 		Texture;

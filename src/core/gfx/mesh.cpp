@@ -8,8 +8,6 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#define MAX_BONE_COUNT 256
-
 namespace geodesy::core::gfx {
 
 	using namespace gpu;
@@ -37,25 +35,21 @@ namespace geodesy::core::gfx {
 		}
 	}
 
-		mesh::instance::uniform_data::uniform_data(const mesh::instance* aInstance) {
-			this->Transform = aInstance->Transform;
-			for (size_t i = 0; i < aInstance->Bone.size(); i++) {
-				this->BoneTransform[i] = aInstance->Bone[i].Transform;
+	mesh::instance::uniform_data::uniform_data(const mesh::instance* aInstance) : uniform_data() {
+		for (size_t i = 0; i < aInstance->Bone.size(); i++) {
 			this->BoneOffset[i] = aInstance->Bone[i].Offset;
 		}
 	}
 
 	mesh::instance::instance() {
-		this->Index 	= -1;
-		this->Context 	= nullptr;
+		this->MeshIndex 		= -1;
+		this->MaterialIndex 	= UINT32_MAX; // TODO: maybe make this int later?
+		this->Context 			= nullptr;
 	}
 
-	mesh::instance::instance(int aMeshIndex, math::mat<float, 4, 4> aTransform, uint aVertexCount, const std::vector<bone>& aBoneData, uint aMaterialIndex) : instance() {
-		this->Index 		= aMeshIndex;
-		this->Transform 	= aTransform;
+	mesh::instance::instance(uint aVertexCount, const std::vector<bone>& aBoneData, int aMeshIndex, uint aMaterialIndex) : instance() {
 		this->Vertex 		= std::vector<vertex::weight>(aVertexCount);
 		this->Bone 			= aBoneData;
-		this->MaterialIndex = aMaterialIndex;
 		// Generate the corresponding vertex buffer which will supply the mesh
 		// instance the needed bone animation data.
 		for (size_t i = 0; i < Vertex.size(); i++) {
@@ -104,41 +98,42 @@ namespace geodesy::core::gfx {
 			}
 			Vertex[i].BoneWeight /= TotalVertexWeight;
 		}
+		this->MeshIndex 		= aMeshIndex;
+		this->MaterialIndex 	= aMaterialIndex;
 	}
 
 	mesh::instance::instance(std::shared_ptr<gpu::context> aContext, const instance& aInstance) {
-		this->Index 		= aInstance.Index;
-		this->Transform 	= aInstance.Transform;
+		this->Root 			= aInstance.Root;
+		this->Parent 		= aInstance.Parent;
 		this->Vertex 		= aInstance.Vertex;
 		this->Bone 			= aInstance.Bone;
-		this->MaterialIndex = aInstance.MaterialIndex;
 		this->Context 		= aContext;
-
+		
 		// Create Vertex Weight Buffer
 		buffer::create_info VBCI;
 		VBCI.Memory = device::memory::DEVICE_LOCAL;
 		VBCI.Usage = buffer::usage::VERTEX | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 		this->VertexWeightBuffer = Context->create_buffer(VBCI, Vertex.size() * sizeof(vertex::weight), Vertex.data());
-
+		
 		// Create Mesh Instance Uniform Buffer
 		buffer::create_info UBCI;
 		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
 		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
-
+		
 		uniform_data MeshInstanceUBOData = uniform_data(this);
+		MeshInstanceUBOData.Transform = this->Parent->transform();
+		for (size_t i = 0; i < this->Bone.size(); i++) {
+			phys::node* Bone = this->Root->find(this->Bone[i].Name);
+			if (Bone != nullptr) {
+				MeshInstanceUBOData.BoneTransform[i] = Bone->transform();
+			}
+		}
 		this->UniformBuffer = Context->create_buffer(UBCI, sizeof(uniform_data), &MeshInstanceUBOData);
 		this->UniformBuffer->map_memory(0, sizeof(uniform_data));
-	}
 
-	void mesh::instance::update(double DeltaTime) {
-		// Convert uniform buffer pointer into data structure for writing.
-		uniform_data* MeshInstanceUBOData = (uniform_data*)this->UniformBuffer->Ptr;
-		// Carry over mesh instance node transform.
-		MeshInstanceUBOData->Transform = this->Transform;
-		// Transfer all bone transformations to the uniform buffer.
-		for (size_t i = 0; i < Bone.size(); i++) {
-			MeshInstanceUBOData->BoneTransform[i] = Bone[i].Transform;
-		}
+		// Set reference indices.
+		this->MeshIndex 	= aInstance.MeshIndex;
+		this->MaterialIndex = aInstance.MaterialIndex;
 	}
 
 	mesh::mesh() : phys::mesh() {

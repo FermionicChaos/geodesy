@@ -5,7 +5,6 @@
 #include "gfx/font.h"
 #include "gfx/mesh.h"
 #include "gfx/material.h"
-#include "gfx/animation.h"
 #include "gfx/node.h"
 #include "gfx/model.h"
 

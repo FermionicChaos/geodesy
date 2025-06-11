@@ -10,7 +10,7 @@ namespace geodesy::bltn::obj {
 	subject_window::forward_draw_call::forward_draw_call(
 		object* 							aObject, 
 		core::gfx::mesh::instance* 			aMeshInstance,
-		runtime::subject* 						aSubjectSource,
+		runtime::subject* 					aSubjectSource,
 		size_t 								aSourceFrameIndex,
 		window* 							aSubjectTarget,
 		size_t 								aTargetFrameIndex
@@ -18,7 +18,7 @@ namespace geodesy::bltn::obj {
 		// Get references for readability.
 		VkResult Result = VK_SUCCESS;
 		std::shared_ptr<core::gpu::context> Context = aObject->Context;
-		std::shared_ptr<gfx::mesh> Mesh = aObject->Model->Mesh[aMeshInstance->Index];
+		std::shared_ptr<gfx::mesh> Mesh = aObject->Model->Mesh[aMeshInstance->MeshIndex];
 		std::shared_ptr<gfx::material> Material = aObject->Model->Material[aMeshInstance->MaterialIndex];
 
 		std::vector<std::shared_ptr<gpu::image>> ImageOutputList = {
@@ -52,7 +52,7 @@ namespace geodesy::bltn::obj {
 		runtime::subject* 	aSubjectTarget 		// Actual Render Target
 	) : runtime::object::renderer(aObject, aSubjectTarget) {
 		// Gather Mesh instances of the object.
-		std::vector<gfx::mesh::instance*> MeshInstance = aObject->Model->Hierarchy.gather_mesh_instances();
+		std::vector<gfx::mesh::instance*> MeshInstance = aObject->Model->Hierarchy->gather_instances();
 
 		this->OverridenDrawCallList = std::vector<std::vector<std::vector<std::shared_ptr<draw_call>>>>(
 			aSubjectTarget->Framechain->Image.size(),

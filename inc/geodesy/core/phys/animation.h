@@ -1,11 +1,12 @@
 #pragma once
-#ifndef GEODESY_CORE_GFX_ANIMATION_H
-#define GEODESY_CORE_GFX_ANIMATION_H
+#ifndef GEODESY_CORE_PHYS_ANIMATION_H
+#define GEODESY_CORE_PHYS_ANIMATION_H
 
 #include <string>
 #include <vector>
 #include <map>
 
+#include "../../config.h"
 #include "../math.h"
 
 // #include "mesh.h"
@@ -13,7 +14,7 @@
 
 struct aiAnimation;
 
-namespace geodesy::core::gfx {
+namespace geodesy::core::phys {
 
 	class animation {
 	public:
@@ -52,4 +53,4 @@ namespace geodesy::core::gfx {
 
 }
 
-#endif // !GEODESY_CORE_GFX_ANIMATION_H
+#endif // !GEODESY_CORE_PHYS_ANIMATION_H

@@ -105,7 +105,7 @@ namespace geodesy::bltn::obj {
 		// Load Context
 		this->Context = aObject->Context;
 		// Get Mesh & Material Data from mesh instance.
-		std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[aMeshInstance->Index];
+		std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[aMeshInstance->MeshIndex];
 		std::shared_ptr<material> Material = aObject->Model->Material[aMeshInstance->MaterialIndex];
 		// Load up desired images which draw call will render to.
 		std::vector<std::shared_ptr<image>> ImageOutputList = {
@@ -152,7 +152,7 @@ namespace geodesy::bltn::obj {
 
 	camera3d::deferred_renderer::deferred_renderer(object* aObject, camera3d* aCamera3D) : runtime::object::renderer(aObject, aCamera3D) {
 		// Gather list of mesh instances throughout model hierarchy.
-		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy.gather_mesh_instances();
+		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy->gather_instances();
 
 		this->DrawCallList = std::vector<std::vector<std::shared_ptr<draw_call>>>(aCamera3D->Framechain->Image.size(), std::vector<std::shared_ptr<draw_call>>(MeshInstance.size()));
 

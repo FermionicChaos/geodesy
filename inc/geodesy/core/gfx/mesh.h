@@ -4,8 +4,13 @@
 
 #include <memory>
 
-#include "../phys/mesh.h"
+// Geodesy Engine Core
+#include "../../config.h"
 
+// Base Mesh Object
+#include "../phys.h"
+
+// GPU Resource Management
 #include "../gpu/context.h"
 #include "../gpu/buffer.h"
 #include "../gpu/pipeline.h"
@@ -29,23 +34,27 @@ namespace geodesy::core::gfx {
 				uniform_data(const mesh::instance* aInstance);
 			};
 
-			// Host Memory Objects
-			int 							Index;
-			math::mat<float, 4, 4> 			Transform;
-			std::vector<vertex::weight> 	Vertex;
-			std::vector<bone>				Bone;				// Yes, this is tied to the instance rather than the mesh object.
-			uint 							MaterialIndex;		// Yes, this is tied to the instance rather than the mesh object.
+			// Access to node hierarchy.
+			phys::node* 					Root;
+			phys::node* 					Parent; // The node the mesh instance exists in.
+			// Has no children, so this is always empty.
 
+			// Host Memory Reference
+			std::vector<vertex::weight> 	Vertex; // Contains Per Vertex BoneIDs & BoneWeights. (Goes to the vertex buffer)
+			std::vector<bone>				Bone; // Contains Per Bone/Node data specifying which vertices it influences. (Goes to bone uniform buffer)
+			
 			// Device Memory Objects
 			std::shared_ptr<gpu::context> 	Context;
 			std::shared_ptr<gpu::buffer> 	VertexWeightBuffer;
 			std::shared_ptr<gpu::buffer> 	UniformBuffer;
 
+			// Add reference to parent node in hierarchy.
+			int 							MeshIndex;
+			uint 							MaterialIndex;
+			
 			instance();
-			instance(int aMeshIndex, math::mat<float, 4, 4> aTransform, uint aVertexCount, const std::vector<bone>& aBoneData, uint aMaterialIndex);
+			instance(uint aVertexCount, const std::vector<bone>& aBoneData, int aMeshIndex, uint aMaterialIndex);
 			instance(std::shared_ptr<gpu::context> aContext, const instance& aInstance);
-
-			void update(double DeltaTime);
 			
 		};
 
@@ -60,12 +69,7 @@ namespace geodesy::core::gfx {
 
 		mesh();
 		mesh(const aiMesh* aMesh);
-		// mesh(std::shared_ptr<gpu::context> aContext, const std::vector<vertex>& aVertexData, const topology& aTopologyData);
 		mesh(std::shared_ptr<gpu::context> aContext, std::shared_ptr<mesh> aMesh);
-
-		// void draw(VkCommandBuffer aCommandBuffer, std::shared_ptr<gpu::pipeline> aPipeline, std::shared_ptr<gpu::framebuffer> aFramebuffer, std::shared_ptr<gpu::descriptor::array> aDescriptorArray);
-
-		// void draw(std::vector<std::shared_ptr<gpu::image>> aOutput, std::shared_ptr<gpu::pipeline> aPipeline, std::shared_ptr<material> aMaterial);
 
 	};
 
