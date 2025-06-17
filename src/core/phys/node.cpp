@@ -122,12 +122,6 @@ namespace geodesy::core::phys {
 		return Nodes;
 	}
 
-	void node::hierarchy() {
-		for (auto Chd : this->Child) {
-			Chd->hierarchy();
-		}
-	}
-
 	void node::copy(const node* aNode) {
 		// This function simply copies all data not related to the hierarchy.
 		// This is used to copy data from one node to another.

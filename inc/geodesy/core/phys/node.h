@@ -76,8 +76,6 @@ namespace geodesy::core::phys {
 		// Creates a linearized list of nodes in the hierarchy.
 		std::vector<node*> linearize();
 
-		void hierarchy();
-
 		// Overridable node data copy function.
 		virtual void copy(const node* aNode);
 		virtual void update(

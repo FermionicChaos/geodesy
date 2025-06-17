@@ -30,14 +30,13 @@ namespace geodesy::core::gfx {
 			double 									aTime = 0.0f, 
 			const std::vector<float>& 				aAnimationWeight = { 1.0f }, 
 			const std::vector<phys::animation>& 	aPlaybackAnimation = {}
-		);
+		) override;
 
 		// Counts the total number of mesh references in the tree.
 		size_t instance_count();
 
 		// Gather all mesh instances in the hierarchy.
 		std::vector<gfx::mesh::instance*> gather_instances();
-
 
 	};
 
