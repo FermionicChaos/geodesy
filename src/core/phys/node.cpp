@@ -43,6 +43,14 @@ namespace geodesy::core::phys {
 		}
 	}
 
+	size_t node::node_count() const {
+		size_t TotalCount = 1;
+		for (auto Chd : Child) {
+			TotalCount += Chd->node_count();
+		}
+		return TotalCount;
+	}
+
 	// The main transform function that calculates the model transform for this node.
 	math::mat<float, 4, 4> node::transform(const std::vector<float>& aAnimationWeight, const std::vector<phys::animation>& aPlaybackAnimation, double aTime) const {
 		// This calculates the global transform of the node which it is
@@ -114,15 +122,13 @@ namespace geodesy::core::phys {
 		return Nodes;
 	}
 
-	size_t node::node_count() const {
-		size_t TotalCount = 1;
-		for (auto Chd : Child) {
-			TotalCount += Chd->node_count();
+	void node::hierarchy() {
+		for (auto Chd : this->Child) {
+			Chd->hierarchy();
 		}
-		return TotalCount;
 	}
 
-	void node::copy_data(const node* aNode) {
+	void node::copy(const node* aNode) {
 		// This function simply copies all data not related to the hierarchy.
 		// This is used to copy data from one node to another.
 		this->Name = aNode->Name;
@@ -140,27 +146,36 @@ namespace geodesy::core::phys {
 		this->CollisionMesh = aNode->CollisionMesh; // Copy the collision mesh if it exists.
 	}
 
-	void node::update(const std::vector<float>& aAnimationWeight, const std::vector<phys::animation>& aPlaybackAnimation, double aTime) {
-		// Work done here will start at the root
-		// of the node hierarchy.
-
-		// For each mesh instance, and for each bone, update the 
-		// bone transformations according to their respective
-		// animation object.
-		// for (mesh::instance& MI : MeshInstance) {
-		// 	// This is only used to tranform mesh instance vertices without bone animation.
-		// 	// Update Bone Buffer Date GPU side.
-		// 	mesh::instance::uniform_data* UniformData = (mesh::instance::uniform_data*)MI.UniformBuffer->Ptr;
-		// 	UniformData->Transform = this->transform(aAnimationWeight, aPlaybackAnimation, aTime);
-		// 	for (size_t i = 0; i < MI.Bone.size(); i++) {
-		// 		UniformData->BoneTransform[i] = this->Root->find(MI.Bone[i].Name)->transform(aAnimationWeight, aPlaybackAnimation, aTime);
-		// 	}
-		// }
-
+	void node::update(
+		double aDeltaTime, 
+		double aTime, 
+		const std::vector<float>& aAnimationWeight, 
+		const std::vector<animation>& aPlaybackAnimation
+	) {
 		// Go to child nodes and update children nodes.
 		for (auto Chd : this->Child) {
-			Chd->update(aAnimationWeight, aPlaybackAnimation, aTime);
+			Chd->update(
+				aDeltaTime, 
+				aTime, 
+				aAnimationWeight, 
+				aPlaybackAnimation
+			);
 		}
+
+		this->Time += aDeltaTime;
+		this->DeltaTime = aDeltaTime;
+		// //update_info UpdateInfo;
+		// // Newtons First Law: An object in motion tends to stay in motion.
+		// // Newtons Second Law: The change in momentum of an object is equal to the forces applied to it.
+		// // Newtons Third Law: For every action, there is an equal and opposite reaction.
+		// math::mat<float, 3, 3> InvertedInertiaTensor = math::inverse(this->InertiaTensor);
+
+		// // How the momentum of the object will change when a force is applied to it.
+		// this->AngularMomentum += aAppliedTorque * aDeltaTime;
+
+		// // How the object will move according to its current momentum.
+		// this->LinearMomentum += (aAppliedForce + this->InputForce) * aDeltaTime;
+		// this->Position += (this->LinearMomentum / this->Mass + this->InputVelocity) * aDeltaTime;
 	}
 	
 }

@@ -63,13 +63,10 @@ namespace geodesy::runtime {
 		return this->DrawCallList[aIndex];
 	}
 
-	object::object(std::shared_ptr<core::gpu::context> aContext, stage* aStage, creator* aCreator) {
+	object::object(std::shared_ptr<core::gpu::context> aContext, stage* aStage, creator* aCreator) : core::gfx::node() {
 		this->Name 				= aCreator->Name;
 		this->Stage 			= aStage;
 		this->Engine 			= aContext->Device->Engine;
-		this->Time 				= 0.0f;
-		this->DeltaTime 		= 0.0f;
-		this->Mass 				= 1.0f;
 		this->Position 			= aCreator->Position;
 		this->Theta 			= math::radians(aCreator->Direction[0] + 90.0f);
 		this->Phi 				= math::radians(aCreator->Direction[1] + 90.0f);
@@ -77,8 +74,6 @@ namespace geodesy::runtime {
 		this->DirectionUp 		= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
 		this->DirectionFront 	= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
 		this->Scale 			= aCreator->Scale;
-		this->LinearMomentum 	= { 0.0f, 0.0f, 0.0f };
-		this->AngularMomentum 	= { 0.0f, 0.0f, 0.0f };
 
 		this->Context 			= aContext;
 
@@ -143,20 +138,8 @@ namespace geodesy::runtime {
 	}
 
 	void object::update(double aDeltaTime, math::vec<float, 3> aAppliedForce, math::vec<float, 3> aAppliedTorque) {
-		this->Time += aDeltaTime;
-		this->DeltaTime = aDeltaTime;
-		//update_info UpdateInfo;
-		// Newtons First Law: An object in motion tends to stay in motion.
-		// Newtons Second Law: The change in momentum of an object is equal to the forces applied to it.
-		// Newtons Third Law: For every action, there is an equal and opposite reaction.
-		math::mat<float, 3, 3> InvertedInertiaTensor;// = math::inverse(PhysicsMesh->InertiaTensor);
 
-		// How the momentum of the object will change when a force is applied to it.
-		this->AngularMomentum += aAppliedTorque * aDeltaTime;
-
-		// How the object will move according to its current momentum.
-		this->LinearMomentum += (aAppliedForce + this->InputForce) * aDeltaTime;
-		this->Position += (this->LinearMomentum / this->Mass + this->InputVelocity) * aDeltaTime;
+		core::gfx::node::update(aDeltaTime);
 
 		// TODO: Add update using angular momentum to change orientation of object over time.
 

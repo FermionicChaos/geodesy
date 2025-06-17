@@ -16,17 +16,21 @@ namespace geodesy::core::gfx {
 	class node : public phys::node {
 	public:
 
+		std::shared_ptr<gpu::context> Context;
 		std::vector<mesh::instance> MeshInstance; // Mesh Instance located in node hierarchy.
 
 		node();
-		node(const aiScene* aScene, const aiNode* aNode);
-		node(std::shared_ptr<gpu::context> aContext, const node* aNode);
-		node(const node& aInput);
-		node(node&& aInput) noexcept;
+		node(const aiScene* aScene, const aiNode* aNode, phys::node* aRoot = nullptr, phys::node* aParent = nullptr);
+		node(std::shared_ptr<gpu::context> aContext, const node* aNode, phys::node* aRoot = nullptr, phys::node* aParent = nullptr);
 		~node();
 
-		node& operator=(const node& aRhs);
-		node& operator=(node&& aRhs) noexcept;
+		void copy(const phys::node* aNode) override;
+		void update(
+			double 									aDeltaTime = 0.0f, 
+			double 									aTime = 0.0f, 
+			const std::vector<float>& 				aAnimationWeight = { 1.0f }, 
+			const std::vector<phys::animation>& 	aPlaybackAnimation = {}
+		);
 
 		// Counts the total number of mesh references in the tree.
 		size_t instance_count();
@@ -34,8 +38,6 @@ namespace geodesy::core::gfx {
 		// Gather all mesh instances in the hierarchy.
 		std::vector<gfx::mesh::instance*> gather_instances();
 
-		// This is overwritten so mesh instance gpu buffers can be updated.
-		//void update(const std::vector<float>& aAnimationWeight = { 1.0f }, const std::vector<phys::animation>& aPlaybackAnimation = {}, double aTime = 0.0f);
 
 	};
 

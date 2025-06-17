@@ -90,8 +90,6 @@ namespace geodesy::runtime {
 
 		// ! ----- Device Data ----- ! //
 		// ^ This is the data that exists on the GPU.
-
-		std::shared_ptr<core::gpu::context> 										Context;
 		std::shared_ptr<core::gfx::model>											Model;
 		std::shared_ptr<core::gpu::buffer> 											UniformBuffer;
 		std::map<subject*, std::shared_ptr<renderer>>								Renderer;

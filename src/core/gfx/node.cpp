@@ -31,19 +31,23 @@ namespace geodesy::core::gfx {
 		this->Type = node::GRAPHICS; // Default node type is graphics.
 	}
 
-	node::node(const aiScene* aScene, const aiNode* aNode) : gfx::node() {
-		// Recursively copy the node data from the aiNode structure.
-		// Copy over traversal data
+	node::node(const aiScene* aScene, const aiNode* aNode, phys::node* aRoot, phys::node* aParent) : gfx::node() {
+		// Sets up proper node hierarchy.
+		if (aScene->mRootNode != aNode) {
+			this->Root = aRoot;
+			this->Parent = aParent;
+		}
+
+		// Recursively create child nodes.
 		this->Child.resize(aNode->mNumChildren);
 		for (size_t i = 0; i < this->Child.size(); i++) {
 			// Check if aNode's children has any meshes.
-			this->Child[i] 					= new gfx::node();
-			this->Child[i]->Root 			= this->Root;
-			this->Child[i]->Parent 			= this;
-			*(gfx::node*)this->Child[i] 	= gfx::node(aScene, aNode->mChildren[i]);
+			this->Child[i] = new gfx::node(aScene, aNode->mChildren[i], this->Root, this);
 		}
+
 		// Copy over non recurisve node data.
 		this->Name = aNode->mName.C_Str();
+		// TODO: Add Pos, Orientation, Scale
 		this->Transformation = {
 			aNode->mTransformation.a1, aNode->mTransformation.a2, aNode->mTransformation.a3, aNode->mTransformation.a4,
 			aNode->mTransformation.b1, aNode->mTransformation.b2, aNode->mTransformation.b3, aNode->mTransformation.b4,
@@ -78,65 +82,67 @@ namespace geodesy::core::gfx {
 				);
 			}
 			// Load Mesh Instance Data
-			this->MeshInstance[i] = mesh::instance(Mesh->mNumVertices, BoneData, MeshIndex, Mesh->mMaterialIndex);
-			// Set the root and parent node for the mesh instance.
-			this->MeshInstance[i].Root 	= this->Root;
-			this->MeshInstance[i].Parent = this;
+			this->MeshInstance[i] = mesh::instance(Mesh->mNumVertices, BoneData, MeshIndex, Mesh->mMaterialIndex, this->Root, this);
 		}
 	}
 
-	node::node(std::shared_ptr<gpu::context> aContext, const node* aNode) : gfx::node() {
+	node::node(std::shared_ptr<gpu::context> aContext, const node* aNode, phys::node* aRoot, phys::node* aParent) {		
+		// Check if root node.
+		if (aNode->Parent != nullptr) {
+			this->Root = aRoot;
+			this->Parent = aParent;
+		}
+
+		// Sets up proper node hierarchy.
 		this->Child.resize(aNode->Child.size());
-		for (size_t i = 0; i < this->Child.size(); i++) {
+		for (size_t i = 0; i < aNode->Child.size(); i++) {
 			// Check if aNode's children has any meshes.
-			this->Child[i] 				= new gfx::node(aContext, (gfx::node*)aNode->Child[i]);
-			this->Child[i]->Root 		= this->Root;
-			this->Child[i]->Parent 		= this;
-			*(gfx::node*)this->Child[i] = *(gfx::node*)aNode->Child[i];
+			this->Child[i] = new gfx::node(aContext, (gfx::node*)aNode->Child[i], this->Root, this);
 		}
-		// TODO: Fix recursive node hierarchy copy.
-		this->Name 				= aNode->Name;
-		this->Transformation 	= aNode->Transformation;
-		this->MeshInstance 		= std::vector<mesh::instance>(aNode->MeshInstance.size());
-		for (size_t i = 0; i < aNode->MeshInstance.size(); i++) {
-			// Create GPU Mesh Instances
-			this->MeshInstance[i] = mesh::instance(aContext, aNode->MeshInstance[i]);
-		}
-	}
 
-	node::node(const node& aInput) : node() {
-		*this = aInput;
-	}
+		// Set device context.
+		this->Context = aContext;
+		this->copy(aNode);
 
-	node::node(node&& aInput) noexcept : node() {
-		*this = aInput;
 	}
 
 	node::~node() {
 		this->MeshInstance.clear();
 	}
 
-	node& node::operator=(const node& aRhs) {
-		if (this == &aRhs) return *this;
-		this->Name					= aRhs.Name;
-		this->Transformation		= aRhs.Transformation;
-		this->MeshInstance 			= aRhs.MeshInstance;
-		this->Child 				= std::vector<phys::node*>(aRhs.Child.size());
-		for (size_t i = 0; i < aRhs.Child.size(); i++) {
-			// Create Empty Child Node
-			this->Child[i] 					= new gfx::node();
-			// Setup node hierarchy.
-			this->Child[i]->Root 			= this->Root;
-			this->Child[i]->Parent 			= this;
-			// Copy over child node data.
-			*(gfx::node*)this->Child[i] 	= *(gfx::node*)aRhs.Child[i];
+	void node::copy(const phys::node* aNode) {
+		// Copy over the base class node data.
+		phys::node::copy(aNode);
+
+		// Copy over mesh instance data.
+		this->MeshInstance.resize(((gfx::node*)aNode)->MeshInstance.size());
+		for (size_t i = 0; i < this->MeshInstance.size(); i++) {
+			this->MeshInstance[i] = gfx::mesh::instance(this->Context, ((gfx::node*)aNode)->MeshInstance[i], this->Root, this);
 		}
-		return *this;
 	}
 
-	node& node::operator=(node&& aRhs) noexcept {
-		*this = aRhs;
-		return *this;
+	void node::update(
+		double aDeltaTime, 
+		double aTime, 
+		const std::vector<float>& aAnimationWeight, 
+		const std::vector<phys::animation>& aPlaybackAnimation
+	) {
+
+		// Call the base class update function to update the node data.
+		phys::node::update(aDeltaTime, aTime, aAnimationWeight, aPlaybackAnimation);
+
+		// For each mesh instance, and for each bone, update the 
+		// bone transformations according to their respective
+		// animation object.
+		for (mesh::instance& MI : MeshInstance) {
+			// This is only used to tranform mesh instance vertices without bone animation.
+			// Update Bone Buffer Date GPU side.
+			mesh::instance::uniform_data* UniformData = (mesh::instance::uniform_data*)MI.UniformBuffer->Ptr;
+			UniformData->Transform = this->transform(aAnimationWeight, aPlaybackAnimation, aTime);
+			for (size_t i = 0; i < MI.Bone.size(); i++) {
+				UniformData->BoneTransform[i] = this->Root->find(MI.Bone[i].Name)->transform(aAnimationWeight, aPlaybackAnimation, aTime);
+			}
+		}
 	}
 
 	// Counts the total number of mesh references in the tree.
@@ -175,20 +181,5 @@ namespace geodesy::core::gfx {
 
 		return Instances;
 	}
-
-	// void node::update(const std::vector<float>& aAnimationWeight, const std::vector<phys::animation>& aPlaybackAnimation, double aTime) {
-	// 	// For each mesh instance, and for each bone, update the 
-	// 	// bone transformations according to their respective
-	// 	// animation object.
-	// 	for (mesh::instance& MI : MeshInstance) {
-	// 		// This is only used to tranform mesh instance vertices without bone animation.
-	// 		// Update Bone Buffer Date GPU side.
-	// 		mesh::instance::uniform_data* UniformData = (mesh::instance::uniform_data*)MI.UniformBuffer->Ptr;
-	// 		UniformData->Transform = this->transform(aAnimationWeight, aPlaybackAnimation, aTime);
-	// 		for (size_t i = 0; i < MI.Bone.size(); i++) {
-	// 			UniformData->BoneTransform[i] = this->Root->find(MI.Bone[i].Name)->transform(aAnimationWeight, aPlaybackAnimation, aTime);
-	// 		}
-	// 	}
-	// }
 
 }

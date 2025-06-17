@@ -42,12 +42,16 @@ namespace geodesy::core::gfx {
 	}
 
 	mesh::instance::instance() {
+		this->Root 				= nullptr;
+		this->Parent 			= nullptr;
 		this->MeshIndex 		= -1;
 		this->MaterialIndex 	= UINT32_MAX; // TODO: maybe make this int later?
 		this->Context 			= nullptr;
 	}
 
-	mesh::instance::instance(uint aVertexCount, const std::vector<bone>& aBoneData, int aMeshIndex, uint aMaterialIndex) : instance() {
+	mesh::instance::instance(uint aVertexCount, const std::vector<bone>& aBoneData, int aMeshIndex, uint aMaterialIndex, phys::node* aRoot, phys::node* aParent) : instance() {
+		this->Root 			= aRoot;
+		this->Parent 		= aParent;
 		this->Vertex 		= std::vector<vertex::weight>(aVertexCount);
 		this->Bone 			= aBoneData;
 		// Generate the corresponding vertex buffer which will supply the mesh
@@ -102,9 +106,9 @@ namespace geodesy::core::gfx {
 		this->MaterialIndex 	= aMaterialIndex;
 	}
 
-	mesh::instance::instance(std::shared_ptr<gpu::context> aContext, const instance& aInstance) {
-		this->Root 			= aInstance.Root;
-		this->Parent 		= aInstance.Parent;
+	mesh::instance::instance(std::shared_ptr<gpu::context> aContext, const instance& aInstance, phys::node* aRoot, phys::node* aParent) : instance() {
+		this->Root 			= aRoot;
+		this->Parent 		= aParent;
 		this->Vertex 		= aInstance.Vertex;
 		this->Bone 			= aInstance.Bone;
 		this->Context 		= aContext;
@@ -119,11 +123,12 @@ namespace geodesy::core::gfx {
 		buffer::create_info UBCI;
 		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
 		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
-		
+
+		// Use Host node hierarchy to generate the bone transforms. Device Hierarchy not complete yet.
 		uniform_data MeshInstanceUBOData = uniform_data(this);
-		MeshInstanceUBOData.Transform = this->Parent->transform();
+		MeshInstanceUBOData.Transform = aInstance.Parent->transform();
 		for (size_t i = 0; i < this->Bone.size(); i++) {
-			phys::node* Bone = this->Root->find(this->Bone[i].Name);
+			phys::node* Bone = aInstance.Root->find(this->Bone[i].Name);
 			if (Bone != nullptr) {
 				MeshInstanceUBOData.BoneTransform[i] = Bone->transform();
 			}

@@ -53,8 +53,8 @@ namespace geodesy::core::gfx {
 			uint 							MaterialIndex;
 			
 			instance();
-			instance(uint aVertexCount, const std::vector<bone>& aBoneData, int aMeshIndex, uint aMaterialIndex);
-			instance(std::shared_ptr<gpu::context> aContext, const instance& aInstance);
+			instance(uint aVertexCount, const std::vector<bone>& aBoneData, int aMeshIndex, uint aMaterialIndex, phys::node* aRoot = nullptr, phys::node* aParent = nullptr);
+			instance(std::shared_ptr<gpu::context> aContext, const instance& aInstance, phys::node* aRoot = nullptr, phys::node* aParent = nullptr);
 			
 		};
 
