@@ -155,10 +155,10 @@ namespace geodesy::runtime {
 			this->Scale
 		);
 
-		// // Update Model if animation data exists.
-		// if ((this->Model.get() != nullptr) && (this->Model->Animation.size() > 0)) {
-		// 	this->Model->update(aDeltaTime, this->AnimationWeights);
-		// }
+		// Update Model if animation data exists.
+		if ((this->Model.get() != nullptr) && (this->Model->Animation.size() > 0)) {
+			this->Model->update(aDeltaTime, this->AnimationWeights);
+		}
 	}
 
 	std::vector<std::shared_ptr<object::draw_call>> object::draw(subject* aSubject) {
