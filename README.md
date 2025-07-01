@@ -118,6 +118,10 @@ is highly experimental. Efforts have made the engine easy to use on multiple pla
 
 ## To Do List:
 
+- Create model animation caching system.
+
+- Fix single frame broken animation
+
 - Finish model.h material system.
 
 - Clean up pipeline.h to generate descriptor sets for model.h
