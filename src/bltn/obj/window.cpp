@@ -3,7 +3,7 @@
 namespace geodesy::bltn::obj {
 
 	using namespace core;
-	using namespace gcl;
+	using namespace gpu;
 	using namespace gfx;
 
 	namespace {
@@ -35,8 +35,8 @@ namespace geodesy::bltn::obj {
 	) {
 		// Get references for readability.
 		VkResult Result = VK_SUCCESS;
-		std::shared_ptr<gcl::context> Context = aObject->Context;
-		std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[aMeshInstance->Index];
+		std::shared_ptr<gpu::context> Context = aObject->Context;
+		std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[aMeshInstance->MeshIndex];
 		std::shared_ptr<material> Material = aObject->Model->Material[aMeshInstance->MaterialIndex];
 
 		// Get image outputs and vertex inputs.
@@ -63,9 +63,9 @@ namespace geodesy::bltn::obj {
 		Result = Context->end(DrawCommand);
 	}
 
-	window::window_renderer::window_renderer(ecs::object* aObject, window* aWindow) : ecs::object::renderer(aObject, aWindow) {
+	window::window_renderer::window_renderer(runtime::object* aObject, window* aWindow) : runtime::object::renderer(aObject, aWindow) {
 		// Gather list of mesh instances throughout model hierarchy.
-		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy.gather_mesh_instances();
+		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy->gather_instances();
 
 		std::vector<std::vector<draw_call>> Renderer(aWindow->Framechain->Image.size(), std::vector<draw_call>(MeshInstance.size()));
 
@@ -95,13 +95,13 @@ namespace geodesy::bltn::obj {
 		Hovered			= true;
 	}
 
-	window::window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aWindowCreator) : ecs::subject(aContext, aStage, aWindowCreator) {
+	window::window(std::shared_ptr<core::gpu::context> aContext, runtime::stage* aStage, creator* aWindowCreator) : runtime::subject(aContext, aStage, aWindowCreator) {
 		// The default renderer of window is that it takes an image and samples it.
 		// Uses only a quad for basic shaping features, and window parameters. Mostly used for 2D graphics.
 		// Load in shaders for rendering.
 		std::vector<std::string> AssetPath = {
-			"assets/shader/window.vert",
-			"assets/shader/window.frag",
+			"assets/shader/window/window.vert",
+			"assets/shader/window/window.frag",
 		};
 
 		// Open Shader Files.
@@ -153,8 +153,8 @@ namespace geodesy::bltn::obj {
 		this->WindowUniformBuffer->map_memory(0, sizeof(window_uniform_data));
 	}
 
-	std::shared_ptr<ecs::object::renderer> window::default_renderer(ecs::object* aObject) {
-		return std::dynamic_pointer_cast<ecs::object::renderer>(std::make_shared<window_renderer>(aObject, this));
+	std::shared_ptr<runtime::object::renderer> window::default_renderer(runtime::object* aObject) {
+		return std::dynamic_pointer_cast<runtime::object::renderer>(std::make_shared<window_renderer>(aObject, this));
 	}
 	
 }

@@ -6,47 +6,27 @@ namespace geodesy::bltn::obj {
 
 	using namespace geodesy::core;
 	using namespace geodesy::core::gfx;
-	using namespace geodesy::core::gcl;
+	using namespace geodesy::core::gpu;
 
-	namespace {
-
-		struct camera_uniform_data {
-			alignas(16) math::vec<float, 3> Position;
-			alignas(16) math::mat<float, 4, 4> Rotation;
-			alignas(16) math::mat<float, 4, 4> Projection;
-			camera_uniform_data(
-				math::vec<float, 3> aPosition, 
-				math::vec<float, 3> aDirRight,
-				math::vec<float, 3> aDirUp,
-				math::vec<float, 3> aDirForward,
-				float aFOV,
-				math::vec<uint, 3> aResolution,
-				float aNear,
-				float aFar
-			);
-		};
-
-		camera_uniform_data::camera_uniform_data(
-			math::vec<float, 3> aPosition, 
-			math::vec<float, 3> aDirRight,
-			math::vec<float, 3> aDirUp,
-			math::vec<float, 3> aDirForward,
-			float aFOV,
-			math::vec<uint, 3> aResolution,
-			float aNear,
-			float aFar
-		) {
-			float AspectRatio = static_cast<float>(aResolution[0]) / static_cast<float>(aResolution[1]);
-			this->Position = aPosition;
-			this->Rotation = math::mat<float, 4, 4>(
-				 aDirRight[0], 		 aDirRight[1], 		 aDirRight[2], 			0.0f,
-				-aDirUp[0], 		-aDirUp[1], 		-aDirUp[2], 			0.0f,
-				 aDirForward[0], 	 aDirForward[1], 	 aDirForward[2], 		0.0f,
-				 0.0f, 				 0.0f, 				 0.0f, 					1.0f
-			);
-			this->Projection = math::perspective(math::radians(aFOV), AspectRatio, aNear, aFar);
-		}
-
+	camera3d::uniform_data::uniform_data(
+		math::vec<float, 3> aPosition, 
+		math::vec<float, 3> aDirRight,
+		math::vec<float, 3> aDirUp,
+		math::vec<float, 3> aDirForward,
+		float aFOV,
+		math::vec<uint, 3> aResolution,
+		float aNear,
+		float aFar
+	) {
+		float AspectRatio = static_cast<float>(aResolution[0]) / static_cast<float>(aResolution[1]);
+		this->Position = aPosition;
+		this->Rotation = math::mat<float, 4, 4>(
+			 aDirRight[0], 		 aDirRight[1], 		 aDirRight[2], 			0.0f,
+			-aDirUp[0], 		-aDirUp[1], 		-aDirUp[2], 			0.0f,
+			 aDirForward[0], 	 aDirForward[1], 	 aDirForward[2], 		0.0f,
+			 0.0f, 				 0.0f, 				 0.0f, 					1.0f
+		);
+		this->Projection = math::perspective(math::radians(aFOV), AspectRatio, aNear, aFar);
 	}
 
 	camera3d::geometry_buffer::geometry_buffer(
@@ -81,8 +61,11 @@ namespace geodesy::bltn::obj {
 			this->Image[i]["OGB.Color"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
 			this->Image[i]["OGB.Position"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
 			this->Image[i]["OGB.Normal"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Emissive"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.SS"] 		= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.ORM"] 		= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
 			this->Image[i]["OGB.Depth"] 	= aContext->create_image(DepthCreateInfo, DepthFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["FinalColor"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			// Outputs for post processing.
 		}
 
 		// Setup frame clearing commands.
@@ -96,6 +79,9 @@ namespace geodesy::bltn::obj {
 			this->Image[i]["OGB.Color"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.Position"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.Normal"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["OGB.Emissive"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["OGB.SS"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["OGB.ORM"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.Depth"]->clear_depth(ClearCommand, { 1.0f, 0 }, image::layout::DEPTH_ATTACHMENT_OPTIMAL);
 			// this->Image[i]["FinalColor"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			aContext->end(ClearCommand);
@@ -111,15 +97,24 @@ namespace geodesy::bltn::obj {
 		size_t 							aFrameIndex
 	) {
 		VkResult Result = VK_SUCCESS;
-		std::shared_ptr<gcl::context> Context = aObject->Context;
+		// Get distance from subject.
+		// TODO: We need to calculate center of mass for mesh instance using node hierarchy.
+		this->DistanceFromSubject = math::length(aObject->Position - aCamera3D->Position);
+		// Get transparency mode for draw call data structure.
+		this->TransparencyMode = (material::transparency)aObject->Model->Material[aMeshInstance->MaterialIndex]->UniformData.Transparency;
+		// Load Context
+		this->Context = aObject->Context;
 		// Get Mesh & Material Data from mesh instance.
-		std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[aMeshInstance->Index];
+		std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[aMeshInstance->MeshIndex];
 		std::shared_ptr<material> Material = aObject->Model->Material[aMeshInstance->MaterialIndex];
 		// Load up desired images which draw call will render to.
 		std::vector<std::shared_ptr<image>> ImageOutputList = {
 			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Color"],
 			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Position"],
 			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Normal"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Emissive"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.SS"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.ORM"],
 			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Depth"]
 		};
 		// Acquire Mesh Vertex Buffer, and Mesh Instance Vertex Weight Buffer.
@@ -137,12 +132,17 @@ namespace geodesy::bltn::obj {
 
 		// Bind Material Textures.
 		DescriptorArray->bind(1, 0, 0, Material->Texture["Color"]);
-		DescriptorArray->bind(1, 1, 0, Material->Texture["Normal"]);
-		DescriptorArray->bind(1, 2, 0, Material->Texture["Height"]);
-		DescriptorArray->bind(1, 3, 0, Material->Texture["Emission"]);
-		DescriptorArray->bind(1, 4, 0, Material->Texture["Opacity"]);
-		DescriptorArray->bind(1, 5, 0, Material->Texture["AmbientOcclusion"]);
-		DescriptorArray->bind(1, 6, 0, Material->Texture["MetallicRoughness"]);
+		DescriptorArray->bind(1, 1, 0, Material->Texture["Opacity"]);
+		DescriptorArray->bind(1, 2, 0, Material->Texture["Normal"]);
+		DescriptorArray->bind(1, 3, 0, Material->Texture["Height"]);
+		DescriptorArray->bind(1, 4, 0, Material->Texture["Emissive"]);
+		DescriptorArray->bind(1, 5, 0, Material->Texture["Specular"]);
+		DescriptorArray->bind(1, 6, 0, Material->Texture["Shininess"]);
+		DescriptorArray->bind(1, 7, 0, Material->Texture["AmbientOcclusion"]);
+		DescriptorArray->bind(1, 8, 0, Material->Texture["Metallic"]);
+		DescriptorArray->bind(1, 9, 0, Material->Texture["Roughness"]);
+		DescriptorArray->bind(1, 10, 0, Material->Texture["Sheen"]);
+		DescriptorArray->bind(1, 11, 0, Material->Texture["ClearCoat"]);
 
 		// Actual Draw Call.
 		Result = Context->begin(DrawCommand);
@@ -150,9 +150,9 @@ namespace geodesy::bltn::obj {
 		Result = Context->end(DrawCommand);
 	}
 
-	camera3d::deferred_renderer::deferred_renderer(object* aObject, camera3d* aCamera3D) : ecs::object::renderer(aObject, aCamera3D) {
+	camera3d::deferred_renderer::deferred_renderer(object* aObject, camera3d* aCamera3D) : runtime::object::renderer(aObject, aCamera3D) {
 		// Gather list of mesh instances throughout model hierarchy.
-		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy.gather_mesh_instances();
+		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy->gather_instances();
 
 		this->DrawCallList = std::vector<std::vector<std::shared_ptr<draw_call>>>(aCamera3D->Framechain->Image.size(), std::vector<std::shared_ptr<draw_call>>(MeshInstance.size()));
 
@@ -164,7 +164,7 @@ namespace geodesy::bltn::obj {
 		}
 	}
 
-	camera3d::camera3d(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aCamera3DCreator) : ecs::subject(aContext, aStage, aCamera3DCreator) {
+	camera3d::camera3d(std::shared_ptr<core::gpu::context> aContext, runtime::stage* aStage, creator* aCamera3DCreator) : runtime::subject(aContext, aStage, aCamera3DCreator) {
 		VkResult Result = VK_SUCCESS;
 		engine* Engine = aContext->Device->Engine;
 		this->FOV 	= aCamera3DCreator->FOV;
@@ -173,8 +173,17 @@ namespace geodesy::bltn::obj {
 
 		// List of assets Camera3D will load into memory.
 		std::vector<std::string> AssetList = {
-			"assets/shader/camera3d.vert",
-			"assets/shader/camera3d.frag"
+			// Standard Vertex Shader
+			"assets/shader/camera3d/standard.vert",
+			// Opaque Rasterization
+			"assets/shader/camera3d/opaque.frag",
+			// Transulucent Rasterization
+			// Opaque Lighting & Shadows
+			"assets/shader/camera3d/opaque.rgen",
+			"assets/shader/camera3d/opaque.rmiss",
+			"assets/shader/camera3d/opaque.rchit"
+			// Translucent Renderings
+			// Final Post Processing
 		};
 
 		// Loaded host memory assets for this object's possession.
@@ -184,9 +193,9 @@ namespace geodesy::bltn::obj {
 		this->Framechain = std::dynamic_pointer_cast<framechain>(std::make_shared<geometry_buffer>(aContext, aCamera3DCreator->Resolution, aCamera3DCreator->FrameRate, aCamera3DCreator->FrameCount));
 
 		// Grab shaders from asset list, compile, and link.
-		std::shared_ptr<gcl::shader> VertexShader = std::dynamic_pointer_cast<gcl::shader>(Asset[0]);
-		std::shared_ptr<gcl::shader> PixelShader = std::dynamic_pointer_cast<gcl::shader>(Asset[1]);
-		std::vector<std::shared_ptr<gcl::shader>> ShaderList = { VertexShader, PixelShader };
+		std::shared_ptr<gpu::shader> VertexShader = std::dynamic_pointer_cast<gpu::shader>(Asset[0]);
+		std::shared_ptr<gpu::shader> PixelShader = std::dynamic_pointer_cast<gpu::shader>(Asset[1]);
+		std::vector<std::shared_ptr<gpu::shader>> ShaderList = { VertexShader, PixelShader };
 		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::make_shared<pipeline::rasterizer>(ShaderList, aCamera3DCreator->Resolution);
 
 		// This code specifies how the vextex data is to be interpreted from the bound vertex buffers.
@@ -203,7 +212,10 @@ namespace geodesy::bltn::obj {
 		Rasterizer->attach(0, this->Framechain->draw_frame()["OGB.Color"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
 		Rasterizer->attach(1, this->Framechain->draw_frame()["OGB.Position"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
 		Rasterizer->attach(2, this->Framechain->draw_frame()["OGB.Normal"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
-		Rasterizer->attach(3, this->Framechain->draw_frame()["OGB.Depth"], 		image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+		Rasterizer->attach(3, this->Framechain->draw_frame()["OGB.Emissive"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
+		Rasterizer->attach(4, this->Framechain->draw_frame()["OGB.SS"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
+		Rasterizer->attach(5, this->Framechain->draw_frame()["OGB.ORM"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
+		Rasterizer->attach(6, this->Framechain->draw_frame()["OGB.Depth"], 		image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
 		// How to intepret vertex data in rasterization.
 		Rasterizer->InputAssembly.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
@@ -233,7 +245,7 @@ namespace geodesy::bltn::obj {
 		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
 		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 
-		camera_uniform_data UniformData = camera_uniform_data(
+		uniform_data UniformData = uniform_data(
 			this->Position, 
 			this->DirectionRight, 
 			this->DirectionUp, 
@@ -280,7 +292,7 @@ namespace geodesy::bltn::obj {
 		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
 		this->DirectionFront			= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
 
-		camera_uniform_data UniformData = camera_uniform_data(
+		*(uniform_data*)this->CameraUniformBuffer->Ptr = uniform_data(
 			this->Position, 
 			this->DirectionRight, 
 			this->DirectionUp, 
@@ -290,12 +302,138 @@ namespace geodesy::bltn::obj {
 			this->Near,
 			this->Far
 		);
-		memcpy(this->CameraUniformBuffer->Ptr, &UniformData, sizeof(camera_uniform_data));
 	}
 
-	std::shared_ptr<ecs::object::renderer> camera3d::default_renderer(object* aObject) {
-		return std::dynamic_pointer_cast<ecs::object::renderer>(std::make_shared<deferred_renderer>(aObject, this));
+	std::shared_ptr<runtime::object::renderer> camera3d::default_renderer(object* aObject) {
+		return std::dynamic_pointer_cast<runtime::object::renderer>(std::make_shared<deferred_renderer>(aObject, this));
 	}
 
+	// ----- Geodesy Default 3D Real Time Rendering System ----- //
+	// this->RenderingOperations[0]: Clears all images in geometry buffer.
+	// this->RenderingOperations[1]: Opaque Mesh Instance Renderings
+	// this->RenderingOperations[2]: Transparent Mesh Instance Renderings
+	// this->RenderingOperations[3]: Translucent Mesh Instance Renderings for ray tracing.
+	// this->RenderingOperations[4]: Lighting & Shadows on Opaque Geometry Buffer
+	// this->RenderingOperations[5]: Ray Tracing informed by Translucent Outputs.
+	// this->RenderingOperations[6]: Post Processing to Final Color Output.
+	// this->RenderingOperations[7]: postdraw operations.
+	/*
+	core::gpu::submission_batch camera3d::render(runtime::stage* aStage) {
+
+		// Get next frame.
+		VkResult Result = this->Framechain->next_frame();
+
+		// Predraw operations.
+		this->RenderingOperations += this->Framechain->predraw();
+
+		std::list<std::shared_ptr<draw_call>> OpaqueList;
+		std::list<std::shared_ptr<draw_call>> TransparentList;
+		std::list<std::shared_ptr<draw_call>> TranslucentList;
+
+		// Iterate through all draw calls and sort based on assigned material to mesh instance.
+		for (auto& Object : aStage->Object) {
+			std::vector<std::shared_ptr<draw_call>> DrawCallList = Object->draw(this);
+			for (auto& DrawCall : DrawCallList) {
+				// Use insert sort to sort draw calls by distance from camera.
+				switch(DrawCall->TransparencyMode) {
+					case gfx::material::transparency::OPAQUE: {
+							// Sort nearest to the camera first.
+							// insert 2.0
+							// 0.2 | 0.7 | 3.3 | 4.5
+							// Rewrite code, when list empty, push back, and fix if larger than all elements.
+							bool Inserted = false;
+							for (auto it = OpaqueList.begin(); it != OpaqueList.end(); ++it) {
+								if (DrawCall->DistanceFromSubject < (*it)->DistanceFromSubject) {
+									OpaqueList.insert(it, DrawCall);
+									Inserted = true;
+									break;
+								}
+							}
+							// If not inserted, push back.
+							if (!Inserted) {
+								OpaqueList.push_back(DrawCall);
+							}
+						}
+						break;
+					case gfx::material::transparency::TRANSPARENT: {
+							// This section sorts by farthest to the camera first.
+							// insert 2.0
+							// 4.5 | 3.3 | 0.7 | 0.2
+							// Copy the opaque code but in reverse order.
+							bool Inserted = false;
+							for (auto it = TransparentList.begin(); it != TransparentList.end(); ++it) {
+								if (DrawCall->DistanceFromSubject > (*it)->DistanceFromSubject) {
+									TransparentList.insert(it, DrawCall);
+									Inserted = true;
+									break;
+								}
+							}
+							// If not inserted, push back.
+							if (!Inserted) {
+								TransparentList.push_back(DrawCall);
+							}
+						}
+						break;
+					case gfx::material::transparency::TRANSLUCENT: {
+							// This section sorts by farthest to the camera first.
+							// insert 2.0
+							// 4.5 | 3.3 | 0.7 | 0.2
+							// Repeat the transparent code.
+							bool Inserted = false;
+							for (auto it = TranslucentList.begin(); it != TranslucentList.end(); ++it) {
+								if (DrawCall->DistanceFromSubject > (*it)->DistanceFromSubject) {
+									TranslucentList.insert(it, DrawCall);
+									Inserted = true;
+									break;
+								}
+							}
+							// If not inserted, push back.
+							if (!Inserted) {
+								TranslucentList.push_back(DrawCall);
+							}
+						}
+						break;
+					default:
+						break;
+				}
+			}
+		}
+
+		// Convert Linked List objects into command batches.
+		{
+			std::vector<std::shared_ptr<draw_call>> OpaqueVector(OpaqueList.begin(), OpaqueList.end());
+			std::vector<std::shared_ptr<draw_call>> TransparentVector(TransparentList.begin(), TransparentList.end());
+			std::vector<std::shared_ptr<draw_call>> TranslucentVector(TranslucentList.begin(), TranslucentList.end());
+			// Convert to Command Buffer arrays.
+			std::vector<VkCommandBuffer> OpaqueCommandBuffer = convert(OpaqueVector);
+			std::vector<VkCommandBuffer> TransparentCommandBuffer = convert(TransparentVector);
+			std::vector<VkCommandBuffer> TranslucentCommandBuffer = convert(TranslucentVector);
+			// Convert to Command Batches.
+			command_batch OpaqueBatch(OpaqueCommandBuffer);
+			command_batch TransparentBatch(TransparentCommandBuffer);
+			command_batch TranslucentBatch(TranslucentCommandBuffer);
+			// Add to Rendering Operations.
+			this->RenderingOperations += OpaqueBatch;
+			this->RenderingOperations += TransparentBatch;
+			this->RenderingOperations += TranslucentBatch;
+		}
+
+		// Shadow & Lighting Operations on Opaque Geometry Buffer.
+
+		// Ray Tracing Operations on Translucent Geometry Buffer.
+
+		// Post Processing Operations on Final Color Output.
+		this->RenderingOperations += this->Framechain->postdraw();
+
+		// Setup Semaphore dependencies between command_batches.
+		for (size_t i = 0; i < this->RenderingOperations.size() - 1; i++) {
+			VkPipelineStageFlags Stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+			this->RenderingOperations[i + 1].depends_on(this->SemaphorePool, Stage, this->RenderingOperations[i]);
+		}
+
+		// Build submission batch and prepare for GPU execution.
+		return build(this->RenderingOperations);
+	}
+	//*/
 
 }

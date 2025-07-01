@@ -33,21 +33,20 @@ int main(int aCmdArgCount, char* aCmdArgList[]) {
 	}
 
 	// Load select layers desired for engine.
-	std::vector<const char*> LayerList = {
+	std::set<std::string> LayerList = {
 		"VK_LAYER_KHRONOS_validation"
 	};
 
-	// Load selected extensions so engine can render to system windows.
-	std::vector<const char*> ExtensionList = system_window::engine_extensions();
+	std::set<std::string> ExtensionList = system_window::engine_extensions();
 
 	{
 		geodesy::engine Engine(CommandLineArguments, LayerList, ExtensionList);
 		{
-				// Initialize User App
-				bltn::unit_test UnitTest(&Engine);
+			// Initialize User App
+			bltn::unit_test UnitTest(&Engine);
 
-				// Run User App
-				Engine.run(&UnitTest);
+			// Run User App
+			Engine.run(&UnitTest);
 		}
 	}
 

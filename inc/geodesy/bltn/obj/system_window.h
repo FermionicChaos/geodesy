@@ -15,7 +15,7 @@ namespace geodesy::bltn::obj {
 	class system_window : public window {
 	public:
 
-		class swapchain : public core::gcl::framechain {
+		class swapchain : public framechain {
 		public:
 
 			enum colorspace {
@@ -56,7 +56,7 @@ namespace geodesy::bltn::obj {
 		    struct property {
 				uint32_t					    FrameCount;
 				float 							FrameRate;
-				core::gcl::image::format 		PixelFormat;
+				core::gpu::image::format 		PixelFormat;
 				colorspace						ColorSpace;
 		        int 							ImageUsage;
 				composite 						CompositeAlpha;
@@ -72,16 +72,16 @@ namespace geodesy::bltn::obj {
 			VkSwapchainCreateInfoKHR				CreateInfo;
 			VkSwapchainKHR							Handle;
 
-		    swapchain(std::shared_ptr<core::gcl::context> aContext, VkSurfaceKHR aSurface, const property& aProperty);
+		    swapchain(std::shared_ptr<core::gpu::context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain = VK_NULL_HANDLE);
 		    ~swapchain();
 
 			VkImageCreateInfo image_create_info() const;
 
-			VkResult next_frame(VkSemaphore& aPresentFrameSemaphore, VkSemaphore& aNextFrameSemaphore, VkFence aNextFrameFence = VK_NULL_HANDLE) override;
+			VkResult next_frame(VkSemaphore aPresentFrameSemaphore = VK_NULL_HANDLE, VkSemaphore aNextFrameSemaphore = VK_NULL_HANDLE, VkFence aNextFrameFence = VK_NULL_HANDLE) override;
 
 		private:
 
-			VkResult create_swapchain(std::shared_ptr<core::gcl::context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain = VK_NULL_HANDLE);
+			VkResult create_swapchain(std::shared_ptr<core::gpu::context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain = VK_NULL_HANDLE);
 			void clear();
 
 		};
@@ -97,9 +97,9 @@ namespace geodesy::bltn::obj {
 
 		static bool initialize();
 		static void terminate();
-		static std::vector<const char*> engine_extensions();
-		static std::vector<const char*> context_extensions();
-		static void check_present_support(core::gcl::device* aDevice);
+		static std::set<std::string> engine_extensions();
+		static std::set<std::string> context_extensions();
+		static void check_present_support(core::gpu::device* aDevice);
 
 		// Timing
 		static double get_time();
@@ -114,10 +114,10 @@ namespace geodesy::bltn::obj {
 		GLFWwindow* 							WindowHandle;
 		VkSurfaceKHR 							SurfaceHandle;
 
-		system_window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aSystemWindowCreator);
+		system_window(std::shared_ptr<core::gpu::context> aContext, runtime::stage* aStage, creator* aSystemWindowCreator);
 		~system_window();
 
-		core::gcl::submission_batch render(ecs::stage* aStage) override;
+		core::gpu::submission_batch render(runtime::stage* aStage) override;
 		void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f }) override;
 
 	private:

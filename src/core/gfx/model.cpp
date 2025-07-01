@@ -108,7 +108,7 @@ namespace geodesy::core::gfx {
 	model::model(std::string aFilePath, file::manager* aFileManager) : file(aFilePath) {
 		this->Time = 0.0;
 		if (aFilePath.length() == 0) return;
-		const aiScene *Scene = ModelImporter->ReadFile(aFilePath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices);
+		const aiScene *Scene = ModelImporter->ReadFile(aFilePath, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices | aiProcess_CalcTangentSpace);
 
 		// for (int i = 0; i < Scene->mNumMeshes; i++) {
 		// 	std::cout << "Mesh Name: " << Scene->mMeshes[i]->mName.C_Str() << std::endl;
@@ -126,13 +126,13 @@ namespace geodesy::core::gfx {
 		// Get Name of Model.
 		this->Name = Scene->mName.C_Str();
 
-		// Extract Scene Hiearchy
-		this->Hierarchy = node(Scene, Scene->mRootNode);
+		// Check if root node has meshes, and choose node constructor.
+		this->Hierarchy = std::shared_ptr<gfx::node>(new gfx::node(Scene, Scene->mRootNode));
 
 		// Load animation tracks.
-		this->Animation = std::vector<animation>(Scene->mNumAnimations);
+		this->Animation = std::vector<phys::animation>(Scene->mNumAnimations);
 		for (size_t i = 0; i < this->Animation.size(); i++) {
-			this->Animation[i] = animation(Scene->mAnimations[i]);
+			this->Animation[i] = phys::animation(Scene->mAnimations[i]);
 		}
 
 		// Cleaner way to load meshes.
@@ -148,7 +148,7 @@ namespace geodesy::core::gfx {
 		}
 
 		// TODO: Implement direct texture loader later.
-		// this->Texture = std::vector<std::shared_ptr<gcl::image>>(Scene->mNumTextures);
+		// this->Texture = std::vector<std::shared_ptr<gpu::image>>(Scene->mNumTextures);
 
 		// std::vector<node*> LinearHierarchy = this->Hierarchy.linearize();
 
@@ -185,12 +185,12 @@ namespace geodesy::core::gfx {
 		ModelImporter->FreeScene();
 	}
 
-	model::model(std::shared_ptr<gcl::context> aContext, std::shared_ptr<model> aModel, gcl::image::create_info aCreateInfo) : model() {
+	model::model(std::shared_ptr<gpu::context> aContext, std::shared_ptr<model> aModel, gpu::image::create_info aCreateInfo) : model() {
 		this->Name = aModel->Name;
 		this->Context = aContext;
 
 		// Create Node Hierarchy for GPU.
-		this->Hierarchy = node(aContext, aModel->Hierarchy);
+		this->Hierarchy = std::shared_ptr<gfx::node>(new gfx::node(aContext, aModel->Hierarchy.get()));
 
 		// Load node animations.
 		this->Animation = aModel->Animation;
@@ -208,9 +208,9 @@ namespace geodesy::core::gfx {
 		}
 
 		// Load textures into GPU memory.
-		this->Texture = std::vector<std::shared_ptr<gcl::image>>(aModel->Texture.size());
+		this->Texture = std::vector<std::shared_ptr<gpu::image>>(aModel->Texture.size());
 		for (std::size_t i = 0; i < aModel->Texture.size(); i++) {
-			this->Texture[i] = std::shared_ptr<gcl::image>(new gcl::image(aContext, aCreateInfo, aModel->Texture[i]));
+			this->Texture[i] = std::shared_ptr<gpu::image>(new gpu::image(aContext, aCreateInfo, aModel->Texture[i]));
 		}
 
 	}
@@ -222,7 +222,7 @@ namespace geodesy::core::gfx {
 	void model::update(double aDeltaTime, const std::vector<float>& aAnimationWeights) {
 		this->Time += aDeltaTime;
 		// Choose animation here.
-		this->Hierarchy.update(aAnimationWeights, this->Animation, this->Time);
+		this->Hierarchy->update(aDeltaTime, this->Time, aAnimationWeights, this->Animation);
 	}
 
 }

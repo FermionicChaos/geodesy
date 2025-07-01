@@ -4,11 +4,23 @@
 
 // ------------------------------ field.h ------------------------------ //
 /*
-* field.h is a class which exists over a selected space with
+This code is intended to be a field class that holds numerical data of functions. 
+X is the domain type, usually a float or double, N is the dimensionality, and Y is 
+the range values. For instance it could be a temperature field that is a scalar at 
+every point between the Lower/Upper Bound, and Element count is the samples in each 
+direction. Y could be vec<float,3> which would make it a vector field over a domain. 
+Outside of the bounds, should return a zero value. Inspect this code and for instance 
+if there are scalars that are being added, divided, singular argument functions, 
+we can skip using sampling to take averages. We can apply to each element directly 
+and save compute time. We want to be able compose compile time math expressions that readable.
+// Example usage:
+field<float, 1, float> x(-5.0f, 5.0f, 1024);
+field<float, 1, float> y = 10f * 0.5f * (sin(x * x) + 1.0f);
 */
 
 #include <cmath>
 #include <vector>
+#include <stdexcept>
 #include "vec.h"
 #include <omp.h>
 
@@ -38,58 +50,40 @@ namespace geodesy::core::math {
 		}
 
 		// Constructor for single dimension field.
-		field(X aLowerBound, X aUpperBound, std::size_t aElementCount) : field(vec<X, 1>{aLowerBound}, vec<X, 1>{aUpperBound}, vec<std::size_t, 1>{aElementCount}) {}
-
-		field(vec<X, N> aLowerBound, vec<X, N> aUpperBound, vec<std::size_t, N> aElementCount) : LowerBound(aLowerBound), UpperBound(aUpperBound), ElementCount(aElementCount) {
-			std::size_t ElementCountTotal = 1;
-			for (std::size_t i = 0; i < N; i++) {
-				ElementCountTotal *= ElementCount[i];
-			}
-			this->resize(ElementCountTotal, Y());
-		}
+		field(X aLowerBound, X aUpperBound, std::size_t aElementCount, std::ptrdiff_t aDomainType = 0) : field(vec<X, 1>{aLowerBound}, vec<X, 1>{aUpperBound}, vec<std::size_t, 1>{aElementCount}, aDomainType) {}
 
 		// Multidimensional constructor.
-		field(vec<X, N> aLowerBound, vec<X, N> aUpperBound, vec<std::size_t, N> aElementCount, std::size_t aDomainType) : field(aLowerBound, aUpperBound, aElementCount) {
-			// ds is the step size for each dimension.
-			vec<X, N> ds = (UpperBound - LowerBound);
-			for (std::size_t i = 0; i < N; i++) {
-				ds[i] /= ElementCount[i] - 1;
-			}
+		field(vec<X, N> aLowerBound, vec<X, N> aUpperBound, vec<std::size_t, N> aElementCount, std::ptrdiff_t aDomainType = 0) {
+			// TODO: Check element count is valid.
 
-			for (std::ptrdiff_t i = 0; i < this->size(); i++) {
-				// This is to generate numerical dimensions along each axis, which can be used for numerical functions.
-				// ds is the step which will be used to generate the value at each sample point in the domain.
-				vec<std::size_t, N> Index = this->convert_to_dimensional_index(i);
-				size_t GlobalIndex = this->convert_to_global_index(Index);
-				(*this)[GlobalIndex] = ds[aDomainType - 1] * Index[aDomainType - 1] + LowerBound[aDomainType - 1];
+			this->ElementCount = aElementCount;
+			this->LowerBound = aLowerBound;
+			this->UpperBound = aUpperBound;
+
+			// Initialize the the memory for the field, and zero the values.
+			std::size_t ElementCountTotal = 1;
+			for (std::size_t i = 0; i < N; i++) {
+				ElementCountTotal *= aElementCount[i];
+			}
+			this->resize(ElementCountTotal, Y());
+
+			// Check if domain needs to be generated.
+			if ((aDomainType > 0) && (aDomainType <= N)) {
+				// ds is the step size for each dimension.
+				vec<X, N> ds = (aUpperBound - aLowerBound);
+				for (std::size_t i = 0; i < N; i++) {
+					ds[i] /= aElementCount[i] - 1;
+				}
+
+				// Generate the field values based on the domain type.
+				for (std::ptrdiff_t i = 0; i < this->size(); i++) {
+					// This is to generate numerical dimensions along each axis, which can be used for numerical functions.
+					// ds is the step which will be used to generate the value at each sample point in the domain.
+					vec<std::size_t, N> Index = this->convert_to_dimensional_index(i);
+					(*this)[i] = ds[aDomainType - 1] * Index[aDomainType - 1] + aLowerBound[aDomainType - 1];
+				}
 			}
 		}
-
-		// Y& operator()(const vec<std::size_t, N>& aI) {
-		// 	std::size_t GlobalIndex = this->convert_to_global_index(aI);
-		// 	return (*this)[GlobalIndex];
-		// }
-
-		// Y operator()(const vec<std::size_t, N>& aI) const {
-		// 	std::size_t GlobalIndex = this->convert_to_global_index(aI);
-		// 	return (*this)[GlobalIndex];
-		// }
-
-		// Y& operator()(const vec<X, N>& aX) {
-		// 	vec<std::size_t, N> Index;
-		// 	// ds is the step size for each dimension.
-		// 	vec<X, N> ds = (UpperBound - LowerBound);
-		// 	for (std::size_t i = 0; i < N; i++) {
-		// 		ds[i] /= ElementCount[i] - 1;
-		// 	}
-		// 	// Determine Nearest Neighbour.
-		// 	for (std::size_t i = 0; i < N; i++) {
-		// 		// ds = (X2 - X1) / (N - 1)
-		// 		// i = ((X - X1) / ds) + 1
-		// 		Index[i] = std::round((aX[i] - LowerBound[i]) / ds[i]);
-		// 	}
-		// 	return (*this)(Index);
-		// }
 
 		// Access f(x) = y. Uses interpolation.
 		Y operator()(const vec<X, N>& aX) const {
@@ -163,6 +157,11 @@ namespace geodesy::core::math {
 			return SamplePoints[0];
 		}
 
+		// Single dimension access.
+		Y operator()(const X& aX) {
+			return (*this)(vec<X, 1>{aX});
+		}
+
 		// Determines the union bounds of the two fields.
 		field<X, N, Y> operator|(const field<X, N, Y>& aRhs) const {
 			field<X, N, Y> Out;
@@ -196,7 +195,7 @@ namespace geodesy::core::math {
 		}
 
 		field<X, N, Y> operator-() const {
-			field<X, N, Y> Out;
+			field<X, N, Y> Out = *this;
 			for (std::size_t i = 0; i < N; i++) {
 				Out[i] = -(*this)[i];
 			}
@@ -237,7 +236,7 @@ namespace geodesy::core::math {
 		}
 
 		field<X, N, Y> operator/(const field<X, N, Y>& aRhs) const {
-			field<X, N, Y> Out = *this;
+			field<X, N, Y> Out = *this & aRhs;
 			#pragma omp parallel for
 			for (std::ptrdiff_t i = 0; i < Out.size(); i++) {
 				vec<std::size_t, N> Index = Out.convert_to_dimensional_index(i);
@@ -247,48 +246,12 @@ namespace geodesy::core::math {
 			return Out;
 		}
 
-		field<X, N, Y> operator+(const Y& aRhs) const {
-			field<X, N, Y> Out = *this;
+		field<X, N, Y>& operator=(const Y& aRhs) {
 			#pragma omp parallel for
-			for (std::ptrdiff_t i = 0; i < Out.size(); i++) {
-				vec<std::size_t, N> Index = Out.convert_to_dimensional_index(i);
-				vec<X, N> Position = Out.convert_index_to_position(Index);
-				Out[i] = (*this)(Position) + aRhs;
+			for (std::ptrdiff_t i = 0; i < this->size(); i++) {
+				(*this)[i] = aRhs;
 			}
-			return Out;
-		}
-
-		field<X, N, Y> operator-(const Y& aRhs) const {
-			field<X, N, Y> Out = *this;
-			#pragma omp parallel for
-			for (std::ptrdiff_t i = 0; i < Out.size(); i++) {
-				vec<std::size_t, N> Index = Out.convert_to_dimensional_index(i);
-				vec<X, N> Position = Out.convert_index_to_position(Index);
-				Out[i] = (*this)(Position) - aRhs;
-			}
-			return Out;
-		}
-
-		field<X, N, Y> operator*(const Y& aRhs) const {
-			field<X, N, Y> Out = *this;
-			#pragma omp parallel for
-			for (std::ptrdiff_t i = 0; i < Out.size(); i++) {
-				vec<std::size_t, N> Index = Out.convert_to_dimensional_index(i);
-				vec<X, N> Position = Out.convert_index_to_position(Index);
-				Out[i] = (*this)(Position) * aRhs;
-			}
-			return Out;
-		}
-
-		field<X, N, Y> operator/(const Y& aRhs) const {
-			field<X, N, Y> Out = *this;
-			#pragma omp parallel for
-			for (std::ptrdiff_t i = 0; i < Out.size(); i++) {
-				vec<std::size_t, N> Index = Out.convert_to_dimensional_index(i);
-				vec<X, N> Position = Out.convert_index_to_position(Index);
-				Out[i] = (*this)(Position) / aRhs;
-			}
-			return Out;
+			return *this;
 		}
 
 		field<X, N, Y>& operator+=(const field<X, N, Y>& aRhs) {
@@ -301,6 +264,67 @@ namespace geodesy::core::math {
 			return *this;
 		}
 
+		field<X, N, Y>& operator*=(const field<X, N, Y>& aRhs) {
+			(*this) = (*this) * aRhs;
+			return *this;
+		}
+
+		field<X, N, Y>& operator/=(const field<X, N, Y>& aRhs) {
+			(*this) = (*this) / aRhs;
+			return *this;
+		}
+
+		field<X, N, Y> operator+(const Y& aRhs) const {
+			field<X, N, Y> Out = *this;
+			#pragma omp parallel for
+			for (std::ptrdiff_t i = 0; i < Out.size(); i++) {
+				Out[i] = (*this)[i] + aRhs;
+			}
+			return Out;
+		}
+
+		field<X, N, Y> operator-(const Y& aRhs) const {
+			field<X, N, Y> Out = *this;
+			#pragma omp parallel for
+			for (std::ptrdiff_t i = 0; i < Out.size(); i++) {
+				Out[i] = (*this)[i] - aRhs;
+			}
+			return Out;
+		}
+
+		field<X, N, Y> operator*(const Y& aRhs) const {
+			field<X, N, Y> Out = *this;
+			#pragma omp parallel for
+			for (std::ptrdiff_t i = 0; i < Out.size(); i++) {
+				Out[i] = (*this)[i] * aRhs;
+			}
+			return Out;
+		}
+
+		field<X, N, Y> operator/(const Y& aRhs) const {
+			// Check if aRhs is zero to avoid division by zero.
+			if (std::fabs(aRhs) < std::numeric_limits<Y>::epsilon()) {
+				throw std::runtime_error("Division by zero in field division.");
+			}
+			// Create a new field for the result.
+			field<X, N, Y> Out = *this;
+			#pragma omp parallel for
+			for (std::ptrdiff_t i = 0; i < Out.size(); i++) {
+				Out[i] = (*this)[i] / aRhs;
+			}
+			return Out;
+		}
+
+		field<X, N, Y>& operator+=(const Y& aRhs) {
+			(*this) = (*this) + aRhs;
+			return *this;
+		}
+
+		field<X, N, Y>& operator-=(const Y& aRhs) {
+			(*this) = (*this) - aRhs;
+			return *this;
+		}
+
 		field<X, N, Y>& operator*=(const Y& aRhs) {
 			(*this) = (*this) * aRhs;
 			return *this;
@@ -309,24 +333,6 @@ namespace geodesy::core::math {
 		field<X, N, Y>& operator/=(const Y& aRhs) {
 			(*this) = (*this) / aRhs;
 			return *this;
-		}
-
-		bool increment(vec<std::size_t, N>& aIndex, const vec<std::size_t, N>& aElementCount) const {
-			bool BreakLoop = false;
-			for (std::size_t i = 0; i < N; i++) {
-				aIndex[i]++;
-				if (aIndex[i] >= aElementCount[i]) {
-					if (i == N - 1) {
-						aIndex = vec<std::size_t, N>{};
-						BreakLoop = true;
-						break;
-					}
-					aIndex[i] = 0;
-				} else {
-					break;
-				}
-			}
-			return !BreakLoop;
 		}
 
 		vec<std::size_t, N> convert_to_dimensional_index(std::size_t aIndex) const {
@@ -374,28 +380,26 @@ namespace geodesy::core::math {
 	};
 
 	template <typename X, std::size_t N, typename Y>
-	field<X, N, Y> operator+(const Y& aLhs, field<X, N, Y>& aRhs) {
+	field<X, N, Y> operator+(const Y& aLhs, const field<X, N, Y>& aRhs) {
 		return aRhs + aLhs;
 	}
 
 	template <typename X, std::size_t N, typename Y>
-	field<X, N, Y> operator-(const Y& aLhs, field<X, N, Y>& aRhs) {
+	field<X, N, Y> operator-(const Y& aLhs, const field<X, N, Y>& aRhs) {
 		return (-aRhs) + aLhs;
 	}
 
 	template <typename X, std::size_t N, typename Y>
-	field<X, N, Y> operator*(const Y& aLhs, field<X, N, Y>& aRhs) {
+	field<X, N, Y> operator*(const Y& aLhs, const field<X, N, Y>& aRhs) {
 		return aRhs * aLhs;
 	}
 
 	template <typename X, std::size_t N, typename Y>
-	field<X, N, Y> operator/(const Y& aLhs, field<X, N, Y>& aRhs) {
+	field<X, N, Y> operator/(const Y& aLhs, const field<X, N, Y>& aRhs) {
 		field<X, N, Y> Out = aRhs;
 		#pragma omp parallel for
 		for (std::ptrdiff_t i = 0; i < Out.size(); i++) {
-			vec<std::size_t, N> Index = Out.convert_to_dimensional_index(i);
-			vec<X, N> Position = Out.convert_index_to_position(Index);
-			Out[i] = aLhs / aRhs(Position);
+			Out[i] = aLhs / aRhs[i];
 		}
 		return Out;
 	}
@@ -669,18 +673,20 @@ namespace geodesy::core::math {
 		#pragma omp parallel for
 		for (std::ptrdiff_t i = 0; i < Out.size(); i++) {
 			vec<std::size_t, N> k = Out.convert_to_dimensional_index(i);
-			vec<Y, N> df = vec<Y, N>();
+			Y divergence = Y();  // Fixed: Y instead of vec<Y, N>
 			for (std::size_t j = 0; j < N; j++) {
+				Y df = Y();  // Fixed: Y instead of vec<Y, N>
 				X dxj = 2.0 * ds[j];
 				if ((k[j] > 0) && (k[j] < (aF.ElementCount[j] - 1))) {
 					vec<std::size_t, N> k1 = k;
 					vec<std::size_t, N> k2 = k;
 					k1[j] -= 1;
 					k2[j] += 1;
-					df = aF(k2)[j] - aF(k1)[j];
+					df = aF(k2)[j] - aF(k1)[j];  // Get j-th component
 				}
-				Out[i][j] += df / dxj;
+				divergence += df / dxj;  // Fixed: accumulate into divergence
 			}
+			Out[i] = divergence;  // Fixed: assign final divergence value
 		}
 		return Out;
 	}

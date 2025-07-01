@@ -13,7 +13,7 @@ namespace geodesy {
 	//using namespace bltn::app;
 
 	using namespace util;
-	using namespace gcl;
+	using namespace gpu;
 	using namespace lgc;
 	using namespace gfx;
 
@@ -89,7 +89,7 @@ namespace geodesy {
 		this->PrimaryDevice = nullptr;
 	}
 
-	engine::engine(std::vector<const char*> aCommandLineArgumentList, std::vector<const char*> aLayerList, std::vector<const char*> aExtensionList) : engine() {
+	engine::engine(std::vector<const char*> aCommandLineArgumentList, std::set<std::string> aLayerList, std::set<std::string> aExtensionList) : engine() {
 		VkResult Result = VK_SUCCESS;
 		this->Name			= "Geodesy Engine";
 		this->Version		= math::vec<uint, 3>(GEODESY_ENGINE_VERSION_MAJOR, GEODESY_ENGINE_VERSION_MINOR, GEODESY_ENGINE_VERSION_PATCH);
@@ -103,10 +103,14 @@ namespace geodesy {
 			std::vector<const char*> Extension;
 
 			// Add Validation Layers
-			Layer.insert(Layer.end(), aLayerList.begin(), aLayerList.end());
+			for (const std::string& LayerName : aLayerList) {
+				Layer.push_back(LayerName.c_str());
+			}
 
-			// Add WSI extensions
-			Extension.insert(Extension.end(), aExtensionList.begin(), aExtensionList.end());
+			// Add Extensions
+			for (const std::string& ExtensionName : aExtensionList) {
+				Extension.push_back(ExtensionName.c_str());
+			}
 			
 			// TODO: Figure out how to funnel app meta data into here.
 			AppInfo.sType								= VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -137,7 +141,7 @@ namespace geodesy {
 		}
 
 		// Query system for existing GPGPU capable devices.
-		gcl::device::get_system_devices(this);
+		gpu::device::get_system_devices(this);
 		if (this->Device.size() == 0) {
 			Logger << log::message(log::GEODESY, log::ERROR, log::INITIALIZATION_FAILED, "Error: No Vulkan capable devices detected on system!");
 			throw Logger;
@@ -156,18 +160,18 @@ namespace geodesy {
 
 	}
 
-	std::shared_ptr<core::gcl::context> engine::create_device_context(std::shared_ptr<core::gcl::device> aDevice, std::vector<uint> aOperationBitfieldList, std::vector<const char*> aLayerList, std::vector<const char*> aExtensionList) {
-		std::shared_ptr<core::gcl::context> NewDeviceContext = std::make_shared<core::gcl::context>(aDevice, aOperationBitfieldList, aLayerList, aExtensionList);
+	std::shared_ptr<core::gpu::context> engine::create_device_context(std::shared_ptr<core::gpu::device> aDevice, std::vector<uint> aOperationBitfieldList, std::set<std::string> aLayerList, std::set<std::string> aExtensionList) {
+		std::shared_ptr<core::gpu::context> NewDeviceContext = std::make_shared<core::gpu::context>(aDevice, aOperationBitfieldList, aLayerList, aExtensionList);
 		Context.insert(NewDeviceContext);
 		return NewDeviceContext;
 	}
 
-	void engine::destroy_device_context(std::shared_ptr<core::gcl::context> aDeviceContext) {
+	void engine::destroy_device_context(std::shared_ptr<core::gpu::context> aDeviceContext) {
 		Context.erase(aDeviceContext);
 		// Should I delete all contexts everywhere, or allow resoure deallocation until?
 	}
 
-	VkResult engine::wait_on_device_context(std::vector<std::shared_ptr<core::gcl::context>> aDeviceContextList) {
+	VkResult engine::wait_on_device_context(std::vector<std::shared_ptr<core::gpu::context>> aDeviceContextList) {
 		VkResult Result = VK_SUCCESS;
 		if (aDeviceContextList.size() == 0) {
 			for (auto& Ctx : Context) {
@@ -182,19 +186,19 @@ namespace geodesy {
 		return Result;
 	}
 
-	void engine::run(ecs::app* aApp) {
+	void engine::run(runtime::app* aApp) {
 
 		aApp->init();
 
 	}
 
-	VkResult engine::update_resources(ecs::app* aApp) {
+	VkResult engine::update_resources(runtime::app* aApp) {
 		VkResult Result = VK_SUCCESS;
-		std::map<std::shared_ptr<context>, core::gcl::submission_batch> UpdateOperations;
+		std::map<std::shared_ptr<context>, core::gpu::submission_batch> UpdateOperations;
 
 		aApp->Mutex.lock();
 
-		UpdateOperations = aApp->update(aApp->TimeStep);
+		UpdateOperations = aApp->update(this->ThreadController.total_time());
 
 		aApp->Mutex.unlock();
 
@@ -217,9 +221,9 @@ namespace geodesy {
 		return Result;
 	}
 
-	VkResult engine::execute_render_operations(ecs::app* aApp) {
+	VkResult engine::execute_render_operations(runtime::app* aApp) {
 		VkResult Result = VK_SUCCESS;
-		std::map<std::shared_ptr<context>, core::gcl::submission_batch> RenderInfo;
+		std::map<std::shared_ptr<context>, core::gpu::submission_batch> RenderInfo;
 
 		aApp->Mutex.lock();
 

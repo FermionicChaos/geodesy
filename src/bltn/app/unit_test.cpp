@@ -10,13 +10,13 @@
 namespace geodesy::bltn {
 
 	using namespace core;
-	using namespace ecs;
+	using namespace runtime;
 
-	using namespace gcl;
+	using namespace gpu;
 	using namespace obj;
 	using namespace lgc;
 
-	unit_test::unit_test(engine* aEngine) : ecs::app(aEngine, "geodesy-unit-test", { 1, 0, 0 }) {
+	unit_test::unit_test(engine* aEngine) : runtime::app(aEngine, "geodesy-unit-test", { 1, 0, 0 }) {
 		TimeStep = 1.0 / 100.0;
 		Window = nullptr;
 		// I want my device context to support these operation types.
@@ -26,10 +26,13 @@ namespace geodesy::bltn {
 			device::operation::GRAPHICS_AND_COMPUTE,
 			device::operation::PRESENT
 		};
+		std::set<std::string> LayerList = {};
 		// I want my device context to be able to render to system windows.
-		std::vector<const char*> DeviceContextExtension = system_window::context_extensions();
+		std::set<std::string> ExtensionList = system_window::context_extensions();
+		// Add ray tracing extensions to the device context.
+		ExtensionList.insert(context::RayTracingExtensions.begin(), context::RayTracingExtensions.end());
 		// Engine create device context for gpu operations.
-		DeviceContext = Engine->create_device_context(Engine->PrimaryDevice, OperationList, {}, DeviceContextExtension);
+		DeviceContext = Engine->create_device_context(Engine->PrimaryDevice, OperationList, LayerList, ExtensionList);
 	}
 
 	unit_test::~unit_test() {
@@ -53,7 +56,7 @@ namespace geodesy::bltn {
 		// Create System Window Object.
 		system_window::creator SystemWindowCreator;
 		SystemWindowCreator.Name 			= "System Window";
-		SystemWindowCreator.Resolution 		= { 1920, 1080, 1 };
+		SystemWindowCreator.Resolution 		= { 1280, 720, 1 };
 		SystemWindowCreator.FrameCount 		= 3;
 		SystemWindowCreator.FrameRate 		= 60.0f;
 		SystemWindowCreator.Display 		= Engine->PrimaryDisplay;
@@ -65,7 +68,7 @@ namespace geodesy::bltn {
 		SubjectWindowCreator.Position 		= { 0.0f, 0.0f, 0.5f };
 		SubjectWindowCreator.Direction 		= { 180.0f, 0.0f };
 		SubjectWindowCreator.Scale 			= { 1.0f, 1.0f, 1.0f };
-		SubjectWindowCreator.Subject 		= std::dynamic_pointer_cast<ecs::subject>(this->StageLookup["3D Rendering Testing"]->ObjectLookup["Camera3D"]);
+		SubjectWindowCreator.Subject 		= std::dynamic_pointer_cast<runtime::subject>(this->StageLookup["3D Rendering Testing"]->ObjectLookup["Camera3D"]);
 
 		// Create System Window.
 		Window = this->StageLookup["Window Testing"]->create_object<obj::system_window>(&SystemWindowCreator);
@@ -108,7 +111,7 @@ namespace geodesy::bltn {
 				//std::cout << "Thread Over Time: " << Engine->ThreadController.work_time() - TimeStep << std::endl;
 			}
 
-			// if (timer::get_time() > 60.0f) {
+			// if (timer::get_time() > 30.0f) {
 			// 	break;
 			// }
 

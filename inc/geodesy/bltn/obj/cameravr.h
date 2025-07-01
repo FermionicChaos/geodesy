@@ -6,9 +6,9 @@
 
 namespace geodesy::bltn::obj {
 
-	class cameravr : public ecs::subject {
+	class cameravr : public runtime::subject {
 
-		struct creator : public ecs::subject::creator {
+		struct creator : public runtime::subject::creator {
 			/*
 			Image Usage
 			Image Format
@@ -16,11 +16,11 @@ namespace geodesy::bltn::obj {
 			*/
 		};
 
-		class geometry_buffer : public core::gcl::framechain {
+		class geometry_buffer : public framechain {
 
 		};
 
-		cameravr(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aCreator);
+		cameravr(std::shared_ptr<core::gpu::context> aContext, runtime::stage* aStage, creator* aCreator);
 
 	};
 

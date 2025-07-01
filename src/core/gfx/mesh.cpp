@@ -8,66 +8,52 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#define MAX_BONE_COUNT 256
-
 namespace geodesy::core::gfx {
 
-	using namespace gcl;
+	using namespace gpu;
 
-	namespace {
-
-		struct mesh_instance_ubo_data {
-			alignas(16) math::mat<float, 4, 4> Transform;
-			alignas(16) math::mat<float, 4, 4> BoneTransform[MAX_BONE_COUNT];
-			alignas(16) math::mat<float, 4, 4> BoneOffset[MAX_BONE_COUNT];
-			mesh_instance_ubo_data();
-			mesh_instance_ubo_data(const mesh::instance* aInstance);
+	mesh::instance::uniform_data::uniform_data() {
+		Transform = {
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
 		};
-
-		mesh_instance_ubo_data::mesh_instance_ubo_data() {
-			Transform = {
+		for (size_t i = 0; i < MAX_BONE_COUNT; i++) {
+			BoneTransform[i] = {
 				1.0f, 0.0f, 0.0f, 0.0f,
 				0.0f, 1.0f, 0.0f, 0.0f,
 				0.0f, 0.0f, 1.0f, 0.0f,
 				0.0f, 0.0f, 0.0f, 1.0f
 			};
-			for (size_t i = 0; i < MAX_BONE_COUNT; i++) {
-				BoneTransform[i] = {
-					1.0f, 0.0f, 0.0f, 0.0f,
-					0.0f, 1.0f, 0.0f, 0.0f,
-					0.0f, 0.0f, 1.0f, 0.0f,
-					0.0f, 0.0f, 0.0f, 1.0f
-				};
-				BoneOffset[i] = {
-					1.0f, 0.0f, 0.0f, 0.0f,
-					0.0f, 1.0f, 0.0f, 0.0f,
-					0.0f, 0.0f, 1.0f, 0.0f,
-					0.0f, 0.0f, 0.0f, 1.0f
-				};
-			}
+			BoneOffset[i] = {
+				1.0f, 0.0f, 0.0f, 0.0f,
+				0.0f, 1.0f, 0.0f, 0.0f,
+				0.0f, 0.0f, 1.0f, 0.0f,
+				0.0f, 0.0f, 0.0f, 1.0f
+			};
 		}
+	}
 
-		mesh_instance_ubo_data::mesh_instance_ubo_data(const mesh::instance* aInstance) {
-			this->Transform = aInstance->Transform;
-			for (size_t i = 0; i < aInstance->Bone.size(); i++) {
-				this->BoneTransform[i] = aInstance->Bone[i].Transform;
-				this->BoneOffset[i] = aInstance->Bone[i].Offset;
-			}
+	mesh::instance::uniform_data::uniform_data(const mesh::instance* aInstance) : uniform_data() {
+		for (size_t i = 0; i < aInstance->Bone.size(); i++) {
+			this->BoneOffset[i] = aInstance->Bone[i].Offset;
 		}
-
 	}
 
 	mesh::instance::instance() {
-		this->Index 	= -1;
-		this->Context 	= nullptr;
+		this->Root 				= nullptr;
+		this->Parent 			= nullptr;
+		this->MeshIndex 		= -1;
+		this->MaterialIndex 	= UINT32_MAX; // TODO: maybe make this int later?
+		this->Context 			= nullptr;
 	}
 
-	mesh::instance::instance(int aMeshIndex, math::mat<float, 4, 4> aTransform, uint aVertexCount, const std::vector<bone>& aBoneData, uint aMaterialIndex) : instance() {
-		this->Index 		= aMeshIndex;
-		this->Transform 	= aTransform;
+	mesh::instance::instance(uint aVertexCount, const std::vector<bone>& aBoneData, int aMeshIndex, uint aMaterialIndex, phys::node* aRoot, phys::node* aParent) : instance() {
+		this->Root 			= aRoot;
+		this->Parent 		= aParent;
 		this->Vertex 		= std::vector<vertex::weight>(aVertexCount);
 		this->Bone 			= aBoneData;
-		this->MaterialIndex = aMaterialIndex;
 		// Generate the corresponding vertex buffer which will supply the mesh
 		// instance the needed bone animation data.
 		for (size_t i = 0; i < Vertex.size(); i++) {
@@ -116,41 +102,50 @@ namespace geodesy::core::gfx {
 			}
 			Vertex[i].BoneWeight /= TotalVertexWeight;
 		}
+		this->MeshIndex 		= aMeshIndex;
+		this->MaterialIndex 	= aMaterialIndex;
 	}
 
-	mesh::instance::instance(std::shared_ptr<gcl::context> aContext, const instance& aInstance) {
-		this->Index 		= aInstance.Index;
-		this->Transform 	= aInstance.Transform;
+	mesh::instance::instance(std::shared_ptr<gpu::context> aContext, const instance& aInstance, phys::node* aRoot, phys::node* aParent) : instance() {
+		this->Root 			= aRoot;
+		this->Parent 		= aParent;
 		this->Vertex 		= aInstance.Vertex;
 		this->Bone 			= aInstance.Bone;
-		this->MaterialIndex = aInstance.MaterialIndex;
 		this->Context 		= aContext;
-
+		
 		// Create Vertex Weight Buffer
-        buffer::create_info VBCI;
-        VBCI.Memory = device::memory::DEVICE_LOCAL;
-        VBCI.Usage = buffer::usage::VERTEX | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
-        this->VertexWeightBuffer = Context->create_buffer(VBCI, Vertex.size() * sizeof(vertex::weight), Vertex.data());
+		buffer::create_info VBCI;
+		VBCI.Memory = device::memory::DEVICE_LOCAL;
+		VBCI.Usage = buffer::usage::VERTEX | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
+		this->VertexWeightBuffer = Context->create_buffer(VBCI, Vertex.size() * sizeof(vertex::weight), Vertex.data());
+		
+		// Create Mesh Instance Uniform Buffer
+		buffer::create_info UBCI;
+		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
+		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 
-        // Create Mesh Instance Uniform Buffer
-        buffer::create_info UBCI;
-        UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
-        UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
+		// Use Host node hierarchy to generate the bone transforms. Device Hierarchy not complete yet.
+		uniform_data MeshInstanceUBOData = uniform_data(this);
+		MeshInstanceUBOData.Transform = aInstance.Parent->transform();
+		for (size_t i = 0; i < this->Bone.size(); i++) {
+			phys::node* Bone = aInstance.Root->find(this->Bone[i].Name);
+			if (Bone != nullptr) {
+				MeshInstanceUBOData.BoneTransform[i] = Bone->transform();
+			}
+		}
+		this->UniformBuffer = Context->create_buffer(UBCI, sizeof(uniform_data), &MeshInstanceUBOData);
+		this->UniformBuffer->map_memory(0, sizeof(uniform_data));
 
-		mesh_instance_ubo_data MeshInstanceUBOData = mesh_instance_ubo_data(this);
-        this->UniformBuffer = Context->create_buffer(UBCI, sizeof(mesh_instance_ubo_data), &MeshInstanceUBOData);
-		this->UniformBuffer->map_memory(0, sizeof(mesh_instance_ubo_data));
+		// Set reference indices.
+		this->MeshIndex 	= aInstance.MeshIndex;
+		this->MaterialIndex = aInstance.MaterialIndex;
 	}
 
-	void mesh::instance::update(double DeltaTime) {
-		// Convert uniform buffer pointer into data structure for writing.
-		mesh_instance_ubo_data* MeshInstanceUBOData = (mesh_instance_ubo_data*)this->UniformBuffer->Ptr;
-		// Carry over mesh instance node transform.
-		MeshInstanceUBOData->Transform = this->Transform;
-		// Transfer all bone transformations to the uniform buffer.
-		for (size_t i = 0; i < Bone.size(); i++) {
-			MeshInstanceUBOData->BoneTransform[i] = Bone[i].Transform;
-		}
+	mesh::mesh() : phys::mesh() {
+		this->Context = nullptr;
+		this->VertexBuffer = nullptr;
+		this->IndexBuffer = nullptr;
+		this->AccelerationStructure = nullptr;
 	}
 
 	mesh::mesh(const aiMesh* aMesh) {
@@ -187,6 +182,13 @@ namespace geodesy::core::gfx {
 					aMesh->mBitangents[i].z
 				};
 			}
+
+			// ^Save for later, not useful now. Just commit it.
+			// // Filter normal components and insure that tangent is perpendicular to normal.
+			// Vertex[i].Tangent -= (Vertex[i].Normal * Vertex[i].Tangent) * Vertex[i].Normal;
+			// Vertex[i].Tangent = math::normalize(Vertex[i].Tangent);
+			// // Generate bitangent from tangent and normal.
+			// Vertex[i].Bitangent = Vertex[i].Normal ^ Vertex[i].Tangent;
 
 			// -------------------- Texturing & Coloring -------------------- //
 
@@ -243,46 +245,31 @@ namespace geodesy::core::gfx {
 			}
 		}
 	}
-
-	mesh::mesh(std::shared_ptr<gcl::context> aContext, const std::vector<vertex>& aVertexData, const topology& aTopologyData) : phys::mesh() {
-		this->Vertex 	= aVertexData;
-		this->Topology	= aTopologyData;
-		if (aContext != nullptr) {
-			this->Context = aContext;
+	
+	mesh::mesh(std::shared_ptr<gpu::context> aContext, std::shared_ptr<mesh> aMesh) {
+		this->HostMesh = aMesh;
+		this->Context = aContext;
+		if ((aContext != nullptr) && (aMesh != nullptr)) {
 			// Vertex Buffer Creation Info
-			gcl::buffer::create_info VBCI;
+			gpu::buffer::create_info VBCI;
 			VBCI.Memory = device::memory::DEVICE_LOCAL;
-			VBCI.Usage = buffer::usage::VERTEX | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
-			VBCI.ElementCount = Vertex.size();
+			VBCI.Usage = buffer::usage::VERTEX | buffer::usage::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR | buffer::usage::SHADER_DEVICE_ADDRESS | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
+			VBCI.ElementCount = aMesh->Vertex.size();
 			// Index buffer Create Info
-			gcl::buffer::create_info IBCI;
+			gpu::buffer::create_info IBCI;
 			IBCI.Memory = device::memory::DEVICE_LOCAL;
-			IBCI.Usage = buffer::usage::INDEX | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
-			IBCI.ElementCount = Topology.Data16.size() > 0 ? Topology.Data16.size() : Topology.Data32.size();
-			// Index buffer Create Info
-			// gcl::buffer::create_info BBCI(
-			// 	device::memory::HOST_VISIBLE | device::memory::DEVICE_LOCAL,
-			// 	buffer::usage::INDEX | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST
-			// );
-			//VertexBuffer = std::make_shared<buffer>(Context, VBCI, Vertex.size() * sizeof(vertex), (void*)Vertex.data());
-			VertexBuffer = Context->create_buffer(VBCI, Vertex.size() * sizeof(vertex), Vertex.data());
-			// wtf this is legal?
-			// IndexBuffer = std::vector<gcl::buffer>(1, buffer(Context, IBCI, aIndexData.size() * sizeof(ushort), (void*)aIndexData.data()));
+			IBCI.Usage = buffer::usage::INDEX | buffer::usage::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR | buffer::usage::SHADER_DEVICE_ADDRESS | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
+			IBCI.ElementCount = aMesh->Topology.Data16.size() > 0 ? aMesh->Topology.Data16.size() : aMesh->Topology.Data32.size();
+			// Create Vertex Buffer
+			this->VertexBuffer = aContext->create_buffer(VBCI, aMesh->Vertex.size() * sizeof(vertex), aMesh->Vertex.data());
+			// Create Index Buffer
 			if (this->Vertex.size() <= (1 << 16)) {
-				//IndexBuffer = std::make_shared<buffer>(Context, IBCI, Topology.Data16.size() * sizeof(ushort), (void*)Topology.Data16.data());
-				IndexBuffer = Context->create_buffer(IBCI, Topology.Data16.size() * sizeof(ushort), Topology.Data16.data());
+				this->IndexBuffer = aContext->create_buffer(IBCI, aMesh->Topology.Data16.size() * sizeof(ushort), aMesh->Topology.Data16.data());
 			}
 			else {
-				// IndexBuffer = std::make_shared<buffer>(Context, IBCI, Topology.Data32.size() * sizeof(uint), (void*)Topology.Data32.data());
-				IndexBuffer = Context->create_buffer(IBCI, Topology.Data32.size() * sizeof(uint), Topology.Data32.data());
+				this->IndexBuffer = aContext->create_buffer(IBCI, aMesh->Topology.Data32.size() * sizeof(uint), aMesh->Topology.Data32.data());
 			}
 		}
 	}
-
-	mesh::mesh(std::shared_ptr<gcl::context> aContext, std::shared_ptr<mesh> aMesh) : mesh(aContext, aMesh->Vertex, aMesh->Topology) {}
-
-	// void mesh::draw(VkCommandBuffer aCommandBuffer, std::shared_ptr<gcl::pipeline> aPipeline, std::shared_ptr<gcl::framebuffer> aFramebuffer, std::shared_ptr<gcl::descriptor::array> aDescriptorArray) {
-	// 	aPipeline->draw(aCommandBuffer, aFramebuffer, { VertexBuffer }, IndexBuffer, aDescriptorArray);
-	// }
 
 }

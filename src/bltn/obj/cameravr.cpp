@@ -9,7 +9,7 @@
 
 namespace geodesy::bltn::obj {
 
-	cameravr::cameravr(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aCreator) : ecs::subject(aContext, aStage, aCreator) {
+	cameravr::cameravr(std::shared_ptr<core::gpu::context> aContext, runtime::stage* aStage, creator* aCreator) : runtime::subject(aContext, aStage, aCreator) {
 		XrResult Result = XR_SUCCESS;
 		XrInstance Instance = XR_NULL_HANDLE;
 		XrSystemId SystemID = XR_NULL_SYSTEM_ID;
@@ -53,7 +53,7 @@ namespace geodesy::bltn::obj {
 			GBVK2.instance 				= Engine->Handle;
 			GBVK2.physicalDevice 		= aContext->Device->Handle;
 			GBVK2.device 				= aContext->Handle;
-			GBVK2.queueFamilyIndex 		= aContext->Device->qfi(core::gcl::device::operation::GRAPHICS_AND_COMPUTE);
+			GBVK2.queueFamilyIndex 		= aContext->Device->qfi(core::gpu::device::operation::GRAPHICS_AND_COMPUTE);
 			GBVK2.queueIndex 			= 0;
 
 			XrSessionCreateInfo SCI{};

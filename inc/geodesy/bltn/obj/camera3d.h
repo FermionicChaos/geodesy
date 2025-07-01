@@ -6,12 +6,43 @@
 
 namespace geodesy::bltn::obj {
 
-	class camera3d : public ecs::subject {
+	class camera3d : public runtime::subject {
 	public:
 
-		class geometry_buffer : public core::gcl::framechain {
+		class geometry_buffer : public framechain {
 		public:
-			geometry_buffer(std::shared_ptr<core::gcl::context> aContext, core::math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount);
+			/*
+			The Geometry Buffer contains the Following Attachments.
+			// --- Final Output --- //
+			Color: 		The Final Output color of the camera after rendering the scene plus post processing.
+			// --- Classic Opaque Geometry Buffer --- //
+			Albedo: 	The Color of the rasterized scene of all opaque and transparent objects.
+			Position: 	The Fragment Position of the rasterized scene of all opaque and transparent objects.
+			Normal: 	The Fragment Normal of the rasterized scene of all opaque and transparent objects.
+			Emissive: 	The Emissive Color of the rasterized scene of all opaque and transparent objects.
+			SS: 		The Specular & Shininess values of the rasterized scene of all opaque and transparent objects.
+			ORM: 		The Occlusion, Roughness, and Metallic values of the rasterized scene of all opaque and transparent objects.
+			Depth: 		The Depth of the rasterized scene of all opaque and transparent objects.
+			// --- Ray Traced Deferred Shading Output --- //
+			// --- Translucent Ray Tracing Layer --- //
+			*/
+			geometry_buffer(std::shared_ptr<core::gpu::context> aContext, core::math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount);
+		};
+
+		struct uniform_data {
+			alignas(16) core::math::vec<float, 3> 		Position;
+			alignas(16) core::math::mat<float, 4, 4> 	Rotation;
+			alignas(16) core::math::mat<float, 4, 4> 	Projection;
+			uniform_data(
+				core::math::vec<float, 3> 		aPosition, 
+				core::math::vec<float, 3> 		aDirRight,
+				core::math::vec<float, 3> 		aDirUp,
+				core::math::vec<float, 3> 		aDirForward,
+				float 							aFOV,
+				core::math::vec<uint, 3> 		aResolution,
+				float 							aNear,
+				float 							aFar
+			);
 		};
 
 		struct deferred_draw_call : object::draw_call {
@@ -37,15 +68,16 @@ namespace geodesy::bltn::obj {
 		};
 
 		float FOV, Near, Far;
-		std::shared_ptr<core::gcl::buffer> 	CameraUniformBuffer;
+		std::shared_ptr<core::gpu::buffer> 	CameraUniformBuffer;
 
-		camera3d(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aCamera3DCreator);
+		camera3d(std::shared_ptr<core::gpu::context> aContext, runtime::stage* aStage, creator* aCamera3DCreator);
 		~camera3d();
 
 		// Implement input
 		void input(const core::hid::input& aInput) override;
 		void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f }) override;
-		std::shared_ptr<renderer> default_renderer(ecs::object* aObject) override;
+		std::shared_ptr<renderer> default_renderer(runtime::object* aObject) override;
+		// core::gpu::submission_batch render(runtime::stage* aStage) override;
 
 	};
 

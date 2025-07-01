@@ -5,23 +5,23 @@
 namespace geodesy::bltn::obj {
 
 	using namespace core;
-	using namespace gcl;
+	using namespace gpu;
 
 	subject_window::forward_draw_call::forward_draw_call(
 		object* 							aObject, 
 		core::gfx::mesh::instance* 			aMeshInstance,
-		ecs::subject* 						aSubjectSource,
+		runtime::subject* 					aSubjectSource,
 		size_t 								aSourceFrameIndex,
 		window* 							aSubjectTarget,
 		size_t 								aTargetFrameIndex
 	) {
 		// Get references for readability.
 		VkResult Result = VK_SUCCESS;
-		std::shared_ptr<core::gcl::context> Context = aObject->Context;
-		std::shared_ptr<gfx::mesh> Mesh = aObject->Model->Mesh[aMeshInstance->Index];
+		std::shared_ptr<core::gpu::context> Context = aObject->Context;
+		std::shared_ptr<gfx::mesh> Mesh = aObject->Model->Mesh[aMeshInstance->MeshIndex];
 		std::shared_ptr<gfx::material> Material = aObject->Model->Material[aMeshInstance->MaterialIndex];
 
-		std::vector<std::shared_ptr<gcl::image>> ImageOutputList = {
+		std::vector<std::shared_ptr<gpu::image>> ImageOutputList = {
 			aSubjectTarget->Framechain->Image[aTargetFrameIndex]["Color"],
 		};
 		// Acquire Mesh Vertex Buffer, and Mesh Instance Vertex Weight Buffer.
@@ -47,12 +47,12 @@ namespace geodesy::bltn::obj {
 
 	// Do not get confused, subject_window is not a render target, it forwards the outputs of other render targets.
 	subject_window::forward_renderer::forward_renderer(
-		ecs::object* 	aObject, 			// SubjectWindow
-		ecs::subject* 	aSubjectSource, 	// SubjectWindow source
-		ecs::subject* 	aSubjectTarget 		// Actual Render Target
-	) : ecs::object::renderer(aObject, aSubjectTarget) {
+		runtime::object* 	aObject, 			// SubjectWindow
+		runtime::subject* 	aSubjectSource, 	// SubjectWindow source
+		runtime::subject* 	aSubjectTarget 		// Actual Render Target
+	) : runtime::object::renderer(aObject, aSubjectTarget) {
 		// Gather Mesh instances of the object.
-		std::vector<gfx::mesh::instance*> MeshInstance = aObject->Model->Hierarchy.gather_mesh_instances();
+		std::vector<gfx::mesh::instance*> MeshInstance = aObject->Model->Hierarchy->gather_instances();
 
 		this->OverridenDrawCallList = std::vector<std::vector<std::vector<std::shared_ptr<draw_call>>>>(
 			aSubjectTarget->Framechain->Image.size(),
@@ -91,12 +91,12 @@ namespace geodesy::bltn::obj {
 		this->Subject = nullptr;
 	}
 
-	subject_window::subject_window(std::shared_ptr<core::gcl::context> aContext, ecs::stage* aStage, creator* aSubjectWindowCreator) : ecs::object(aContext, aStage, aSubjectWindowCreator) {
+	subject_window::subject_window(std::shared_ptr<core::gpu::context> aContext, runtime::stage* aStage, creator* aSubjectWindowCreator) : runtime::object(aContext, aStage, aSubjectWindowCreator) {
 		this->SubjectSource = aSubjectWindowCreator->Subject;
 	}
 
-	std::vector<std::shared_ptr<ecs::object::draw_call>> subject_window::draw(ecs::subject* aSubjectTarget) {
-		std::vector<std::shared_ptr<ecs::object::draw_call>> DrawCallList;
+	std::vector<std::shared_ptr<runtime::object::draw_call>> subject_window::draw(runtime::subject* aSubjectTarget) {
+		std::vector<std::shared_ptr<runtime::object::draw_call>> DrawCallList;
 
 		// NOTE: A single draw call represents a single mesh instance in the model.
 		if (this->Renderer.count(aSubjectTarget) == 0) {

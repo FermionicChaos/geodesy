@@ -2,56 +2,41 @@
 #ifndef GEODESY_CORE_GFX_NODE_H
 #define GEODESY_CORE_GFX_NODE_H
 
+// Engine Configuration
 #include "../../config.h"
+
+// Physics Base
+#include "../phys.h"
 
 #include "mesh.h"
 #include "material.h"
-#include "animation.h"
-
-struct aiScene;
-struct aiNode;
 
 namespace geodesy::core::gfx {
 
-	class node {
+	class node : public phys::node {
 	public:
 
-		// Traversal Data
-		node*								Root;
-		node*								Parent;
-		std::vector<node>					Child;
-
-		// Metadata
-		std::string							Name;				// Name of the Node in Hierarchy
-		math::mat<float, 4, 4>				Transformation;		// This transforms to parent node space.
-		std::vector<mesh::instance> 		MeshInstance; 		// Mesh Instance located in node hierarchy.
+		std::shared_ptr<gpu::context> Context;
+		std::vector<mesh::instance> MeshInstance; // Mesh Instance located in node hierarchy.
 
 		node();
-		node(const aiScene* aScene, const aiNode* aNode);
-		node(std::shared_ptr<gcl::context> aContext, const node& aNode);
-		node(const node& aInput);
-		node(node&& aInput) noexcept;
+		node(const aiScene* aScene, const aiNode* aNode, phys::node* aRoot = nullptr, phys::node* aParent = nullptr);
+		node(std::shared_ptr<gpu::context> aContext, const node* aNode, phys::node* aRoot = nullptr, phys::node* aParent = nullptr);
 		~node();
 
-		node& operator=(const node& aRhs);
-		node& operator=(node&& aRhs) noexcept;
+		void copy(const phys::node* aNode) override;
+		void update(
+			double 									aDeltaTime = 0.0f, 
+			double 									aTime = 0.0f, 
+			const std::vector<float>& 				aAnimationWeight = { 1.0f }, 
+			const std::vector<phys::animation>& 	aPlaybackAnimation = {}
+		) override;
 
-		node& operator[](int aIndex);
-
-		// Finds node with name in hierarchy.
-		node* find(std::string aName);
-		// Update the node hierarchy. (Applies Node & Mesh Animations)
-		void update(const std::vector<float>& aAnimationWeight = { 1.0f }, const std::vector<animation>& aPlaybackAnimation = {}, double aTime = 0.0f);	
-		// Total Number of Nodes from this point on.
-		size_t node_count() const;
 		// Counts the total number of mesh references in the tree.
-		size_t instance_count() const;
-		// For this node, it will calculate the model transform for a node at a particular time.
-		math::mat<float, 4, 4> transform(const std::vector<float>& aAnimationWeight = { 1.0f }, const std::vector<animation>& aPlaybackAnimation = {}, double aTime = 0.0f);
-		// Gathers a list of references to MeshInstance objects.
-		std::vector<mesh::instance*> gather_mesh_instances();
+		size_t instance_count();
 
-		std::vector<node*> linearize();
+		// Gather all mesh instances in the hierarchy.
+		std::vector<gfx::mesh::instance*> gather_instances();
 
 	};
 

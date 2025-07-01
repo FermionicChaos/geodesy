@@ -1,0 +1,55 @@
+#version 460
+#extension GL_EXT_ray_tracing : require
+
+struct ray_payload {
+    vec4 Color;
+};
+
+// Ray Payload
+layout(location = 0) rayPayloadEXT ray_payload Payload;
+
+layout(set = 0, binding = 0) uniform accelerationStructureEXT TLAS;
+layout(set = 0, binding = 1, rgba8) uniform image2D PixelColor;
+layout(set = 0, binding = 2, rgba32f) uniform image2D PixelPosition;
+layout(set = 0, binding = 3, rgba32f) uniform image2D PixelNormal;
+layout(set = 0, binding = 4, rgba8) uniform image2D PixelEmissive;
+layout(set = 0, binding = 5, rgba8) uniform image2D PixelSS;
+layout(set = 0, binding = 6, rgba8) uniform image2D PixelORM;
+layout(set = 0, binding = 7, rgba8) uniform image2D OutputColor;
+
+layout (set = 1, binding = 0) uniform Camera3DUBO {
+	vec3 Position;
+	mat4 Rotation;
+	mat4 Projection;
+} Camera3D;
+
+void main() {
+    ivec2 RayIndex = ivec2(gl_LaunchIDEXT.xy);
+    ivec2 Resolution = imageSize(PixelColor);
+
+    vec3 RayOrigin = Camera3D.Position;
+    vec3 RayDirection = vec3(
+        (2.0 * gl_LaunchIDEXT.x / gl_LaunchSizeEXT.x - 1.0) * Camera3D.Projection[0][0],
+        (1.0 - 2.0 * gl_LaunchIDEXT.y / gl_LaunchSizeEXT.y) * Camera3D.Projection[1][1],
+        -1.0
+    );
+
+    traceRayEXT(
+        TLAS, 
+        gl_RayFlagsOpaqueEXT, 
+        0xFF, 
+        0, 
+        1, 
+        0, 
+        RayOrigin, 
+        0.0, 
+        RayDirection, 
+        10000.0, 
+        0
+    );
+
+    // Output the payload
+    vec4 color = vec4(payload, 1.0);
+    // Store the color in an image or a buffer
+    imageStore(PixelColor, RayIndex, color);
+}

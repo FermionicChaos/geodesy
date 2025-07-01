@@ -5,8 +5,8 @@
 // Engine Configuration Options.
 #include "../../config.h"
 
-// GCL Configuration Options.
-#include "../gcl/config.h"
+// GPU Configuration Options.
+#include "../gpu/config.h"
 
 namespace geodesy::core::util {
 
