@@ -27,7 +27,8 @@ namespace geodesy::core::phys {
 			key() : Time(0.0), Value() {}
 		};
 
-		struct node_anim {
+		// Determines transform override based on time, for a singular node.
+		struct node {
 			std::vector<key<math::vec<float, 3>>> 		PositionKey;
 			std::vector<key<math::quaternion<float>>> 	RotationKey;
 			std::vector<key<math::vec<float, 3>>> 		ScalingKey;
@@ -35,19 +36,20 @@ namespace geodesy::core::phys {
 			bool exists() const;
 		};
 
-		// Not Implemented Yet
-		struct mesh_anim {};
+		// Determiens and overrides mesh vertices over time.
+		struct mesh {};
 
 		std::string 						Name;
-		double 								Duration;				// Duration is in Ticks
+		double 								Start;
+		double 								Stop;
 		double 								TicksPerSecond;			// Conversion Factor for Ticks to Seconds
-		std::map<std::string, node_anim> 	NodeAnimMap;
-		std::map<std::string, mesh_anim> 	MeshAnimMap;
+		std::map<std::string, node> 		NodeAnimMap;
+		std::map<std::string, mesh> 		MeshAnimMap;
 
 		animation();
 		animation(const aiAnimation* aAnimation);
 
-		const node_anim& operator[](std::string aNodeName) const;
+		const node& operator[](std::string aNodeName) const;
 
 	};
 

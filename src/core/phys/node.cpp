@@ -73,19 +73,24 @@ namespace geodesy::core::phys {
 		// Overrides/Averages Animation Transformations with Bind Pose Transform based on weights.
 		for (size_t i = 0; i < aPlaybackAnimation.size(); i++) {
 			// Check if Animation Data exists for this node, if not, use bind pose.
-			if (aPlaybackAnimation[i][this->Name].exists()) {
-				// Animation Data Exists
-				double TickerTime = std::fmod(aTime * aPlaybackAnimation[i].TicksPerSecond, aPlaybackAnimation[i].Duration);
+			// Pull animation for readability.
+			auto& NodeAnimation = aPlaybackAnimation[i][this->Name];
+			float Weight = aAnimationWeight[i + 1];
+			if (NodeAnimation.exists()) {
+				// Calculate time in ticks
+				float TickerTime = aTime * aPlaybackAnimation[i].TicksPerSecond;
+				// Ensure TickerTime is within the bounds of the animation.
+				float BoundedTickerTime = std::fmod(TickerTime, aPlaybackAnimation[i].Stop - aPlaybackAnimation[i].Start) + aPlaybackAnimation[i].Start;
 				if (this->Root == this) {
-					NodeTransform += this->Transformation * aPlaybackAnimation[i][this->Name][TickerTime] * aAnimationWeight[i + 1];
+					NodeTransform += this->Transformation * NodeAnimation[BoundedTickerTime] * Weight;
 				}
 				else {
-					NodeTransform += aPlaybackAnimation[i][this->Name][TickerTime] * aAnimationWeight[i + 1];
+					NodeTransform += NodeAnimation[BoundedTickerTime] * Weight;
 				}
 			}
 			else {
 				// Animation Data Does Not Exist, use bind pose animation.
-				NodeTransform += this->Transformation * aAnimationWeight[i + 1];
+				NodeTransform += this->Transformation * Weight;
 			}
 		}
 
