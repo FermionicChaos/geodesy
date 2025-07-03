@@ -116,19 +116,9 @@ The geodesy engine is a cross-platform high performance game engine written in C
 graphics and compute API to interact with GPU hardware. The game engine is in its early design phases, and
 is highly experimental. Efforts have made the engine easy to use on multiple platforms.
 
-## To Do List:
+## TODO List:
 
 - Create model animation caching system.
-
-- Fix single frame broken animation
-
-- Finish model.h material system.
-
-- Clean up pipeline.h to generate descriptor sets for model.h
-
-- Resolve issue with object being used in multiple stages simultaneously.
-
-## Back Burner:
 
 - Introduce portaudio to the geodesy engine.
 
@@ -150,3 +140,12 @@ and forward to proper objects.
 along with how vulkan does it, is that a texture describes the texture
 of a particular surface while an image is a generalized concept of a type
 of memory.
+
+## Bug List:
+
+- Fix single frame broken animation
+
+- Figure out gpu uniform buffer update latency
+
+- Figure out window zero size vulkan validation error on windows
+
