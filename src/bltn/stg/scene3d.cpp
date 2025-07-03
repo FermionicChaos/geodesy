@@ -22,7 +22,7 @@ namespace geodesy::bltn::stg {
 
 		// runtime::object::creator Box;
 		// Box.Name 							= "Box";
-		// Box.ModelPath 						= "../glTF-Sample-Models/2.0/Box/glTF/Box.gltf";
+		// Box.ModelPath 						= "dep/gltf-models/2.0/Box/glTF/Box.gltf";
 		// Box.Position 						= { 0.0f, 0.0f, 0.0f };
 		// Box.Direction 						= { 0.0f, 0.0f };
 		// Box.Scale 							= { 5.0f, 5.0f, 5.0f };
@@ -30,7 +30,7 @@ namespace geodesy::bltn::stg {
 
 		// runtime::object::creator BoxTextured;
 		// BoxTextured.Name 					= "BoxTextured";
-		// BoxTextured.ModelPath 				= "../glTF-Sample-Models/2.0/BoxTextured/glTF/BoxTextured.gltf";
+		// BoxTextured.ModelPath 				= "dep/gltf-models/2.0/BoxTextured/glTF/BoxTextured.gltf";
 		// BoxTextured.Position 				= { 10.0f, 0.0f, 0.0f };
 		// BoxTextured.Direction 				= { 0.0f, 0.0f };
 		// BoxTextured.Scale 					= { 5.0f, 5.0f, 5.0f };
@@ -38,7 +38,7 @@ namespace geodesy::bltn::stg {
 
 		runtime::object::creator Lantern;
 		Lantern.Name 						= "Lantern";
-		Lantern.ModelPath 					= "../glTF-Sample-Models/2.0/Lantern/glTF/Lantern.gltf";
+		Lantern.ModelPath 					= "dep/gltf-models/2.0/Lantern/glTF/Lantern.gltf";
 		Lantern.Position 					= { 00.0f, 0.0f, 0.0f };
 		Lantern.Direction 					= { -90.0f, 0.0f };
 		Lantern.Scale 						= { 1.0f, 1.0f, 1.0f };
@@ -46,7 +46,7 @@ namespace geodesy::bltn::stg {
 
 		runtime::object::creator Sponza;
 		Sponza.Name 						= "Sponza";
-		Sponza.ModelPath 					= "../glTF-Sample-Models/2.0/Sponza/glTF/Sponza.gltf";
+		Sponza.ModelPath 					= "dep/gltf-models/2.0/Sponza/glTF/Sponza.gltf";
 		Sponza.Position 					= { 0.0f, 0.0f, 0.0f };
 		Sponza.Direction 					= { -90.0f, 90.0f };
 		Sponza.Scale 						= { 75.0f, 75.0f, 75.0f };
@@ -54,7 +54,7 @@ namespace geodesy::bltn::stg {
 
 		// runtime::object::creator CesiumMilkTruck;
 		// CesiumMilkTruck.Name 				= "CesiumMilkTruck";
-		// CesiumMilkTruck.ModelPath 			= "../glTF-Sample-Models/2.0/CesiumMilkTruck/glTF/CesiumMilkTruck.gltf";
+		// CesiumMilkTruck.ModelPath 			= "dep/gltf-models/2.0/CesiumMilkTruck/glTF/CesiumMilkTruck.gltf";
 		// CesiumMilkTruck.Position 			= { 0.0f, 30.0f, 0.0f };
 		// CesiumMilkTruck.Direction 			= { -90.0f, 0.0f };
 		// CesiumMilkTruck.Scale 				= { 5.0f, 5.0f, 5.0f };
@@ -72,7 +72,7 @@ namespace geodesy::bltn::stg {
 
 		runtime::object::creator BrainStem;
 		BrainStem.Name 						= "BrainStem";
-		BrainStem.ModelPath 				= "../glTF-Sample-Models/2.0/BrainStem/glTF/BrainStem.gltf";
+		BrainStem.ModelPath 				= "dep/gltf-models/2.0/BrainStem/glTF/BrainStem.gltf";
 		BrainStem.Position 					= { 10.0f, 00.0f, 0.0f };
 		BrainStem.Direction 				= { -90.0f, 0.0f };
 		BrainStem.Scale 					= { 10.0f, 10.0f, 10.0f };
@@ -81,7 +81,7 @@ namespace geodesy::bltn::stg {
 
 		runtime::object::creator CesiumMan;
 		CesiumMan.Name 						= "CesiumMan";
-		CesiumMan.ModelPath 				= "../glTF-Sample-Models/2.0/CesiumMan/glTF/CesiumMan.gltf";
+		CesiumMan.ModelPath 				= "dep/gltf-models/2.0/CesiumMan/glTF/CesiumMan.gltf";
 		CesiumMan.Position 					= { -10.0f, 0.0f, 0.0f };
 		CesiumMan.Direction 				= { -90.0f, 0.0f };
 		CesiumMan.Scale 					= { 10.0f, 10.0f, 10.0f };

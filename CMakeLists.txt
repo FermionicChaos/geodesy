@@ -19,14 +19,15 @@ endif()
 
 include(FetchContent)
 
-# Setup directories for dependencies
-#set(FETCHCONTENT_BASE_DIR "${CMAKE_SOURCE_DIR}/dep")
+# Setup source directories for dependencies (build dirs will remain in build folder)
+set(DEP_SOURCE_DIR "${CMAKE_SOURCE_DIR}/dep")
 
 # ----- Assimp ----- #
 FetchContent_Declare(
     assimp
     GIT_REPOSITORY      https://github.com/assimp/assimp.git
     GIT_TAG             v5.4.3
+    SOURCE_DIR          ${DEP_SOURCE_DIR}/assimp-src
 )
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
 set(ASSIMP_INSTALL OFF CACHE BOOL "")
@@ -40,17 +41,19 @@ FetchContent_Declare(
     freetype
     GIT_REPOSITORY      https://gitlab.freedesktop.org/freetype/freetype.git
     GIT_TAG             VER-2-12-1
+    SOURCE_DIR          ${DEP_SOURCE_DIR}/freetype-src
 )
 FetchContent_MakeAvailable(freetype)
-file(READ ${FETCHCONTENT_BASE_DIR}/freetype-build/include/freetype/config/ftoption.h FreetypeConfig)
+file(READ ${freetype_BINARY_DIR}/include/freetype/config/ftoption.h FreetypeConfig)
 string(REGEX REPLACE "#define FT_CONFIG_OPTION_USE_ZLIB" "// #define FT_CONFIG_OPTION_USE_ZLIB" FreetypeConfig "${FreetypeConfig}")
-file(WRITE ${FETCHCONTENT_BASE_DIR}/freetype-build/include/freetype/config/ftoption.h "${FreetypeConfig}")
+file(WRITE ${freetype_BINARY_DIR}/include/freetype/config/ftoption.h "${FreetypeConfig}")
 
 # ----- STB ----- #
 FetchContent_Declare(
     stb
     GIT_REPOSITORY      https://github.com/nothings/stb.git
     GIT_TAG             master
+    SOURCE_DIR          ${DEP_SOURCE_DIR}/stb-src
 )
 FetchContent_MakeAvailable(stb)
 
@@ -59,6 +62,7 @@ FetchContent_Declare(
     glfw
     GIT_REPOSITORY      https://github.com/glfw/glfw.git
     GIT_TAG             3.3.8
+    SOURCE_DIR          ${DEP_SOURCE_DIR}/glfw-src
 )
 set(GLFW_BUILD_DOCS OFF)
 set(GLFW_BUILD_EXAMPLES OFF)
@@ -71,6 +75,7 @@ FetchContent_Declare(
     openxr
     GIT_REPOSITORY      https://github.com/KhronosGroup/OpenXR-SDK.git
     GIT_TAG             release-1.1.43
+    SOURCE_DIR          ${DEP_SOURCE_DIR}/openxr-src
 )
 # set(BUILD_API_LAYERS OFF)
 # set(BUILD_API_TESTS OFF)
@@ -100,6 +105,7 @@ FetchContent_Declare(
     glslang
     GIT_REPOSITORY      https://github.com/KhronosGroup/glslang.git
     GIT_TAG             vulkan-sdk-1.3.296.0
+    SOURCE_DIR          ${DEP_SOURCE_DIR}/glslang-src
 )
 set(ENABLE_PCH OFF)
 set(GLSLANG_ENABLE_INSTALL OFF)
@@ -112,16 +118,26 @@ FetchContent_Declare(
     imgui
     GIT_REPOSITORY      https://github.com/ocornut/imgui.git
     GIT_TAG             v1.90.4
+    SOURCE_DIR          ${DEP_SOURCE_DIR}/imgui-src
 )
 FetchContent_MakeAvailable(imgui)
 set(IMGUI_SOURCES
-    ${FETCHCONTENT_BASE_DIR}/imgui-src/imgui.cpp
-    ${FETCHCONTENT_BASE_DIR}/imgui-src/imgui_draw.cpp
-    ${FETCHCONTENT_BASE_DIR}/imgui-src/imgui_tables.cpp
-    ${FETCHCONTENT_BASE_DIR}/imgui-src/imgui_widgets.cpp
-    ${FETCHCONTENT_BASE_DIR}/imgui-src/backends/imgui_impl_glfw.cpp
-    ${FETCHCONTENT_BASE_DIR}/imgui-src/backends/imgui_impl_opengl3.cpp
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
 )
+
+# ----- GLTF Models ----- #
+FetchContent_Declare(
+    gltf-models
+    GIT_REPOSITORY      https://github.com/KhronosGroup/glTF-Sample-Models.git
+    GIT_TAG             main
+    SOURCE_DIR          ${DEP_SOURCE_DIR}/gltf-models
+)
+FetchContent_MakeAvailable(gltf-models)
 
 # ----------------------- Geodesy Library ----------------------- #
 
@@ -170,16 +186,16 @@ add_library(${GEODESY_LIBRARY} ${INC} ${SRC} ${IMGUI_SOURCES})
 # Include directories
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${Vulkan_INCLUDE_DIRS}/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inc/)
-target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/)
-target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glfw-src/include/)
-target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/openxr-src/include/)
-target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/stb-src/)
-target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/assimp-src/include/)
-target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/freetype-src/include/)
-target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/imgui-src/)
-target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/glfw-build/src/)
-target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/freetype-build/include/)
-target_include_directories(${GEODESY_LIBRARY} PUBLIC ${FETCHCONTENT_BASE_DIR}/assimp-build/include/)
+target_include_directories(${GEODESY_LIBRARY} PUBLIC ${DEP_SOURCE_DIR}/)
+target_include_directories(${GEODESY_LIBRARY} PUBLIC ${glfw_SOURCE_DIR}/include/)
+target_include_directories(${GEODESY_LIBRARY} PUBLIC ${openxr_SOURCE_DIR}/include/)
+target_include_directories(${GEODESY_LIBRARY} PUBLIC ${stb_SOURCE_DIR}/)
+target_include_directories(${GEODESY_LIBRARY} PUBLIC ${assimp_SOURCE_DIR}/include/)
+target_include_directories(${GEODESY_LIBRARY} PUBLIC ${freetype_SOURCE_DIR}/include/)
+target_include_directories(${GEODESY_LIBRARY} PUBLIC ${imgui_SOURCE_DIR}/)
+target_include_directories(${GEODESY_LIBRARY} PUBLIC ${glfw_BINARY_DIR}/src/)
+target_include_directories(${GEODESY_LIBRARY} PUBLIC ${freetype_BINARY_DIR}/include/)
+target_include_directories(${GEODESY_LIBRARY} PUBLIC ${assimp_BINARY_DIR}/include/)
 
 # Link Against Vulkan
 if(OpenMP_CXX_FOUND)
