@@ -147,15 +147,15 @@ namespace geodesy::core::util {
 
 	const char* log::message::api_to_string(api aAPI) {
 		switch (aAPI) {
-		case GEODESY:		return "geodesy ";
-		case GLSLANG: 		return "glslang   ";
-		case FREETYPE: 		return "FreeType  ";
-		case FREEIMAGE: 	return "FreeImage ";
-		case ASSIMP: 		return "Assimp    ";
-		case PORTAUDIO: 	return "PortAudio ";
-		case GLFW: 			return "GLFW      ";
-		case VULKAN: 		return "Vulkan    ";
-		default:			return "          ";
+		case GEODESY:		return "geodesy";
+		case GLSLANG: 		return "glslang";
+		case FREETYPE: 		return "FreeType";
+		case FREEIMAGE: 	return "FreeImage";
+		case ASSIMP: 		return "Assimp";
+		case PORTAUDIO: 	return "PortAudio";
+		case GLFW: 			return "GLFW";
+		case VULKAN: 		return "Vulkan";
+		default:			return "";
 		}
 	}
 

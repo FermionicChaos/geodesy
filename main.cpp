@@ -39,7 +39,7 @@ int main(int aCmdArgCount, char* aCmdArgList[]) {
 
 	std::set<std::string> ExtensionList = system_window::engine_extensions();
 
-	{
+	try {
 		geodesy::engine Engine(CommandLineArguments, LayerList, ExtensionList);
 		{
 			// Initialize User App
@@ -48,6 +48,23 @@ int main(int aCmdArgCount, char* aCmdArgList[]) {
 			// Run User App
 			Engine.run(&UnitTest);
 		}
+	}
+	catch (const geodesy::core::util::log& Logger) {
+		std::cout << "log" << std::endl;
+		for (size_t i = 0; i < Logger.Message.size(); i++) {
+			const auto& Message = Logger.Message[i];
+			std::cerr << "Log[" << i << "]:"
+			<< " | Type - " << geodesy::core::util::log::message::type_to_string(Message.Type)
+			<< " | Reporter - " << geodesy::core::util::log::message::api_to_string(Message.IssuerAPI)
+			<< " | Code - " << geodesy::core::util::log::message::code_to_string(Message.Code)
+			<< " | Message - " << Message.Content << " |" << std::endl;
+		}
+		return -1;
+
+	}
+	catch (const std::exception& e) {
+		std::cerr << "Error: " << e.what() << std::endl;
+		return -1;
 	}
 
 	// Terminate all third party libraries.
