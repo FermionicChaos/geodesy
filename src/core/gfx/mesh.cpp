@@ -253,12 +253,17 @@ namespace geodesy::core::gfx {
 			// Vertex Buffer Creation Info
 			gpu::buffer::create_info VBCI;
 			VBCI.Memory = device::memory::DEVICE_LOCAL;
-			VBCI.Usage = buffer::usage::VERTEX | buffer::usage::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR | buffer::usage::SHADER_DEVICE_ADDRESS | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
+			VBCI.Usage = buffer::usage::VERTEX | buffer::usage::SHADER_DEVICE_ADDRESS | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 			VBCI.ElementCount = aMesh->Vertex.size();
 			// Index buffer Create Info
 			gpu::buffer::create_info IBCI;
 			IBCI.Memory = device::memory::DEVICE_LOCAL;
-			IBCI.Usage = buffer::usage::INDEX | buffer::usage::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR | buffer::usage::SHADER_DEVICE_ADDRESS | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
+			IBCI.Usage = buffer::usage::INDEX | buffer::usage::SHADER_DEVICE_ADDRESS | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
+			// Only enable usage type if context supports acceleration structures.
+			if (aContext->extension_enabled("VK_KHR_acceleration_structure")) {
+				VBCI.Usage |= buffer::usage::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR;
+				IBCI.Usage |= buffer::usage::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR;
+			}
 			IBCI.ElementCount = aMesh->Topology.Data16.size() > 0 ? aMesh->Topology.Data16.size() : aMesh->Topology.Data32.size();
 			// Create Vertex Buffer
 			this->VertexBuffer = aContext->create_buffer(VBCI, aMesh->Vertex.size() * sizeof(vertex), aMesh->Vertex.data());

@@ -21,6 +21,8 @@ namespace geodesy::core::gpu {
 
 		std::mutex									Mutex;
 		std::shared_ptr<device> 					Device;
+		std::set<std::string> 						Extensions;
+		std::set<std::string> 						Layers;
 		VkDevice									Handle;
 		std::map<uint, VkQueue>						Queue;
 		std::map<uint, bool> 						InFlight;
@@ -37,6 +39,7 @@ namespace geodesy::core::gpu {
 
 		VkMemoryRequirements get_buffer_memory_requirements(VkBuffer aBufferHandle) const;
 		VkMemoryRequirements get_image_memory_requirements(VkImage aImageHandle) const;
+		bool extension_enabled(const std::string& aExtensionName);
 
 		// ----- Device Resource Management ----- //
 

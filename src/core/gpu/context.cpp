@@ -213,6 +213,10 @@ namespace geodesy::core::gpu {
 				throw aDevice->Engine->Logger;
 			}
 
+			// Save a copy of loaded layers and extensions.
+			this->Layers = aLayerList;
+			this->Extensions = aExtensionList;
+
 			// Load function pointers to ray tracing functions.
 			for (const char* FunctionName : VulkanRayTracingFunctionNames) {
 				this->FunctionPointer[FunctionName] = vkGetDeviceProcAddr(this->Handle, FunctionName);
@@ -265,6 +269,15 @@ namespace geodesy::core::gpu {
 		VkMemoryRequirements MemoryRequirements;
 		vkGetImageMemoryRequirements(this->Handle, aImageHandle, &MemoryRequirements);
 		return MemoryRequirements;
+	}
+
+	bool context::extension_enabled(const std::string& aExtensionName) {
+		if (this->Extensions.count(aExtensionName) > 0) {
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 
 	VkCommandBuffer context::allocate_command_buffer(device::operation aOperation, VkCommandBufferLevel aLevel) {
@@ -371,13 +384,18 @@ namespace geodesy::core::gpu {
 	VkDeviceMemory context::allocate_memory(VkMemoryRequirements aMemoryRequirements, uint aMemoryType) {
 		VkResult Result = VK_SUCCESS;
 		VkDeviceMemory MemoryHandle = VK_NULL_HANDLE;
+		// This structure is needed for ray tracing.
 		VkMemoryAllocateFlagsInfo MemoryAllocateFlagsInfo{};
 		MemoryAllocateFlagsInfo.sType			= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
 		MemoryAllocateFlagsInfo.pNext			= NULL;
 		MemoryAllocateFlagsInfo.flags			= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
 		VkMemoryAllocateInfo AllocateInfo{};
 		AllocateInfo.sType						= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		AllocateInfo.pNext						= &MemoryAllocateFlagsInfo;
+		if (this->extension_enabled("VK_KHR_buffer_device_address")) {
+			AllocateInfo.pNext					= &MemoryAllocateFlagsInfo;
+		} else {
+			AllocateInfo.pNext					= NULL;
+		}
 		AllocateInfo.allocationSize				= aMemoryRequirements.size;
 		AllocateInfo.memoryTypeIndex			= this->Device->get_memory_type_index(aMemoryRequirements, aMemoryType);
 		Result = vkAllocateMemory(this->Handle, &AllocateInfo, NULL, &MemoryHandle);
