@@ -102,7 +102,7 @@ namespace geodesy::core::gfx {
 
 		// Set device context.
 		this->Context = aContext;
-		this->copy(aNode);
+		this->copy_data(aNode);
 
 	}
 
@@ -110,9 +110,9 @@ namespace geodesy::core::gfx {
 		this->MeshInstance.clear();
 	}
 
-	void node::copy(const phys::node* aNode) {
+	void node::copy_data(const phys::node* aNode) {
 		// Copy over the base class node data.
-		phys::node::copy(aNode);
+		phys::node::copy_data(aNode);
 
 		// Copy over mesh instance data.
 		this->MeshInstance.resize(((gfx::node*)aNode)->MeshInstance.size());

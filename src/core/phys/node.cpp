@@ -122,7 +122,14 @@ namespace geodesy::core::phys {
 		return Nodes;
 	}
 
-	void node::copy(const node* aNode) {
+	void node::set_root(node* aRootNode) {
+		this->Root = aRootNode; // Set the root node for this node.
+		for (auto& Chd : this->Child) {
+			Chd->set_root(aRootNode);
+		}
+	}
+
+	void node::copy_data(const node* aNode) {
 		// This function simply copies all data not related to the hierarchy.
 		// This is used to copy data from one node to another.
 		this->Name = aNode->Name;
@@ -138,6 +145,42 @@ namespace geodesy::core::phys {
 		this->AngularMomentum = aNode->AngularMomentum;
 		this->Transformation = aNode->Transformation;
 		this->CollisionMesh = aNode->CollisionMesh; // Copy the collision mesh if it exists.
+	}
+
+	void node::copy(const node* aNode) {
+		// // Copy the data from the given node.
+		// this->copy_data(aNode);
+		// // Clear the current child nodes.
+		// for (auto& C : this->Child) {
+		// 	delete C; // Delete each child node.
+		// }
+		// this->Child.clear();
+		// // Copy the child nodes.
+		// for (const auto& Chd : aNode->Child) {
+		// 	node* NewChild = new node();
+		// 	NewChild->Root = this; // Set the root to this node.
+		// 	NewChild->Parent = this; // Set the parent to this node.
+		// 	NewChild->copy(Chd); // Copy the child node data.
+		// 	this->Child.push_back(NewChild); // Add the new child to the list.
+		// }
+	}
+
+	void node::swap(node* aNode) {
+		// Swap the data of this node with the given node.
+		if (aNode == nullptr) {
+			return; // Nothing to swap with.
+		}
+		// Copy node data
+		this->copy_data(aNode);
+		this->Child.swap(aNode->Child);
+		std::swap(this->Root, aNode->Root);
+		std::swap(this->Parent, aNode->Parent);
+		for (auto& Chd : this->Child) {
+			// Set parent for immediate children
+			Chd->Parent = this;
+			// Set root for each child node tree
+			Chd->set_root(this->Root);
+		}
 	}
 
 	void node::update(
