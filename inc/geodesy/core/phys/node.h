@@ -48,8 +48,8 @@ namespace geodesy::core::phys {
 		// Node Data
 		std::string             				Name;       		// Node name
 		type 									Type;       		// Node type
-		float									Time;				// Second 			[s]
-		float 									DeltaTime; 			// Second 			[s]
+		// float									Time;				// Second 			[s]
+		// float 									DeltaTime; 			// Second 			[s]
 		float									Mass;				// Kilogram			[kg]
 		math::mat<float, 3, 3>					InertiaTensor;		// Inertia Tensor	[kg*m^2]
 		math::vec<float, 3>						Position;			// Meter			[m]

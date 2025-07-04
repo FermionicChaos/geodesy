@@ -98,7 +98,10 @@ namespace geodesy::runtime {
 
 				// TODO: Do a Device Context Registry to check which host models have been loaded
 				// into device memory, and recycle them if they have been loaded already.
-				this->Model = std::shared_ptr<gfx::model>(new gfx::model(aContext, HostModel, MaterialTextureInfo));
+				this->Model = aContext->create_model(HostModel, MaterialTextureInfo);
+
+				// Give the transform hierarchy to object, and make it root.
+				this->swap(this->Model->Hierarchy.get());
 
 				// If model has animations, then create animation data.
 				if (this->Model->Animation.size() > 0) {
@@ -129,6 +132,21 @@ namespace geodesy::runtime {
 
 	object::~object() {}
 
+	void object::copy_data(const core::phys::node* aNode) {
+		// This is ideally for root nodes, ignore base transform data.
+		this->Name = aNode->Name;
+		this->Transformation = aNode->Transformation;
+
+		// Copy over physics mesh.
+		this->CollisionMesh = aNode->CollisionMesh; // Copy the collision mesh if it exists.
+
+		// Copy over mesh instance data.
+		this->MeshInstance.resize(((gfx::node*)aNode)->MeshInstance.size());
+		for (size_t i = 0; i < this->MeshInstance.size(); i++) {
+			this->MeshInstance[i] = gfx::mesh::instance(this->Context, ((gfx::node*)aNode)->MeshInstance[i], this->Root, this);
+		}
+	}
+
 	bool object::is_subject() {
 		return false;
 	}
@@ -139,7 +157,10 @@ namespace geodesy::runtime {
 
 	void object::update(double aDeltaTime, math::vec<float, 3> aAppliedForce, math::vec<float, 3> aAppliedTorque) {
 
-		core::gfx::node::update(aDeltaTime);
+		this->DeltaTime = aDeltaTime;
+		this->Time += aDeltaTime;
+
+		core::gfx::node::update(aDeltaTime, this->Time, this->AnimationWeights, this->Model->Animation);
 
 		// TODO: Add update using angular momentum to change orientation of object over time.
 

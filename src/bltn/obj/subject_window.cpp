@@ -52,7 +52,7 @@ namespace geodesy::bltn::obj {
 		runtime::subject* 	aSubjectTarget 		// Actual Render Target
 	) : runtime::object::renderer(aObject, aSubjectTarget) {
 		// Gather Mesh instances of the object.
-		std::vector<gfx::mesh::instance*> MeshInstance = aObject->Model->Hierarchy->gather_instances();
+		std::vector<gfx::mesh::instance*> MeshInstance = aObject->gather_instances();
 
 		this->OverridenDrawCallList = std::vector<std::vector<std::vector<std::shared_ptr<draw_call>>>>(
 			aSubjectTarget->Framechain->Image.size(),

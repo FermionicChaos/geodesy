@@ -152,7 +152,7 @@ namespace geodesy::bltn::obj {
 
 	camera3d::deferred_renderer::deferred_renderer(object* aObject, camera3d* aCamera3D) : runtime::object::renderer(aObject, aCamera3D) {
 		// Gather list of mesh instances throughout model hierarchy.
-		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy->gather_instances();
+		std::vector<mesh::instance*> MeshInstance = aObject->gather_instances();
 
 		this->DrawCallList = std::vector<std::vector<std::shared_ptr<draw_call>>>(aCamera3D->Framechain->Image.size(), std::vector<std::shared_ptr<draw_call>>(MeshInstance.size()));
 

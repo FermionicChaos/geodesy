@@ -81,6 +81,8 @@ namespace geodesy::runtime {
 		std::mutex																	Mutex;
 
 		// * Object Input and Physics
+		float																		Time;				// Second 			[s]
+		float 																		DeltaTime; 			// Second 			[s]
 		float 																		Theta, Phi;			// Radians			[rad]
 		core::math::vec<float, 3>													DirectionRight;		// Right			[Normalized]
 		core::math::vec<float, 3>													DirectionUp;		// Up				[Normalized]
@@ -96,6 +98,8 @@ namespace geodesy::runtime {
 
 		object(std::shared_ptr<core::gpu::context> aContext, stage* aStage, creator* aCreator);
 		~object();
+
+		void copy_data(const core::phys::node* aNode) override;
 
 		virtual bool is_subject();
 
