@@ -46,7 +46,7 @@ namespace geodesy::core::gfx {
 		}
 
 		// Copy over non recurisve node data.
-		this->Name = aNode->mName.C_Str();
+		this->Identifier = aNode->mName.C_Str();
 		// TODO: Add Pos, Orientation, Scale
 		this->Transformation = {
 			aNode->mTransformation.a1, aNode->mTransformation.a2, aNode->mTransformation.a3, aNode->mTransformation.a4,

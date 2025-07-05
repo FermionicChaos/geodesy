@@ -134,7 +134,7 @@ namespace geodesy::runtime {
 
 	void object::copy_data(const core::phys::node* aNode) {
 		// This is ideally for root nodes, ignore base transform data.
-		this->Name = aNode->Name;
+		this->Identifier = aNode->Identifier;
 		this->Transformation = aNode->Transformation;
 
 		// Copy over physics mesh.

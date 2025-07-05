@@ -46,10 +46,8 @@ namespace geodesy::core::phys {
 		std::vector<node*> 						Child;      		// Child nodes in hierarchy
 		
 		// Node Data
-		std::string             				Name;       		// Node name
+		std::string             				Identifier; 		// Node identifier
 		type 									Type;       		// Node type
-		// float									Time;				// Second 			[s]
-		// float 									DeltaTime; 			// Second 			[s]
 		float									Mass;				// Kilogram			[kg]
 		math::mat<float, 3, 3>					InertiaTensor;		// Inertia Tensor	[kg*m^2]
 		math::vec<float, 3>						Position;			// Meter			[m]

@@ -81,6 +81,7 @@ namespace geodesy::runtime {
 		std::mutex																	Mutex;
 
 		// * Object Input and Physics
+		std::string																	Name;				// Name of the object.
 		float																		Time;				// Second 			[s]
 		float 																		DeltaTime; 			// Second 			[s]
 		float 																		Theta, Phi;			// Radians			[rad]

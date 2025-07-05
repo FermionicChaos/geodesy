@@ -11,7 +11,7 @@ namespace geodesy::core::phys {
 
 	// Default constructor, zero out all data.
 	node::node() {
-		this->Name 				= "";
+		this->Identifier 				= "";
 		this->Type 				= node::PHYSICS; // Default type to PHYSICS.
 		this->Root 				= this;
 		this->Parent 			= nullptr;
@@ -72,7 +72,7 @@ namespace geodesy::core::phys {
 		for (size_t i = 0; i < aPlaybackAnimation.size(); i++) {
 			// Check if Animation Data exists for this node, if not, use bind pose.
 			// Pull animation for readability.
-			auto& NodeAnimation = aPlaybackAnimation[i][this->Name];
+			auto& NodeAnimation = aPlaybackAnimation[i][this->Identifier];
 			float Weight = aAnimationWeight[i + 1];
 			if (NodeAnimation.exists()) {
 				// Calculate time in ticks
@@ -103,7 +103,7 @@ namespace geodesy::core::phys {
 
 	node* node::find(std::string aName) {
 		// Find the node with the given name in the hierarchy.
-		if (this->Name == aName) {
+		if (this->Identifier == aName) {
 			return this;
 		}
 		for (const auto& child : this->Child) {
@@ -135,7 +135,7 @@ namespace geodesy::core::phys {
 	void node::copy_data(const node* aNode) {
 		// This function simply copies all data not related to the hierarchy.
 		// This is used to copy data from one node to another.
-		this->Name = aNode->Name;
+		this->Identifier = aNode->Identifier;
 		this->Type = aNode->Type;
 		this->Mass = aNode->Mass;
 		this->InertiaTensor = aNode->InertiaTensor;
