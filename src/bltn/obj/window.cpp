@@ -118,16 +118,7 @@ namespace geodesy::bltn::obj {
 		std::vector<std::shared_ptr<shader>> ShaderList = { VertexShader, PixelShader };
 		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::make_shared<pipeline::rasterizer>(ShaderList, aWindowCreator->Resolution);
 
-		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 0, offsetof(gfx::mesh::vertex, Position));
-		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 1, offsetof(gfx::mesh::vertex, Normal));
-		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 2, offsetof(gfx::mesh::vertex, Tangent));
-		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 3, offsetof(gfx::mesh::vertex, Bitangent));
-		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 4, offsetof(gfx::mesh::vertex, TextureCoordinate));
-		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 5, offsetof(gfx::mesh::vertex, Color));
-
-		// Set output format.
-		Rasterizer->attach(0, aWindowCreator->PixelFormat, image::sample::COUNT_1, image::layout::SHADER_READ_ONLY_OPTIMAL);
-
+		// ----- Set Pipeline Options ----- //
 		// How to intepret vertex data in rasterization.
 		Rasterizer->InputAssembly.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		Rasterizer->InputAssembly.primitiveRestartEnable	= false;
@@ -140,6 +131,17 @@ namespace geodesy::bltn::obj {
 
 		// Copy Paste
 		Rasterizer->Multisample.rasterizationSamples		= VK_SAMPLE_COUNT_1_BIT;
+
+		// Define Vertex Input Bindings
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 0, offsetof(gfx::mesh::vertex, Position));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 1, offsetof(gfx::mesh::vertex, Normal));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 2, offsetof(gfx::mesh::vertex, Tangent));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 3, offsetof(gfx::mesh::vertex, Bitangent));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 4, offsetof(gfx::mesh::vertex, TextureCoordinate));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 5, offsetof(gfx::mesh::vertex, Color));
+
+		// Define Output Attachments
+		Rasterizer->attach(0, aWindowCreator->PixelFormat);
 
 		this->Pipeline = Context->create_pipeline(Rasterizer);
 

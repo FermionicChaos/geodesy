@@ -434,19 +434,20 @@ namespace geodesy::core::gpu {
 	}
 
 	void pipeline::rasterizer::attach(uint32_t aAttachmentIndex, std::shared_ptr<image> aAttachmentImage, image::layout aImageLayout) {
-		this->attach(aAttachmentIndex, (image::format)aAttachmentImage->CreateInfo.format, (image::sample)aAttachmentImage->CreateInfo.samples, aImageLayout);
+		// TODO: Maybe check that image sample count matches rasterizer sample count?
+		this->attach(aAttachmentIndex, (image::format)aAttachmentImage->CreateInfo.format, aImageLayout);
 	}
 
-	void pipeline::rasterizer::attach(uint32_t aAttachmentIndex, image::format aFormat, image::sample aSampleCount, image::layout aImageLayout) {
+	void pipeline::rasterizer::attach(uint32_t aAttachmentIndex, image::format aFormat, image::layout aImageLayout) {
 		if (aAttachmentIndex < this->ColorAttachment.size()) {
 			this->ColorAttachment[aAttachmentIndex].Description.format			= (VkFormat)aFormat;
-			this->ColorAttachment[aAttachmentIndex].Description.samples			= (VkSampleCountFlagBits)aSampleCount;
+			this->ColorAttachment[aAttachmentIndex].Description.samples			= (VkSampleCountFlagBits)this->Multisample.rasterizationSamples;
 			this->ColorAttachment[aAttachmentIndex].Description.initialLayout	= (VkImageLayout)aImageLayout;
 			this->ColorAttachment[aAttachmentIndex].Description.finalLayout		= (VkImageLayout)aImageLayout;
 		}
 		else if (aAttachmentIndex == this->ColorAttachment.size()) {
 			this->DepthStencilAttachment.Description.format						= (VkFormat)aFormat;
-			this->DepthStencilAttachment.Description.samples					= (VkSampleCountFlagBits)aSampleCount;
+			this->DepthStencilAttachment.Description.samples					= (VkSampleCountFlagBits)this->Multisample.rasterizationSamples;
 			this->DepthStencilAttachment.Description.initialLayout				= (VkImageLayout)aImageLayout;
 			this->DepthStencilAttachment.Description.finalLayout				= (VkImageLayout)aImageLayout;
 		}

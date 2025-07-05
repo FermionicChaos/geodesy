@@ -41,7 +41,7 @@ namespace geodesy::bltn::obj {
 	) {
 		// New API design?
 		image::create_info DepthCreateInfo;
-		DepthCreateInfo.Layout		= image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		DepthCreateInfo.Layout		= image::layout::SHADER_READ_ONLY_OPTIMAL;
 		DepthCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
 		DepthCreateInfo.Usage		= image::usage::SAMPLED | image::usage::DEPTH_STENCIL_ATTACHMENT  | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
 
@@ -82,7 +82,7 @@ namespace geodesy::bltn::obj {
 			this->Image[i]["OGB.Emissive"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.SS"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.ORM"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
-			this->Image[i]["OGB.Depth"]->clear_depth(ClearCommand, { 1.0f, 0 }, image::layout::DEPTH_ATTACHMENT_OPTIMAL);
+			this->Image[i]["OGB.Depth"]->clear_depth(ClearCommand, { 1.0f, 0 });
 			// this->Image[i]["FinalColor"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			aContext->end(ClearCommand);
 			this->PredrawFrameOperation[i] += ClearCommand;
@@ -198,25 +198,6 @@ namespace geodesy::bltn::obj {
 		std::vector<std::shared_ptr<gpu::shader>> ShaderList = { VertexShader, PixelShader };
 		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::make_shared<pipeline::rasterizer>(ShaderList, aCamera3DCreator->Resolution);
 
-		// This code specifies how the vextex data is to be interpreted from the bound vertex buffers.
-		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 0, offsetof(gfx::mesh::vertex, Position));
-		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 1, offsetof(gfx::mesh::vertex, Normal));
-		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 2, offsetof(gfx::mesh::vertex, Tangent));
-		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 3, offsetof(gfx::mesh::vertex, Bitangent));
-		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 4, offsetof(gfx::mesh::vertex, TextureCoordinate));
-		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 5, offsetof(gfx::mesh::vertex, Color));
-		Rasterizer->bind(1, sizeof(gfx::mesh::vertex::weight), 6, offsetof(gfx::mesh::vertex::weight, BoneID));
-		Rasterizer->bind(1, sizeof(gfx::mesh::vertex::weight), 7, offsetof(gfx::mesh::vertex::weight, BoneWeight));
-		
-		// Select output attachments for pipeline.
-		Rasterizer->attach(0, this->Framechain->draw_frame()["OGB.Color"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
-		Rasterizer->attach(1, this->Framechain->draw_frame()["OGB.Position"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
-		Rasterizer->attach(2, this->Framechain->draw_frame()["OGB.Normal"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
-		Rasterizer->attach(3, this->Framechain->draw_frame()["OGB.Emissive"], 	image::layout::SHADER_READ_ONLY_OPTIMAL);
-		Rasterizer->attach(4, this->Framechain->draw_frame()["OGB.SS"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
-		Rasterizer->attach(5, this->Framechain->draw_frame()["OGB.ORM"], 		image::layout::SHADER_READ_ONLY_OPTIMAL);
-		Rasterizer->attach(6, this->Framechain->draw_frame()["OGB.Depth"], 		image::layout::DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-
 		// How to intepret vertex data in rasterization.
 		Rasterizer->InputAssembly.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		Rasterizer->InputAssembly.primitiveRestartEnable	= false;
@@ -237,6 +218,25 @@ namespace geodesy::bltn::obj {
 		Rasterizer->DepthStencil.depthCompareOp				= VK_COMPARE_OP_LESS; // Camera, +z is closer.
 		Rasterizer->DepthStencil.minDepthBounds				= 0.0f;
 		Rasterizer->DepthStencil.maxDepthBounds				= 1.0f;
+
+		// This code specifies how the vextex data is to be interpreted from the bound vertex buffers.
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 0, offsetof(gfx::mesh::vertex, Position));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 1, offsetof(gfx::mesh::vertex, Normal));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 2, offsetof(gfx::mesh::vertex, Tangent));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 3, offsetof(gfx::mesh::vertex, Bitangent));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 4, offsetof(gfx::mesh::vertex, TextureCoordinate));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 5, offsetof(gfx::mesh::vertex, Color));
+		Rasterizer->bind(1, sizeof(gfx::mesh::vertex::weight), 6, offsetof(gfx::mesh::vertex::weight, BoneID));
+		Rasterizer->bind(1, sizeof(gfx::mesh::vertex::weight), 7, offsetof(gfx::mesh::vertex::weight, BoneWeight));
+		
+		// Select output attachments for pipeline.
+		Rasterizer->attach(0, this->Framechain->draw_frame()["OGB.Color"]);
+		Rasterizer->attach(1, this->Framechain->draw_frame()["OGB.Position"]);
+		Rasterizer->attach(2, this->Framechain->draw_frame()["OGB.Normal"]);
+		Rasterizer->attach(3, this->Framechain->draw_frame()["OGB.Emissive"]);
+		Rasterizer->attach(4, this->Framechain->draw_frame()["OGB.SS"]);
+		Rasterizer->attach(5, this->Framechain->draw_frame()["OGB.ORM"]);
+		Rasterizer->attach(6, this->Framechain->draw_frame()["OGB.Depth"]);
 
 		// Create render pipeline for camera3d.
 		this->Pipeline = Context->create_pipeline(Rasterizer);
