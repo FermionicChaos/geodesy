@@ -396,7 +396,7 @@ namespace geodesy::core::gpu {
 		}
 	}
 
-	void pipeline::rasterizer::bind(VkVertexInputRate aInputRate, uint32_t aBindingIndex, size_t aVertexStride, uint32_t aLocationIndex, size_t aVertexOffset) {
+	void pipeline::rasterizer::bind(uint32_t aBindingIndex, size_t aVertexStride, uint32_t aLocationIndex, size_t aVertexOffset, input_rate aInputRate) {
 		// Check if binding already exists in set.
 		bool ExistsInSet = false;
 		for (const VkVertexInputBindingDescription& Buffer : this->VertexBufferBindingDescription) {
@@ -408,7 +408,7 @@ namespace geodesy::core::gpu {
 			VkVertexInputBindingDescription Buffer{};
 			Buffer.binding		= aBindingIndex;
 			Buffer.stride		= aVertexStride;
-			Buffer.inputRate	= aInputRate;
+			Buffer.inputRate	= (VkVertexInputRate)aInputRate;
 			this->VertexBufferBindingDescription.push_back(Buffer);
 		}
 		else {
@@ -417,7 +417,7 @@ namespace geodesy::core::gpu {
 				if (aBindingIndex == Buffer.binding) {
 					Buffer.binding		= aBindingIndex;
 					Buffer.stride		= aVertexStride;
-					Buffer.inputRate	= aInputRate;
+					Buffer.inputRate	= (VkVertexInputRate)aInputRate;
 				}
 			}
 		}
