@@ -4,25 +4,25 @@
 // this shader launches a ray into the direction of each light source checking for intersections.
 // If an intersection is found, the pixel is in shadow, if not, the pixel is illuminated by the light source.
 
-#define MAX_SCENE_LIGHTS 16
-
-struct lighting_and_shadow_payload {
-    vec3 Origin;
-    vec3 Direction;
-    vec3 Destination;
-    int Hit;
-};
+#define MAX_SCENE_LIGHTS 256
 
 struct light {
-    int Type;
-    vec3 Position;
+	int Type;
+	vec3 Color;
+	vec3 Position;
+	vec3 Direction;
+};
+
+struct payload {
+    vec3 Origin;
     vec3 Direction;
-    vec3 Color;
-    float Intensity;
+    int Hit; // 1 if hit, 0 if not
+    int HitInstanceID; // Instance ID of the geometry hit
+    vec3 HitLocation; // Where the ray hit in world space
 };
 
 // Ray Payload
-layout(location = 0) rayPayloadEXT lighting_and_shadow_payload Ray;
+layout(location = 0) rayPayloadEXT payload Ray;
 
 // Load Geometry Buffer Data.
 layout(set = 0, binding = 0) uniform accelerationStructureEXT TLAS;
@@ -40,117 +40,118 @@ layout (set = 1, binding = 0) uniform Camera3DUBO {
 	mat4 Projection;
 } Camera3D;
 
+// Light sources for illumination calculations
 // Deferred shading for light sources for both lighting and shadows.
-layout(set = 1, binding = 1) uniform SceneLightsUBO {
-    light Lights[MAX_SCENE_LIGHTS];
-    int LightCount;
-    vec3 AmbientLight;
-};
+layout(set = 2, binding = 0) uniform LightData {
+	vec4 AmbientLight; 					// rgb = color, a = intensity
+	light Light[MAX_SCENE_LIGHTS]; 		// Array of light sources
+	int LightCount; 					// Number of light sources (up to MAX_SCENE_LIGHTS)
+} Lights;
 
 const float pi = 3.14159265359;
 
 // ----- PBR Rendering Functions ----- //
 
 float normal_distribution(float aNdotH, float aRoughness) {
-    // Defines the specular highlight of light reflection.
-    float a = aRoughness * aRoughness;  // Squared roughness (alpha^2)
-    
-    // Compute GGX denominator (squared term in denominator)
-    float aDenom = ((aNdotH * aNdotH) * (a - 1.0) + 1.0);
-    
-    // Compute GGX normal distribution function
-    return (a / (pi * aDenom * aDenom)); // Correct squaring of denominator
+	// Defines the specular highlight of light reflection.
+	float a = aRoughness * aRoughness;  // Squared roughness (alpha^2)
+	
+	// Compute GGX denominator (squared term in denominator)
+	float aDenom = ((aNdotH * aNdotH) * (a - 1.0) + 1.0);
+	
+	// Compute GGX normal distribution function
+	return (a / (pi * aDenom * aDenom)); // Correct squaring of denominator
 }
 
 float geometric_attenuation(float aHdotN, float aVdotH, float aNdotV, float aNdotL) {
-    return min(1.0, min(2.0 * aHdotN * aNdotV / aVdotH, 2.0 * aHdotN * aNdotL / aVdotH));
+	return min(1.0, min(2.0 * aHdotN * aNdotV / aVdotH, 2.0 * aHdotN * aNdotL / aVdotH));
 }
 
 float fresnel_schlick(float aVdotH, float aF0) {
-    float Factor = 1.0 - aVdotH;
-    float Factor5 = Factor * Factor * Factor * Factor * Factor; // Faster than pow()
-    return aF0 + (1.0 - aF0) * Factor5;
+	float Factor = 1.0 - aVdotH;
+	float Factor5 = Factor * Factor * Factor * Factor * Factor; // Faster than pow()
+	return aF0 + (1.0 - aF0) * Factor5;
 }
 
 float rs(vec3 aL, vec3 aN, vec3 aV, float aRoughness, float aMetallic) {
-    // Load onto stack for multi usage.
-    vec3 h = normalize(aL + aV);
-    float HdotN = max(dot(h, aN), 0.001);
-    float VdotH = max(dot(aV, h), 0.001);
-    float NdotV = max(dot(aN, aV), 0.001);
-    float NdotL = max(dot(aN, aL), 0.001);
-    float F0 = mix(0.04, 1.0, aMetallic);
+	// Load onto stack for multi usage.
+	vec3 h = normalize(aL + aV);
+	float HdotN = max(dot(h, aN), 0.001);
+	float VdotH = max(dot(aV, h), 0.001);
+	float NdotV = max(dot(aN, aV), 0.001);
+	float NdotL = max(dot(aN, aL), 0.001);
+	float F0 = mix(0.04, 1.0, aMetallic);
 
-    // Load cook torrance terms.
-    float D = normal_distribution(dot(aN, h), aRoughness);
-    float G = geometric_attenuation(HdotN, VdotH, NdotV, NdotL);
-    float F = fresnel_schlick(dot(h, aV), F0);
+	// Load cook torrance terms.
+	float D = normal_distribution(dot(aN, h), aRoughness);
+	float G = geometric_attenuation(HdotN, VdotH, NdotV, NdotL);
+	float F = fresnel_schlick(dot(h, aV), F0);
 
-    // return full specular term of the BRDF.
-    return (D * G * F) / (4.0 * NdotL * NdotV);
+	// return full specular term of the BRDF.
+	return (D * G * F) / (4.0 * NdotL * NdotV);
 }
 
 void main() {
-    // Get Index per ray.
-    ivec2 RayIndex = ivec2(gl_LaunchIDEXT.xy);
-    ivec2 Resolution = imageSize(PixelColor);
+	// Get Index per ray.
+	ivec2 RayIndex = ivec2(gl_LaunchIDEXT.xy);
+	ivec2 Resolution = imageSize(PixelColor);
 
-    // Load G-buffer data
-    vec4 Albedo = imageLoad(PixelColor, RayIndex);
-    vec3 WorldPos = imageLoad(PixelPosition, RayIndex).xyz;
-    vec3 Normal = imageLoad(PixelNormal, RayIndex).xyz;
-    vec3 Emissive = imageLoad(PixelEmissive, RayIndex).xyz;
-    float Specular = imageLoad(PixelSS, RayIndex).r;
-    float Shininess = imageLoad(PixelSS, RayIndex).g;
-    float AmbientOcclusion = imageLoad(PixelORM, RayIndex).r;
-    float Roughness = imageLoad(PixelORM, RayIndex).g;
-    float Metallic = imageLoad(PixelORM, RayIndex).b;
+	// Load G-buffer data
+	vec4 Albedo = imageLoad(PixelColor, RayIndex);
+	vec3 WorldPos = imageLoad(PixelPosition, RayIndex).xyz;
+	vec3 Normal = imageLoad(PixelNormal, RayIndex).xyz;
+	vec3 Emissive = imageLoad(PixelEmissive, RayIndex).xyz;
+	float Specular = imageLoad(PixelSS, RayIndex).r;
+	float Shininess = imageLoad(PixelSS, RayIndex).g;
+	float AmbientOcclusion = imageLoad(PixelORM, RayIndex).r;
+	float Roughness = imageLoad(PixelORM, RayIndex).g;
+	float Metallic = imageLoad(PixelORM, RayIndex).b;
 
-    // Start FinalColor, and ViewDir. TODO: Ignore Emissive
-    vec3 FinalColor = Albedo.rgb*AmbientLight*AmbientOcclusion;
+	// Start FinalColor, and ViewDir. TODO: Ignore Emissive
+	vec3 FinalColor = Albedo.rgb*AmbientLight*AmbientOcclusion;
 
-    // View direction of the camera.
-    vec3 ViewDir = normalize(Camera3D.Position - WorldPos);
+	// View direction of the camera.
+	vec3 ViewDir = normalize(Camera3D.Position - WorldPos);
 
-    // Ray origin will start at the world position of the fragment.
-    Ray.Origin = WorldPos;
+	// Ray origin will start at the world position of the fragment.
+	Ray.Origin = WorldPos;
 
-    // Iterate through each light source adding contributions per light source based on intersection with object in TLAS.
-    for (int i = 0; i < LightCount; i++) {
-        // Ray direction will be determined from the pixel position to the light source. (Same as light dir)
-        Ray.Direction = normalize(Lights[i].Position - Ray.Origin);
-        // Set the ray hit to 0.
-        Ray.Hit = 0;        
+	// Iterate through each light source adding contributions per light source based on intersection with object in TLAS.
+	for (int i = 0; i < LightCount; i++) {
+		// Ray direction will be determined from the pixel position to the light source. (Same as light dir)
+		Ray.Direction = normalize(Lights[i].Position - Ray.Origin);
+		// Set the ray hit to 0.
+		Ray.Hit = 0;        
 
-        // Trace ray into scene to see if there is an intersection towards the direction of the light source.
-        traceRayEXT(
-            TLAS,
-            gl_RayFlagsOpaqueEXT,
-            0xFF,
-            0, 0, 0,
-            Ray.Origin,
-            0.001,                                      // Small offset to avoid self-intersection
-            Ray.Direction,
-            length(Lights[i].Position - Ray.Origin),    // Only check up to light distance
-            0                                           // Location of the ray payload
-        );
+		// Trace ray into scene to see if there is an intersection towards the direction of the light source.
+		traceRayEXT(
+			TLAS,
+			gl_RayFlagsOpaqueEXT,
+			0xFF,
+			0, 0, 0,
+			Ray.Origin,
+			0.001,                                      // Small offset to avoid self-intersection
+			Ray.Direction,
+			length(Lights[i].Position - Ray.Origin),    // Only check up to light distance
+			0                                           // Location of the ray payload
+		);
 
-        // If light is obstructed, skip the light source.
-        if (Ray.Hit == 1) continue;
+		// If light is obstructed, skip the light source.
+		if (Ray.Hit == 1) continue;
 
-        // Calculate the light intensity based on the light source type.
-        float r = length(Lights[i].Position - WorldPos);
-        // Calculates the diffuse term.
-        vec3 d = Albedo.rgb * max(dot(Normal, Ray.Direction), 0.0);
-        // Calculates the specular term.
-        vec3 s = rs(Ray.Direction, Normal, ViewDir, Roughness, Metallic)*vec3(1.0);
-        // Calculate the final color based on the light source intensity.
-        FinalColor += ((1.0 - Specular)*d + Specular*s)*Lights[i].Color*Lights[i].Intensity / (r*r);
-    }
+		// Calculate the light intensity based on the light source type.
+		float r = length(Lights[i].Position - WorldPos);
+		// Calculates the diffuse term.
+		vec3 d = Albedo.rgb * max(dot(Normal, Ray.Direction), 0.0);
+		// Calculates the specular term.
+		vec3 s = rs(Ray.Direction, Normal, ViewDir, Roughness, Metallic)*vec3(1.0);
+		// Calculate the final color based on the light source intensity.
+		FinalColor += ((1.0 - Specular)*d + Specular*s)*Lights[i].Color*Lights[i].Intensity / (r*r);
+	}
 
-    // Apply simple tone mapping
-    FinalColor = FinalColor / (FinalColor + vec3(1.0));
+	// Apply simple tone mapping
+	FinalColor = FinalColor / (FinalColor + vec3(1.0));
 
-    // Write the final color per pixel to the output color image.
-    imageStore(OutputColor, RayIndex, vec4(FinalColor, 1.0f));
+	// Write the final color per pixel to the output color image.
+	imageStore(OutputColor, RayIndex, vec4(FinalColor, 1.0f));
 }

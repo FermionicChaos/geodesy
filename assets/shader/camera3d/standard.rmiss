@@ -5,19 +5,21 @@
 // that the ray leaving the geometry buffer pixel has not hit a
 // geometry in the scene, nothing obscures the light source.
 
-struct lighting_and_shadow_payload {
+struct payload {
     vec3 Origin;
     vec3 Direction;
-    vec3 Destination;
-    int Hit;
+    int Hit; // 1 if hit, 0 if not
+    int HitInstanceID; // Instance ID of the geometry hit
+    vec3 HitLocation; // Where the ray hit in world space
 };
 
-layout(location = 0) rayPayloadEXT lighting_and_shadow_payload Ray;
+layout(location = 0) rayPayloadEXT payload Ray;
 
 void main() {
     // Ray missed and hit no geometry.
     // Set destination position to largest float.
-    Ray.Destination = vec3(gl_MaxFloat);
     Ray.Hit = 0;
+    Ray.HitInstanceID = -1; // No instance hit
+    Ray.HitLocation = vec3(gl_MaxFloat);
     terminateRayEXT();
 }
