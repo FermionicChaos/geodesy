@@ -181,58 +181,58 @@ vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
 	return UVMid;
 }
 
-// Comment out to remove lighting testing.
-const vec4 AmbientLight = vec4(0.8, 0.8, 0.6, 1.0);
-const float LightAmplitude = 100.0;
-const vec4 LightColor = vec4(0.0, 1.0, 1.0, 1.0);
-const vec3 LightPosition = vec3(0.0, -5.0, 5.0);
+// // Comment out to remove lighting testing.
+// const vec4 AmbientLight = vec4(0.8, 0.8, 0.6, 1.0);
+// const float LightAmplitude = 100.0;
+// const vec4 LightColor = vec4(0.0, 1.0, 1.0, 1.0);
+// const vec3 LightPosition = vec3(0.0, -5.0, 5.0);
 
-float blinn_phong(float aKs, float aS, vec3 aN, vec3 aL, vec3 aV) {
-	// Calculate the half vector between the light and view direction.
-	return ((1.0 - aKs) * max(dot(aN, aL), 0.0) + aKs * pow(max(dot(aN, normalize(aL + aV)), 0.0), aS));
-}
+// float blinn_phong(float aKs, float aS, vec3 aN, vec3 aL, vec3 aV) {
+// 	// Calculate the half vector between the light and view direction.
+// 	return ((1.0 - aKs) * max(dot(aN, aL), 0.0) + aKs * pow(max(dot(aN, normalize(aL + aV)), 0.0), aS));
+// }
 
-float cook_torrance(float aF0, float aAlpha, vec3 aN, vec3 aL, vec3 aV) {
-	// Calculate the half vector between the light and view direction.
-	vec3 H = normalize(aL + aV);
+// float cook_torrance(float aF0, float aAlpha, vec3 aN, vec3 aL, vec3 aV) {
+// 	// Calculate the half vector between the light and view direction.
+// 	vec3 H = normalize(aL + aV);
 
-	// Calculate the dot products of the normal with the half vector, light, and view direction.
-	float NdotH = dot(aN, H);
-	float NdotL = dot(aN, aL);
-	float NdotV = dot(aN, aV);
-	float HdotL = dot(H, aL);
-	float HdotV = dot(H, aV);
+// 	// Calculate the dot products of the normal with the half vector, light, and view direction.
+// 	float NdotH = dot(aN, H);
+// 	float NdotL = dot(aN, aL);
+// 	float NdotV = dot(aN, aV);
+// 	float HdotL = dot(H, aL);
+// 	float HdotV = dot(H, aV);
 
-	// Calculate fresnel term.
-	float F = aF0 + (1.0 - aF0) * pow(1.0 - NdotH, 5.0);
+// 	// Calculate fresnel term.
+// 	float F = aF0 + (1.0 - aF0) * pow(1.0 - NdotH, 5.0);
 
-	// Calculate geometric attenuation.
-	float G = min(1.0, min(2.0 * NdotH * NdotV / HdotV, 2.0 * NdotH * NdotL / HdotV));
+// 	// Calculate geometric attenuation.
+// 	float G = min(1.0, min(2.0 * NdotH * NdotV / HdotV, 2.0 * NdotH * NdotL / HdotV));
 
-	// Calculate the distribution term.
-	float D = exp((NdotH * NdotH - 1.0) / (aAlpha * aAlpha * NdotH * NdotH)) / (aAlpha * aAlpha * NdotH * NdotH * NdotH * NdotH);
+// 	// Calculate the distribution term.
+// 	float D = exp((NdotH * NdotH - 1.0) / (aAlpha * aAlpha * NdotH * NdotH)) / (aAlpha * aAlpha * NdotH * NdotH * NdotH * NdotH);
 
-	return F * G * D / (4.0 * NdotL * NdotV);	
-}
+// 	return F * G * D / (4.0 * NdotL * NdotV);	
+// }
 
-vec4 final_color(vec2 aUV) {
-	// Sampled color from material and texture.
-	vec4 SampledColor = mix(texture(MaterialColor, aUV), vec4(Material.Color, Material.Opacity), Material.ColorWeight);
+// vec4 final_color(vec2 aUV) {
+// 	// Sampled color from material and texture.
+// 	vec4 SampledColor = mix(texture(MaterialColor, aUV), vec4(Material.Color, Material.Opacity), Material.ColorWeight);
 
-	// Calculates the distance between the light source and the pixel.
-	vec3 l = normalize(LightPosition - PixelPosition.xyz);
-	vec3 v = normalize(Camera3D.Position - PixelPosition.xyz);
-	float r = length(PixelPosition.xyz - LightPosition);
-	vec3 h = (l + v) / length(l + v);
+// 	// Calculates the distance between the light source and the pixel.
+// 	vec3 l = normalize(LightPosition - PixelPosition.xyz);
+// 	vec3 v = normalize(Camera3D.Position - PixelPosition.xyz);
+// 	float r = length(PixelPosition.xyz - LightPosition);
+// 	vec3 h = (l + v) / length(l + v);
 
-	// 
-	float CosTheta = max(dot(l, PixelNormal.xyz), 0.0);
+// 	// 
+// 	float CosTheta = max(dot(l, PixelNormal.xyz), 0.0);
 	
-	// Calculates the final color of the pixel based on ambient lighting and light source.
-	vec4 FinalColor = SampledColor * (AmbientLight + LightAmplitude * CosTheta * LightColor / (r * r)); 
+// 	// Calculates the final color of the pixel based on ambient lighting and light source.
+// 	vec4 FinalColor = SampledColor * (AmbientLight + LightAmplitude * CosTheta * LightColor / (r * r)); 
 
-	return FinalColor;
-}
+// 	return FinalColor;
+// }
 
 void main() {
 
