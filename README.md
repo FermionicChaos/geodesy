@@ -143,8 +143,6 @@ of memory.
 
 ## Bug List:
 
-- Fix single frame broken animation
-
 - Figure out gpu uniform buffer update latency
 
 - Figure out window zero size vulkan validation error on windows

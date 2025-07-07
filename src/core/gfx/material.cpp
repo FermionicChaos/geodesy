@@ -17,6 +17,14 @@ namespace geodesy::core::gfx {
 
 	namespace {
 
+		// enum class pbr_packing_format {
+		// 	UNKNOWN,
+		// 	ORM_GLTF,     // glTF: R=AO, G=Roughness, B=Metallic
+		// 	ARM_UNREAL,   // Unreal: R=AO, G=Roughness, B=Metallic  
+		// 	MRAO_UNITY,   // Unity: R=Metallic, G=Roughness, B=AO
+		// 	AMR_CUSTOM    // Your current assumption: R=AO, G=Metallic, B=Roughness
+		// };
+
 		struct texture_type_database {
 			std::string Name;
 			std::vector<aiTextureType> Type;
@@ -316,8 +324,144 @@ namespace geodesy::core::gfx {
 				this->Texture[TextureType.Name] = TextureType.DefaultTexture;
 			}
 		}
+		
+		///*
+		// Unpack any packed textures, respect loaded files.
+		// Get Stack local copy of textures, and remove from the map.
+		std::map<std::string, std::shared_ptr<gpu::image>> PBR;
+		PBR["AmbientOcclusion"] = this->Texture["AmbientOcclusion"];
+		PBR["Metallic"] = this->Texture["Metallic"];
+		PBR["Roughness"] = this->Texture["Roughness"];
+		this->Texture.erase("AmbientOcclusion");
+		this->Texture.erase("Metallic");
+		this->Texture.erase("Roughness");
 
-		// TODO: Unpack any packed textures, respect loaded files.
+		if (((PBR["AmbientOcclusion"] != nullptr) && (PBR["Metallic"] != nullptr) && (PBR["Roughness"] != nullptr)) ? ((PBR["AmbientOcclusion"]->Path == PBR["Metallic"]->Path) && (PBR["AmbientOcclusion"]->Path == PBR["Roughness"]->Path)) : false) {
+			// This implies that the textures are packed into one texture. They must be split into seperate textures.
+			math::vec<uint, 2> Resolution = { PBR["AmbientOcclusion"]->CreateInfo.extent.width, PBR["AmbientOcclusion"]->CreateInfo.extent.height };
+
+			// TODO: Figure out how to detect packing later.
+			// pbr_packing_format PackingFormatDetected;
+
+			// Make three seperate textures for Ambient Occlusion, Metallic, and Roughness.
+			std::shared_ptr<gpu::image> AmbientOcclusionTexture = geodesy::make<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, Resolution[0], Resolution[1]);
+			std::shared_ptr<gpu::image> MetallicTexture = geodesy::make<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, Resolution[0], Resolution[1]);
+			std::shared_ptr<gpu::image> RoughnessTexture = geodesy::make<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, Resolution[0], Resolution[1]);
+
+			// Type cast to pixel array.
+			math::vec<uchar, 4>* SourcePixelArray = (math::vec<uchar, 4>*)PBR["AmbientOcclusion"]->HostData;
+			math::vec<uchar, 4>* AocPixelArray = (math::vec<uchar, 4>*)AmbientOcclusionTexture->HostData;
+			math::vec<uchar, 4>* MetallicPixelArray = (math::vec<uchar, 4>*)MetallicTexture->HostData;
+			math::vec<uchar, 4>* RoughnessPixelArray = (math::vec<uchar, 4>*)RoughnessTexture->HostData;
+
+			for (size_t i = 0; i < Resolution[0]; i++) {
+				for (size_t j = 0; j < Resolution[1]; j++) {
+					size_t Index = i + j * Resolution[0];
+
+					// Unpack values.
+					uchar AocValue = SourcePixelArray[Index][0]; 		// Assuming Ambient Occlusion is in the red channel
+					uchar RoughnessValue = SourcePixelArray[Index][1]; 	// Assuming Roughness is in the green channel
+					uchar MetallicValue = SourcePixelArray[Index][2]; 	// Assuming Metallic is in the blue channel
+
+					AocPixelArray[Index] 			= { AocValue, AocValue, AocValue, 255 };
+					RoughnessPixelArray[Index] 		= { RoughnessValue, RoughnessValue, RoughnessValue, 255 };
+					MetallicPixelArray[Index] 		= { MetallicValue, MetallicValue, MetallicValue, 255 };
+				}
+			}
+
+			this->Texture["AmbientOcclusion"] = AmbientOcclusionTexture;
+			this->Texture["Metallic"] = MetallicTexture;
+			this->Texture["Roughness"] = RoughnessTexture;
+		}
+		else if (((PBR["AmbientOcclusion"] != nullptr) && (PBR["Metallic"] != nullptr)) ? (PBR["AmbientOcclusion"]->Path == PBR["Metallic"]->Path) : false) {
+			// This implies that the AmbientOcclusion and Metallic textures are packed into one texture.
+			// They must be split into separate textures.
+			math::vec<uint, 2> ResolutionAM = { PBR["AmbientOcclusion"]->CreateInfo.extent.width, PBR["AmbientOcclusion"]->CreateInfo.extent.height };
+
+			std::shared_ptr<gpu::image> AmbientOcclusionTexture = geodesy::make<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, ResolutionAM[0], ResolutionAM[1]);
+			std::shared_ptr<gpu::image> MetallicTexture = geodesy::make<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, ResolutionAM[0], ResolutionAM[1]);
+
+			math::vec<uchar, 4>* SourcePixelArray = (math::vec<uchar, 4>*)PBR["AmbientOcclusion"]->HostData;
+			math::vec<uchar, 4>* AocPixelArray = (math::vec<uchar, 4>*)AmbientOcclusionTexture->HostData;
+			math::vec<uchar, 4>* MetallicPixelArray = (math::vec<uchar, 4>*)MetallicTexture->HostData;
+
+			for (size_t i = 0; i < ResolutionAM[0]; i++) {
+				for (size_t j = 0; j < ResolutionAM[1]; j++) {
+					size_t Index = i + j * ResolutionAM[0];
+
+					uchar AocValue = SourcePixelArray[Index][0]; 		// Assuming Ambient Occlusion is in the red channel
+					uchar MetallicValue = SourcePixelArray[Index][1]; 	// Assuming Metallic is in the green channel
+
+					AocPixelArray[Index] 			= { AocValue, AocValue, AocValue, 255 };
+					MetallicPixelArray[Index] 		= { MetallicValue, MetallicValue, MetallicValue, 255 };
+				}
+			}
+
+			this->Texture["AmbientOcclusion"] = AmbientOcclusionTexture;
+			this->Texture["Metallic"] = MetallicTexture;
+			this->Texture["Roughness"] = PBR["Roughness"]; // Keep Roughness texture as is.
+		}
+		else if (((PBR["AmbientOcclusion"] != nullptr) && (PBR["Roughness"] != nullptr)) ? (PBR["AmbientOcclusion"]->Path == PBR["Roughness"]->Path) : false) {
+			// Same thing here, just with AoC and Roughness textures.
+			math::vec<uint, 2> ResolutionAR = { PBR["AmbientOcclusion"]->CreateInfo.extent.width, PBR["AmbientOcclusion"]->CreateInfo.extent.height };
+
+			std::shared_ptr<gpu::image> AmbientOcclusionTexture = geodesy::make<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, ResolutionAR[0], ResolutionAR[1]);
+			std::shared_ptr<gpu::image> RoughnessTexture = geodesy::make<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, ResolutionAR[0], ResolutionAR[1]);
+
+			math::vec<uchar, 4>* SourcePixelArray = (math::vec<uchar, 4>*)PBR["AmbientOcclusion"]->HostData;
+			math::vec<uchar, 4>* AocPixelArray = (math::vec<uchar, 4>*)AmbientOcclusionTexture->HostData;
+			math::vec<uchar, 4>* RoughnessPixelArray = (math::vec<uchar, 4>*)RoughnessTexture->HostData;
+
+			for (size_t i = 0; i < ResolutionAR[0]; i++) {
+				for (size_t j = 0; j < ResolutionAR[1]; j++) {
+					size_t Index = i + j * ResolutionAR[0];
+
+					uchar AocValue = SourcePixelArray[Index][0]; 		// Assuming Ambient Occlusion is in the red channel
+					uchar RoughnessValue = SourcePixelArray[Index][1]; 	// Assuming Roughness is in the green channel
+
+					AocPixelArray[Index] 			= { AocValue, AocValue, AocValue, 255 };
+					RoughnessPixelArray[Index] 		= { RoughnessValue, RoughnessValue, RoughnessValue, 255 };
+				}
+			}
+
+			this->Texture["AmbientOcclusion"] = AmbientOcclusionTexture;
+			this->Texture["Metallic"] = PBR["Metallic"]; // Keep Metallic texture as is.
+			this->Texture["Roughness"] = RoughnessTexture;
+		}
+		else if (((PBR["Metallic"] != nullptr) && (PBR["Roughness"] != nullptr)) ? (PBR["Metallic"]->Path == PBR["Roughness"]->Path) : false) {
+			// Now seperate Metallic and Roughness textures.
+			math::vec<uint, 2> ResolutionMR = { PBR["Metallic"]->CreateInfo.extent.width, PBR["Metallic"]->CreateInfo.extent.height };
+
+			std::shared_ptr<gpu::image> MetallicTexture = geodesy::make<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, ResolutionMR[0], ResolutionMR[1]);
+			std::shared_ptr<gpu::image> RoughnessTexture = geodesy::make<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, ResolutionMR[0], ResolutionMR[1]);
+
+			math::vec<uchar, 4>* SourcePixelArray = (math::vec<uchar, 4>*)PBR["Metallic"]->HostData;
+			math::vec<uchar, 4>* MetallicPixelArray = (math::vec<uchar, 4>*)MetallicTexture->HostData;
+			math::vec<uchar, 4>* RoughnessPixelArray = (math::vec<uchar, 4>*)RoughnessTexture->HostData;
+
+			for (size_t i = 0; i < ResolutionMR[0]; i++) {
+				for (size_t j = 0; j < ResolutionMR[1]; j++) {
+					size_t Index = i + j * ResolutionMR[0];
+
+					uchar MetallicValue = SourcePixelArray[Index][0]; // Assuming Metallic is in the red channel
+					uchar RoughnessValue = SourcePixelArray[Index][1]; // Assuming Roughness is in the green channel
+
+					MetallicPixelArray[Index] 		= { MetallicValue, MetallicValue, MetallicValue, 255 };
+					RoughnessPixelArray[Index] 		= { RoughnessValue, RoughnessValue, RoughnessValue, 255 };
+				}
+			}
+
+			this->Texture["AmbientOcclusion"] = PBR["AmbientOcclusion"]; // Keep Ambient Occlusion texture as is.
+			this->Texture["Metallic"] = MetallicTexture;
+			this->Texture["Roughness"] = RoughnessTexture;
+		}
+		else {
+			// No textures are packed, so just add them back to the texture map.
+			this->Texture["AmbientOcclusion"] = PBR["AmbientOcclusion"];
+			this->Texture["Metallic"] = PBR["Metallic"];
+			this->Texture["Roughness"] = PBR["Roughness"];
+		}
+		//*/
 	}
 
 	material::material(std::shared_ptr<gpu::context> aContext, gpu::image::create_info aCreateInfo, std::shared_ptr<material> aMaterial) : material() {
