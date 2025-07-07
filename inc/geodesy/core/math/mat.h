@@ -345,7 +345,7 @@ namespace geodesy::core::math {
 		return mat<T, 4, 4>(
 			(1.0 / tn),     0.0,                    0.0,                                    0.0,
 			0.0,            (AspectRatio / tn),     0.0,                                    0.0,
-			0.0,            0.0,                    (Far / (Far - Near)),       (-(Far * Near) / (Far - Near)),
+			0.0,            0.0,                    (-Near / (Far - Near)),       			(Far * Near / (Far - Near)),
 			0.0,            0.0,                    1.0,                                    0.0
 		);
 	}

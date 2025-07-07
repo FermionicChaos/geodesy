@@ -83,7 +83,7 @@ namespace geodesy::bltn::obj {
 			this->Image[i]["OGB.Emissive"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.SS"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.ORM"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
-			this->Image[i]["OGB.Depth"]->clear_depth(ClearCommand, { 1.0f, 0 });
+			this->Image[i]["OGB.Depth"]->clear_depth(ClearCommand, { 0.0f, 0 });
 			// this->Image[i]["FinalColor"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			aContext->end(ClearCommand);
 			this->PredrawFrameOperation[i] += ClearCommand;
@@ -222,8 +222,8 @@ namespace geodesy::bltn::obj {
 	}
 
 	void camera3d::input(const core::hid::input& aInputState) {
-		float LinearSpeed = 250.0f;
-		float RotationSpeed = 1.5f;
+		float LinearSpeed = 20.0f;
+		float RotationSpeed = 0.75f;
 		float ForwardSpeed = 0.0f, RightSpeed = 0.0f;		
 		float DeltaTheta = 0.0f, DeltaPhi = 0.0f;
 
@@ -401,7 +401,7 @@ namespace geodesy::bltn::obj {
 		// Needed for 3D graphics.
 		Rasterizer->DepthStencil.depthTestEnable			= VK_TRUE;
 		Rasterizer->DepthStencil.depthWriteEnable			= VK_TRUE;
-		Rasterizer->DepthStencil.depthCompareOp				= VK_COMPARE_OP_LESS; // Camera, +z is closer.
+		Rasterizer->DepthStencil.depthCompareOp				= VK_COMPARE_OP_GREATER; // Camera, +z is closer.
 		Rasterizer->DepthStencil.minDepthBounds				= 0.0f;
 		Rasterizer->DepthStencil.maxDepthBounds				= 1.0f;
 

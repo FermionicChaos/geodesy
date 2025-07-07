@@ -14,8 +14,8 @@ namespace geodesy::bltn::stg {
 		CameraCreateInfo.FrameRate 			= 60.0f;
 		CameraCreateInfo.FrameCount 		= 4;
 		CameraCreateInfo.FOV 				= 70.0f;
-		CameraCreateInfo.Near 				= 0.1f;
-		CameraCreateInfo.Far 				= 2000.0f;
+		CameraCreateInfo.Near 				= 1.0f;
+		CameraCreateInfo.Far 				= 100.0f;
 
 		// Create Temp Array of objects to be created..
 		std::vector<runtime::object::creator> ObjectList;
@@ -27,7 +27,7 @@ namespace geodesy::bltn::stg {
 		Sponza.ModelPath 					= "dep/gltf-models/2.0/Sponza/glTF/Sponza.gltf";
 		Sponza.Position 					= { 0.0f, 0.0f, 0.0f };
 		Sponza.Direction 					= { -90.0f, 90.0f };
-		Sponza.Scale 						= { 75.0f, 75.0f, 75.0f };
+		Sponza.Scale 						= { 10.0f, 10.0f, 10.0f };
 		ObjectList.push_back(Sponza);
 
 		// Tests Complex Animations
@@ -35,27 +35,27 @@ namespace geodesy::bltn::stg {
 		runtime::object::creator BrainStem;
 		BrainStem.Name 						= "BrainStem";
 		BrainStem.ModelPath 				= "dep/gltf-models/2.0/BrainStem/glTF/BrainStem.gltf";
-		BrainStem.Position 					= { 15.0f, 00.0f, 0.0f };
+		BrainStem.Position 					= { 5.0f, 00.0f, 0.0f };
 		BrainStem.Direction 				= { -90.0f, 0.0f };
-		BrainStem.Scale 					= { 10.0f, 10.0f, 10.0f };
+		BrainStem.Scale 					= { 1.0f, 1.0f, 1.0f };
 		BrainStem.AnimationWeights 			= { 0.0f, 1.0f };
 		ObjectList.push_back(BrainStem);
 
 		runtime::object::creator CesiumMilkTruck;
 		CesiumMilkTruck.Name 				= "CesiumMilkTruck";
 		CesiumMilkTruck.ModelPath 			= "dep/gltf-models/2.0/CesiumMilkTruck/glTF/CesiumMilkTruck.gltf";
-		CesiumMilkTruck.Position 			= { 0.0f, 40.0f, 0.0f };
+		CesiumMilkTruck.Position 			= { 0.0f, 10.0f, 0.0f };
 		CesiumMilkTruck.Direction 			= { -90.0f, 0.0f };
-		CesiumMilkTruck.Scale 				= { 5.0f, 5.0f, 5.0f };
+		CesiumMilkTruck.Scale 				= { 1.0f, 1.0f, 1.0f };
 		CesiumMilkTruck.AnimationWeights 	= { 0.0f, 1.0f };
 		ObjectList.push_back(CesiumMilkTruck);
 
 		runtime::object::creator CesiumMan;
 		CesiumMan.Name 						= "CesiumMan";
 		CesiumMan.ModelPath 				= "dep/gltf-models/2.0/CesiumMan/glTF/CesiumMan.gltf";
-		CesiumMan.Position 					= { -15.0f, 0.0f, 0.0f };
+		CesiumMan.Position 					= { -5.0f, 0.0f, 0.0f };
 		CesiumMan.Direction 				= { -90.0f, 0.0f };
-		CesiumMan.Scale 					= { 10.0f, 10.0f, 10.0f };
+		CesiumMan.Scale 					= { 1.0f, 1.0f, 1.0f };
 		CesiumMan.AnimationWeights 			= { 0.0f, 1.0f };
 		ObjectList.push_back(CesiumMan);
 
@@ -74,16 +74,16 @@ namespace geodesy::bltn::stg {
 		Lantern.ModelPath 					= "dep/gltf-models/2.0/Lantern/glTF/Lantern.gltf";
 		Lantern.Position 					= { 00.0f, 0.0f, 0.0f };
 		Lantern.Direction 					= { -90.0f, 0.0f };
-		Lantern.Scale 						= { 1.0f, 1.0f, 1.0f };
+		Lantern.Scale 						= { 0.1f, 0.1f, 0.1f };
 		ObjectList.push_back(Lantern);
 
 		// Full PBR Test
 		runtime::object::creator DamagedHelmet;
 		DamagedHelmet.Name 					= "DamagedHelmet";
 		DamagedHelmet.ModelPath 			= "dep/gltf-models/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf";
-		DamagedHelmet.Position 				= { 30.0f, 0.0f, 5.0f };
+		DamagedHelmet.Position 				= { 10.0f, 0.0f, 0.0f };
 		DamagedHelmet.Direction 			= { -90.0f, 0.0f };
-		DamagedHelmet.Scale 				= { 5.0f, 5.0f, 5.0f };
+		DamagedHelmet.Scale 				= { 1.0f, 1.0f, 1.0f };
 		ObjectList.push_back(DamagedHelmet);
 
 		// Special Case Objects
@@ -99,9 +99,9 @@ namespace geodesy::bltn::stg {
 		runtime::object::creator MosquitoInAmber;
 		MosquitoInAmber.Name 				= "MosquitoInAmber";
 		MosquitoInAmber.ModelPath 			= "dep/gltf-models/2.0/MosquitoInAmber/glTF/MosquitoInAmber.gltf";
-		MosquitoInAmber.Position 			= { -30.0f, 0.0f, 5.0f };
+		MosquitoInAmber.Position 			= { -10.0f, 0.0f, 0.0f };
 		MosquitoInAmber.Direction 			= { -180.0f, 0.0f };
-		MosquitoInAmber.Scale 				= { 100.0f, 100.0f, 100.0f };
+		MosquitoInAmber.Scale 				= { 50.0f, 50.0f, 50.0f };
 		ObjectList.push_back(MosquitoInAmber);
 
 		// // Sheen Rendering.
