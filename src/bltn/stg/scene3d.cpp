@@ -11,7 +11,7 @@ namespace geodesy::bltn::stg {
 		CameraCreateInfo.Position 			= { 0.0f, -50.0f, 10.0f };
 		CameraCreateInfo.Direction 			= { 0.0f, 0.0f };
 		CameraCreateInfo.Resolution 		= { 2*1920, 2*1080, 1 };
-		CameraCreateInfo.FrameRate 			= 60.0f;
+		CameraCreateInfo.FrameRate 			= 500.0f;
 		CameraCreateInfo.FrameCount 		= 1;
 		CameraCreateInfo.FOV 				= 70.0f;
 		CameraCreateInfo.Near 				= 1.0f;
