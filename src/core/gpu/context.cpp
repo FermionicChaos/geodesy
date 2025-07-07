@@ -556,6 +556,14 @@ namespace geodesy::core::gpu {
 	void context::draw_indexed(VkCommandBuffer aCommandBuffer, uint32_t aIndexCount, uint32_t aInstanceCount, uint32_t aFirstIndex, uint32_t aVertexOffset, uint32_t aFirstInstance) {
 		vkCmdDrawIndexed(aCommandBuffer, aIndexCount, aInstanceCount, aFirstIndex, aVertexOffset, aFirstInstance);
 	}
+
+	VkResult context::wait() {
+		return vkDeviceWaitIdle(this->Handle);
+	}
+
+	VkResult context::wait(device::operation aDeviceOperation) {
+		return vkQueueWaitIdle(this->Queue[aDeviceOperation]);
+	}
 	
 	VkResult context::wait(VkFence aFence) {
 		std::vector<VkFence> FenceList = { aFence };

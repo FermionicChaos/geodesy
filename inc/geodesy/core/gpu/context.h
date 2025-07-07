@@ -93,6 +93,8 @@ namespace geodesy::core::gpu {
 
 		// ----- Command Buffer Execution ----- //
 
+		VkResult wait();
+		VkResult wait(device::operation aDeviceOperation);
 		VkResult wait(VkFence aFence);
 		VkResult wait(std::vector<VkFence> aFenceList, VkBool32 aWaitOnAll = VK_TRUE);
 
