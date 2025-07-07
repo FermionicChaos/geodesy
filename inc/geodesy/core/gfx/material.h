@@ -71,14 +71,14 @@ namespace geodesy::core::gfx {
 			alignas(4) float 							AmbientOcclusionWeight;
 			alignas(4) int 								AmbientOcclusionTextureIndex;
 			alignas(4) float 							AmbientOcclusion;
-			alignas(4) float 							MetallicTextureWeight;
-			alignas(4) float 							MetallicWeight;
-			alignas(4) int 								MetallicTextureIndex;
-			alignas(4) float 							Metallic;
 			alignas(4) float 							RoughnessTextureWeight;
 			alignas(4) float 							RoughnessWeight;
 			alignas(4) int 								RoughnessTextureIndex;
 			alignas(4) float 							Roughness;
+			alignas(4) float 							MetallicTextureWeight;
+			alignas(4) float 							MetallicWeight;
+			alignas(4) int 								MetallicTextureIndex;
+			alignas(4) float 							Metallic;
 			alignas(4) float 							IORVertexWeight;
 			alignas(4) float 							IORTextureWeight;
 			alignas(4) float 							IORWeight;

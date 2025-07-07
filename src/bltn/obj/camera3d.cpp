@@ -142,8 +142,8 @@ namespace geodesy::bltn::obj {
 		DescriptorArray->bind(1, 5, 0, Material->Texture["Specular"]);
 		DescriptorArray->bind(1, 6, 0, Material->Texture["Shininess"]);
 		DescriptorArray->bind(1, 7, 0, Material->Texture["AmbientOcclusion"]);
-		DescriptorArray->bind(1, 8, 0, Material->Texture["Metallic"]);
-		DescriptorArray->bind(1, 9, 0, Material->Texture["Roughness"]);
+		DescriptorArray->bind(1, 8, 0, Material->Texture["Roughness"]);
+		DescriptorArray->bind(1, 9, 0, Material->Texture["Metallic"]);
 		DescriptorArray->bind(1, 10, 0, Material->Texture["Sheen"]);
 		DescriptorArray->bind(1, 11, 0, Material->Texture["ClearCoat"]);
 

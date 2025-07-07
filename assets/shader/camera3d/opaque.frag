@@ -79,14 +79,14 @@ layout (set = 0, binding = 3) uniform MaterialUBO {
 	float 	AmbientOcclusionWeight;
 	int 	AmbientOcclusionTextureIndex;
 	float 	AmbientOcclusion;
-	float 	MetallicTextureWeight;
-	float 	MetallicWeight;
-	int 	MetallicTextureIndex;
-	float 	Metallic;
 	float 	RoughnessTextureWeight;
 	float 	RoughnessWeight;
 	int 	RoughnessTextureIndex;
 	float 	Roughness;
+	float 	MetallicTextureWeight;
+	float 	MetallicWeight;
+	int 	MetallicTextureIndex;
+	float 	Metallic;
 	float 	IORVertexWeight;
 	float 	IORTextureWeight;
 	float 	IORWeight;
@@ -133,10 +133,10 @@ layout (set = 1, binding = 5) uniform sampler2D MaterialSpecular; 			// float3 S
 layout (set = 1, binding = 6) uniform sampler2D MaterialShininess; 			// float Shininess
 // PBR Specific Textures
 layout (set = 1, binding = 7) uniform sampler2D MaterialAmbientOcclusion; 	// float AOC
-layout (set = 1, binding = 8) uniform sampler2D MaterialMetallic; 			// float Metallic	
-layout (set = 1, binding = 9) uniform sampler2D MaterialRoughness; 			// float Roughness
-layout (set = 1, binding = 10) uniform sampler2D MaterialSheen; 				// Sheen Map
-layout (set = 1, binding = 11) uniform sampler2D MaterialClearCoat; 			// Clear Coat Map
+layout (set = 1, binding = 8) uniform sampler2D MaterialRoughness; 			// float Roughness
+layout (set = 1, binding = 9) uniform sampler2D MaterialMetallic; 			// float Metallic	
+layout (set = 1, binding = 10) uniform sampler2D MaterialSheen; 			// Sheen Map
+layout (set = 1, binding = 11) uniform sampler2D MaterialClearCoat; 		// Clear Coat Map
 
 // -------------------- OUTPUT DATA -------------------- //
 
@@ -149,7 +149,7 @@ layout (location = 1) out vec4 PixelPosition;
 layout (location = 2) out vec4 PixelNormal;
 layout (location = 3) out vec4 PixelEmissive;
 layout (location = 4) out vec4 PixelSS;
-layout (location = 5) out vec4 PixelAMR;
+layout (location = 5) out vec4 PixelARM;
 
 vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
 
@@ -339,7 +339,7 @@ void main() {
 	material_property MP = unpack(aUV);
 
 	// Merge Ambient Occlusion, Metallic, and Roughness into a single vec4.
-	PixelAMR = vec4(MP.AmbientOcclusion, MP.Metallic, MP.Roughness, 0.0);
+	PixelARM = vec4(MP.AmbientOcclusion, MP.Roughness, MP.Metallic, 1.0);
 
 	// Merge Specular and Shininess into a single vec4.
 	PixelSS = vec4(MP.Specular.r, MP.Specular.g, MP.Specular.b, MP.Shininess);
@@ -360,5 +360,5 @@ void main() {
 	PixelPosition = vec4(WorldPosition, 1.0) + PixelNormal*texture(MaterialHeightMap, aUV).r;
 
 	// Move over material color.
-	PixelColor = vec4(MP.Albedo, 1.0);
+	PixelColor = vec4(MP.Albedo, 1.0);//*0.01 + PixelARM*0.9;
 }

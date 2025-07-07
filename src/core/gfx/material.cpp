@@ -43,8 +43,8 @@ namespace geodesy::core::gfx {
 	static const unsigned char DefaultSpecularData[4]           = {0, 0, 0, 255};       // No specularity
 	static const unsigned char DefaultShininessData[4]          = {0, 0, 0, 255};       // No shininess
 	static const unsigned char DefaultAmbientOcclusionData[4]   = {255, 255, 255, 255}; // No occlusion (fully lit)
-	static const unsigned char DefaultMetallicData[4]           = {0, 0, 0, 255};       // Non-metallic
 	static const unsigned char DefaultRoughnessData[4]          = {128, 128, 128, 255}; // FIX: Medium roughness (0.5)
+	static const unsigned char DefaultMetallicData[4]           = {0, 0, 0, 255};       // Non-metallic
 	static const unsigned char DefaultSheenData[4]              = {0, 128, 0, 255};     // FIX: No sheen, medium roughness
 	static const unsigned char DefaultClearCoatData[4]          = {0, 32, 0, 255};      // FIX: No clear coat, smooth surface
 
@@ -59,8 +59,8 @@ namespace geodesy::core::gfx {
 		{ "Specular", 				{ aiTextureType_SPECULAR }, 									geodesy::make<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultSpecularData), (void*)DefaultSpecularData) 							},	
 		{ "Shininess", 				{ aiTextureType_SHININESS }, 									geodesy::make<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultShininessData), (void*)DefaultShininessData) 						},
 		{ "AmbientOcclusion", 		{ aiTextureType_LIGHTMAP, aiTextureType_AMBIENT_OCCLUSION }, 	geodesy::make<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultAmbientOcclusionData), (void*)DefaultAmbientOcclusionData) 			},
-		{ "Metallic", 				{ aiTextureType_METALNESS }, 									geodesy::make<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultMetallicData), (void*)DefaultMetallicData) 							},
 		{ "Roughness", 				{ aiTextureType_DIFFUSE_ROUGHNESS }, 							geodesy::make<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultRoughnessData), (void*)DefaultRoughnessData) 						},
+		{ "Metallic", 				{ aiTextureType_METALNESS }, 									geodesy::make<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultMetallicData), (void*)DefaultMetallicData) 							},
 		{ "Sheen", 					{ aiTextureType_SHEEN }, 										geodesy::make<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultSheenData), (void*)DefaultSheenData) 								},
 		{ "ClearCoat", 				{ aiTextureType_CLEARCOAT }, 									geodesy::make<gpu::image>(gpu::image::format::R8G8B8A8_UNORM, 2, 2, 1, 1, sizeof(DefaultClearCoatData), (void*)DefaultClearCoatData) 						}
    };
@@ -127,17 +127,17 @@ namespace geodesy::core::gfx {
 		this->ShininessTextureIndex 						= -1;
 		this->Shininess 									= 0.0f;
 		this->AmbientOcclusionTextureWeight 				= 0.0f;
-		this->AmbientOcclusionWeight 						= 0.0f;
+		this->AmbientOcclusionWeight 						= 1.0f;
 		this->AmbientOcclusionTextureIndex 					= -1;
-		this->AmbientOcclusion 								= 0.0f;
-		this->MetallicTextureWeight 						= 0.0f;
-		this->MetallicWeight 								= 0.0f;
-		this->MetallicTextureIndex 							= -1;
-		this->Metallic 										= 0.0f;
+		this->AmbientOcclusion 								= 1.0f;
 		this->RoughnessTextureWeight 						= 0.0f;
 		this->RoughnessWeight 								= 0.0f;
 		this->RoughnessTextureIndex 						= -1;
 		this->Roughness 									= 0.0f;
+		this->MetallicTextureWeight 						= 0.0f;
+		this->MetallicWeight 								= 1.0f;
+		this->MetallicTextureIndex 							= -1;
+		this->Metallic 										= 0.0f;
 		this->IORVertexWeight 								= 0.0f;
 		this->IORTextureWeight 								= 0.0f;
 		this->IORWeight 									= 1.0f;
