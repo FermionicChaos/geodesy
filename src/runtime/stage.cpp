@@ -1,5 +1,6 @@
 #include <geodesy/runtime/stage.h>
 
+// Why tf is single threaded better?
 // #define ENABLE_MULTITHREADED_PROCESSING
 
 #ifdef ENABLE_MULTITHREADED_PROCESSING
@@ -34,56 +35,39 @@ namespace geodesy::runtime {
 			NodeCountTotal += Obj->LinearizedNodeTree.size();
 		}
 
-		this->NodeCache.resize(NodeCountTotal);
-
-		size_t NodeIndex = 0;
-		for (size_t i = 0; i < this->Object.size(); i++) {
-			for (size_t j = 0; j < this->Object[i]->LinearizedNodeTree.size(); j++) {
-				this->NodeCache[NodeIndex++] = this->Object[i]->LinearizedNodeTree[j];
+		if (NodeCountTotal != this->NodeCache.size()) {
+			this->NodeCache.resize(NodeCountTotal);
+	
+			size_t NodeIndex = 0;
+			for (size_t i = 0; i < this->Object.size(); i++) {
+				for (size_t j = 0; j < this->Object[i]->LinearizedNodeTree.size(); j++) {
+					this->NodeCache[NodeIndex++] = this->Object[i]->LinearizedNodeTree[j];
+				}
 			}
 		}
 
-#ifdef ENABLE_MULTITHREADED_PROCESSING
-
-		/*
 		// This list contains the pairs that have been detected to be in collision on broad phase metrics.
-		std::vector<std::pair<object*, object*>> BroadPhaseCollisionPair;
+		// std::vector<std::pair<object*, object*>> BroadPhaseCollisionPair;
 		
 		// This list contains the pairs that have been detected to be in collision on narrow phase metrics.
-		std::vector<std::pair<object*, object*>> NarrowPhaseCollisionPair;
+		// std::vector<std::pair<object*, object*>> NarrowPhaseCollisionPair;
 		
 		// TODO: Broad phase collision detection will use bounding spheres based on the objects farthest vertex.
 		// Yes, I know this is n2, suck my dick. I'll change it later.
-		// for (size_t i = 0; i < this->Object.size(); i++) {
-		// 	for (size_t j = i + 1; j < this->Object.size(); j++) {
-		// 	}
-		// }
-		
+				
 		// TODO: Narrow phase collision detection will use the actual geometry of the objects.
-		
+				
 		// TODO: This section of the code will evaluate collision responses between pairs.
-		*/
-
+		
 		// After collision has been completed, and response forces determined, update objects accordingly.
-
-		// Determine workload for each thread.
-		std::vector<workload> DistributedThreadWorkload = stage::determine_thread_workload(this->NodeCache.size(), omp_get_max_threads());
-		#pragma omp parallel
-		{
-			size_t ThreadIndex = omp_get_thread_num();
-			size_t StartIndex = DistributedThreadWorkload[ThreadIndex].Start;
-			size_t EndIndex = DistributedThreadWorkload[ThreadIndex].Start + DistributedThreadWorkload[ThreadIndex].Count;
-			for (size_t i = StartIndex; i < EndIndex; i++) {
-				object* Object = static_cast<object*>(this->NodeCache[i]->Root);
-				this->NodeCache[i]->update(aDeltaTime, this->Time, Object->AnimationWeights, Object->Model->Animation);
-			}
-		}
-#else
-		for (auto& Node : this->NodeCache) {
-			object* Object = static_cast<object*>(Node->Root);
-			Node->update(aDeltaTime, this->Time, Object->AnimationWeights, Object->Model->Animation);
-		}
+			
+#ifdef ENABLE_MULTITHREADED_PROCESSING
+		#pragma omp parallel for
 #endif // ENABLE_MULTITHREADED_PROCESSING
+		for (std::ptrdiff_t i = 0; i < this->NodeCache.size(); i++) {
+			object* Object = static_cast<object*>(this->NodeCache[i]->Root);
+			this->NodeCache[i]->update(aDeltaTime, this->Time, Object->AnimationWeights, Object->Model->Animation);
+		}
 
 		return StageUpdateInfo;
 	}
