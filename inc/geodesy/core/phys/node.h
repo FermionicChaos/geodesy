@@ -10,6 +10,8 @@
 #include "mesh.h"
 // Include animation.
 #include "animation.h"
+// Include force.
+#include "force.h"
 
 struct aiScene;
 struct aiNode;
@@ -84,7 +86,8 @@ namespace geodesy::core::phys {
 			double 								aDeltaTime = 0.0f, 
 			double 								aTime = 0.0f, 
 			const std::vector<float>& 			aAnimationWeight = { 1.0f }, 
-			const std::vector<animation>& 		aPlaybackAnimation = {}
+			const std::vector<animation>& 		aPlaybackAnimation = {},
+			const std::vector<force>& 			aAppliedForces = {}
 		);
 		
 	};

@@ -114,6 +114,9 @@ namespace geodesy::runtime {
 			}
 		}
 
+		// Linearize node tree for faster processing.
+		this->LinearizedNodeTree = this->linearize();
+
 		// Object Uniform Buffer Creation from GPU Device Context.
 		buffer::create_info UBCI;
 		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
@@ -155,12 +158,15 @@ namespace geodesy::runtime {
 
 	}
 
-	void object::update(double aDeltaTime, math::vec<float, 3> aAppliedForce, math::vec<float, 3> aAppliedTorque) {
+	void object::update(
+		double 									aDeltaTime, 
+		double 									aTime, 
+		const std::vector<float>& 				aAnimationWeight, 
+		const std::vector<phys::animation>& 	aPlaybackAnimation,
+		const std::vector<phys::force>& 		aAppliedForces
+	) {
 
-		this->DeltaTime = aDeltaTime;
-		this->Time += aDeltaTime;
-
-		core::gfx::node::update(aDeltaTime, this->Time, this->AnimationWeights, this->Model->Animation);
+		core::gfx::node::update(aDeltaTime, aTime, this->AnimationWeights, this->Model->Animation);
 
 		// TODO: Add update using angular momentum to change orientation of object over time.
 
@@ -175,11 +181,6 @@ namespace geodesy::runtime {
 			this->DirectionFront,
 			this->Scale
 		);
-
-		// Update Model if animation data exists.
-		if ((this->Model.get() != nullptr) && (this->Model->Animation.size() > 0)) {
-			this->Model->update(aDeltaTime, this->AnimationWeights);
-		}
 	}
 
 	std::vector<std::shared_ptr<object::draw_call>> object::draw(subject* aSubject) {

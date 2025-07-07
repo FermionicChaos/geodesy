@@ -29,7 +29,8 @@ namespace geodesy::core::gfx {
 			double 									aDeltaTime = 0.0f, 
 			double 									aTime = 0.0f, 
 			const std::vector<float>& 				aAnimationWeight = { 1.0f }, 
-			const std::vector<phys::animation>& 	aPlaybackAnimation = {}
+			const std::vector<phys::animation>& 	aPlaybackAnimation = {},
+			const std::vector<phys::force>& 		aAppliedForces = {}
 		) override;
 
 		// Counts the total number of mesh references in the tree.

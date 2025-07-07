@@ -167,20 +167,21 @@ namespace geodesy::core::phys {
 	}
 
 	void node::update(
-		double aDeltaTime, 
-		double aTime, 
-		const std::vector<float>& aAnimationWeight, 
-		const std::vector<animation>& aPlaybackAnimation
+		double 							aDeltaTime, 
+		double 							aTime, 
+		const std::vector<float>& 		aAnimationWeight, 
+		const std::vector<animation>& 	aPlaybackAnimation,
+		const std::vector<force>& 		aAppliedForces
 	) {
 		// Go to child nodes and update children nodes.
-		for (auto Chd : this->Child) {
-			Chd->update(
-				aDeltaTime, 
-				aTime, 
-				aAnimationWeight, 
-				aPlaybackAnimation
-			);
-		}
+		// for (auto Chd : this->Child) {
+		// 	Chd->update(
+		// 		aDeltaTime, 
+		// 		aTime, 
+		// 		aAnimationWeight, 
+		// 		aPlaybackAnimation
+		// 	);
+		// }
 		
 		// //update_info UpdateInfo;
 		// // Newtons First Law: An object in motion tends to stay in motion.

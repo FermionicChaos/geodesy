@@ -385,9 +385,14 @@ namespace geodesy::bltn::obj {
 		this->destroy_window_handle(this->WindowHandle);
 	}
 
-	void system_window::update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce, core::math::vec<float, 3> aAppliedTorque) {
+	void system_window::update(
+		double 									aDeltaTime, 
+		double 									aTime, 
+		const std::vector<float>& 				aAnimationWeight, 
+		const std::vector<phys::animation>& 	aPlaybackAnimation,
+		const std::vector<phys::force>& 		aAppliedForces
+	) {
 		this->InputState.Mouse.update(aDeltaTime);
-		this->Time += aDeltaTime;
 	}
 
 	core::gpu::submission_batch system_window::render(runtime::stage* aStage) {

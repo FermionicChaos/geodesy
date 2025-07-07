@@ -223,6 +223,7 @@ namespace geodesy::bltn::obj {
 
 	void camera3d::input(const core::hid::input& aInputState) {
 		float LinearSpeed = 20.0f;
+		if (aInputState.Keyboard[hid::keyboard::KEY_LEFT_SHIFT]) LinearSpeed *= 2.0f;
 		float RotationSpeed = 0.75f;
 		float ForwardSpeed = 0.0f, RightSpeed = 0.0f;		
 		float DeltaTheta = 0.0f, DeltaPhi = 0.0f;
@@ -241,9 +242,15 @@ namespace geodesy::bltn::obj {
 
 	}
 
-	void camera3d::update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce, core::math::vec<float, 3> aAppliedTorque) {
+	void camera3d::update(
+		double 									aDeltaTime, 
+		double 									aTime, 
+		const std::vector<float>& 				aAnimationWeight, 
+		const std::vector<phys::animation>& 	aPlaybackAnimation,
+		const std::vector<phys::force>& 		aAppliedForces
+	) {
 		// How the object will move according to its current momentum.
-		this->LinearMomentum += (aAppliedForce + this->InputForce) * aDeltaTime;
+		this->LinearMomentum += (this->InputForce) * aDeltaTime;
 		this->Position += (this->LinearMomentum / this->Mass + this->InputVelocity) * aDeltaTime;
 
 		this->DirectionRight			= {  std::sin(Phi), 					-std::cos(Phi), 					0.0f 			};

@@ -17,7 +17,7 @@ namespace geodesy::bltn {
 	using namespace lgc;
 
 	unit_test::unit_test(engine* aEngine) : runtime::app(aEngine, "geodesy-unit-test", { 1, 0, 0 }) {
-		TimeStep = 1.0 / 100.0;
+		TimeStep = 1.0 / 2000.0;
 		Window = nullptr;
 		// I want my device context to support these operation types.
 		std::vector<uint> OperationList = {
@@ -57,7 +57,7 @@ namespace geodesy::bltn {
 		// Create System Window Object.
 		system_window::creator SystemWindowCreator;
 		SystemWindowCreator.Name 			= "System Window";
-		SystemWindowCreator.Resolution 		= { 1280, 720, 1 };
+		SystemWindowCreator.Resolution 		= { 1920, 1080, 1 };
 		SystemWindowCreator.FrameCount 		= 3;
 		SystemWindowCreator.FrameRate 		= 60.0f;
 		SystemWindowCreator.Display 		= Engine->PrimaryDisplay;

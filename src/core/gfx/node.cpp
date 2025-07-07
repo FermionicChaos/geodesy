@@ -122,10 +122,11 @@ namespace geodesy::core::gfx {
 	}
 
 	void node::update(
-		double aDeltaTime, 
-		double aTime, 
-		const std::vector<float>& aAnimationWeight, 
-		const std::vector<phys::animation>& aPlaybackAnimation
+		double 									aDeltaTime, 
+		double 									aTime, 
+		const std::vector<float>& 				aAnimationWeight, 
+		const std::vector<phys::animation>& 	aPlaybackAnimation,
+		const std::vector<phys::force>& 		aAppliedForces
 	) {
 
 		// Call the base class update function to update the node data.

@@ -12,10 +12,10 @@ namespace geodesy::bltn::stg {
 		CameraCreateInfo.Direction 			= { 0.0f, 0.0f };
 		CameraCreateInfo.Resolution 		= { 1920, 1080, 1 };
 		CameraCreateInfo.FrameRate 			= 60.0f;
-		CameraCreateInfo.FrameCount 		= 4;
+		CameraCreateInfo.FrameCount 		= 1;
 		CameraCreateInfo.FOV 				= 70.0f;
 		CameraCreateInfo.Near 				= 1.0f;
-		CameraCreateInfo.Far 				= 100.0f;
+		CameraCreateInfo.Far 				= 2000.0f;
 
 		// Create Temp Array of objects to be created..
 		std::vector<runtime::object::creator> ObjectList;
@@ -30,23 +30,31 @@ namespace geodesy::bltn::stg {
 		Sponza.Scale 						= { 10.0f, 10.0f, 10.0f };
 		ObjectList.push_back(Sponza);
 
+		runtime::object::creator PirateMap;
+		PirateMap.Name 						= "PirateMap";
+		PirateMap.ModelPath 				= "assets/models/pirate_map/scene.gltf";
+		PirateMap.Position 					= { 0.0f, 0.0f, 0.0f };
+		PirateMap.Direction 				= { -90.0f, 180.0f };
+		PirateMap.Scale 					= { 0.01f, 0.01f, 0.01f };
+		ObjectList.push_back(PirateMap);
+
 		// Tests Complex Animations
 
 		runtime::object::creator BrainStem;
 		BrainStem.Name 						= "BrainStem";
 		BrainStem.ModelPath 				= "dep/gltf-models/2.0/BrainStem/glTF/BrainStem.gltf";
-		BrainStem.Position 					= { 5.0f, 00.0f, 0.0f };
+		BrainStem.Position 					= { 5.0f, 0.0f, 0.0f };
 		BrainStem.Direction 				= { -90.0f, 0.0f };
-		BrainStem.Scale 					= { 1.0f, 1.0f, 1.0f };
+		BrainStem.Scale 					= { 5.0f, 5.0f, 5.0f };
 		BrainStem.AnimationWeights 			= { 0.0f, 1.0f };
 		ObjectList.push_back(BrainStem);
 
 		runtime::object::creator CesiumMilkTruck;
 		CesiumMilkTruck.Name 				= "CesiumMilkTruck";
 		CesiumMilkTruck.ModelPath 			= "dep/gltf-models/2.0/CesiumMilkTruck/glTF/CesiumMilkTruck.gltf";
-		CesiumMilkTruck.Position 			= { 0.0f, 10.0f, 0.0f };
+		CesiumMilkTruck.Position 			= { 0.0f, 30.0f, 0.0f };
 		CesiumMilkTruck.Direction 			= { -90.0f, 0.0f };
-		CesiumMilkTruck.Scale 				= { 1.0f, 1.0f, 1.0f };
+		CesiumMilkTruck.Scale 				= { 5.0f, 5.0f, 5.0f };
 		CesiumMilkTruck.AnimationWeights 	= { 0.0f, 1.0f };
 		ObjectList.push_back(CesiumMilkTruck);
 
@@ -55,7 +63,7 @@ namespace geodesy::bltn::stg {
 		CesiumMan.ModelPath 				= "dep/gltf-models/2.0/CesiumMan/glTF/CesiumMan.gltf";
 		CesiumMan.Position 					= { -5.0f, 0.0f, 0.0f };
 		CesiumMan.Direction 				= { -90.0f, 0.0f };
-		CesiumMan.Scale 					= { 1.0f, 1.0f, 1.0f };
+		CesiumMan.Scale 					= { 5.0f, 5.0f, 5.0f };
 		CesiumMan.AnimationWeights 			= { 0.0f, 1.0f };
 		ObjectList.push_back(CesiumMan);
 

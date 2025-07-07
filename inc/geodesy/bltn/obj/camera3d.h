@@ -75,7 +75,13 @@ namespace geodesy::bltn::obj {
 
 		// Implement input
 		void input(const core::hid::input& aInput) override;
-		void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f }) override;
+		void update(
+			double 										aDeltaTime = 0.0f, 
+			double 										aTime = 0.0f, 
+			const std::vector<float>& 					aAnimationWeight = { 1.0f }, 
+			const std::vector<core::phys::animation>& 	aPlaybackAnimation = {},
+			const std::vector<core::phys::force>& 		aAppliedForces = {}
+		) override;
 		std::shared_ptr<renderer> default_renderer(runtime::object* aObject) override;
 		// core::gpu::submission_batch render(runtime::stage* aStage) override;
 

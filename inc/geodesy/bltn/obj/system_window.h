@@ -118,7 +118,13 @@ namespace geodesy::bltn::obj {
 		~system_window();
 
 		core::gpu::submission_batch render(runtime::stage* aStage) override;
-		void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f }) override;
+		void virtual update(
+			double 										aDeltaTime = 0.0f, 
+			double 										aTime = 0.0f, 
+			const std::vector<float>& 					aAnimationWeight = { 1.0f }, 
+			const std::vector<core::phys::animation>& 	aPlaybackAnimation = {},
+			const std::vector<core::phys::force>& 		aAppliedForces = {}
+		) override;
 
 	private:
 

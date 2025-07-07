@@ -14,6 +14,7 @@ namespace geodesy::runtime {
 
 	stage::stage(std::shared_ptr<gpu::context> aContext, std::string aName) {
 		this->Name		= aName;
+		this->Time		= 0.0;
 		this->Context	= aContext;
 	}
 
@@ -24,6 +25,23 @@ namespace geodesy::runtime {
 	// Does Nothing by default.
 	gpu::submission_batch stage::update(double aDeltaTime) {
 		gpu::submission_batch StageUpdateInfo;
+
+		this->Time += aDeltaTime;
+
+		// Acquire all notes in the stage.
+		size_t NodeCountTotal = 0;
+		for (auto& Obj : this->Object) {
+			NodeCountTotal += Obj->LinearizedNodeTree.size();
+		}
+
+		size_t NodeIndex = 0;
+		std::vector<phys::node*> NodeList(NodeCountTotal);
+		for (size_t i = 0; i < this->Object.size(); i++) {
+			for (size_t j = 0; j < this->Object[i]->LinearizedNodeTree.size(); j++) {
+				NodeList[NodeIndex++] = this->Object[i]->LinearizedNodeTree[j];
+			}
+		}
+
 #ifdef ENABLE_MULTITHREADED_PROCESSING
 
 		/*
@@ -59,8 +77,9 @@ namespace geodesy::runtime {
 			}
 		}
 #else
-		for (auto& Obj : Object) {
-			Obj->update(aDeltaTime);
+		for (auto& Node : NodeList) {
+			object* Object = static_cast<object*>(Node->Root);
+			Node->update(aDeltaTime, this->Time, Object->AnimationWeights, Object->Model->Animation);
 		}
 #endif // ENABLE_MULTITHREADED_PROCESSING
 

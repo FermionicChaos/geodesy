@@ -82,8 +82,6 @@ namespace geodesy::runtime {
 
 		// * Object Input and Physics
 		std::string																	Name;				// Name of the object.
-		float																		Time;				// Second 			[s]
-		float 																		DeltaTime; 			// Second 			[s]
 		float 																		Theta, Phi;			// Radians			[rad]
 		core::math::vec<float, 3>													DirectionRight;		// Right			[Normalized]
 		core::math::vec<float, 3>													DirectionUp;		// Up				[Normalized]
@@ -94,6 +92,7 @@ namespace geodesy::runtime {
 		// ! ----- Device Data ----- ! //
 		// ^ This is the data that exists on the GPU.
 		std::shared_ptr<core::gfx::model>											Model;
+		std::vector<core::phys::node*> 												LinearizedNodeTree;
 		std::shared_ptr<core::gpu::buffer> 											UniformBuffer;
 		std::map<subject*, std::shared_ptr<renderer>>								Renderer;
 
@@ -103,9 +102,14 @@ namespace geodesy::runtime {
 		void copy_data(const core::phys::node* aNode) override;
 
 		virtual bool is_subject();
-
 		virtual void input(const core::hid::input& aInput);
-		virtual void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f });
+		virtual void update(
+			double 										aDeltaTime = 0.0f, 
+			double 										aTime = 0.0f, 
+			const std::vector<float>& 					aAnimationWeight = { 1.0f }, 
+			const std::vector<core::phys::animation>& 	aPlaybackAnimation = {},
+			const std::vector<core::phys::force>& 		aAppliedForces = {}
+		) override;
 		virtual std::vector<std::shared_ptr<draw_call>> draw(subject* aSubject);
 
 	protected:

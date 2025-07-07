@@ -54,6 +54,7 @@ namespace geodesy::runtime {
 		};
 
 		std::string											Name;
+		double												Time;
 		std::shared_ptr<core::gpu::context> 				Context;
 		std::vector<std::shared_ptr<object>>				Object;
 		std::map<std::string, std::shared_ptr<object>> 		ObjectLookup;
