@@ -192,6 +192,7 @@ namespace geodesy {
 
 	}
 
+	// ! Abandoned: Dead Code.
 	VkResult engine::update_resources(runtime::app* aApp) {
 		VkResult Result = VK_SUCCESS;
 		std::map<std::shared_ptr<context>, core::gpu::submission_batch> UpdateOperations;
@@ -207,12 +208,12 @@ namespace geodesy {
 		for (std::shared_ptr<context> Ctx : Context) {
 			// Lock Context for execution.
 			Ctx->Mutex.lock();
+			
+			// Execute all transfer device operations.
+			Result = Ctx->execute(device::operation::TRANSFER_AND_COMPUTE, UpdateOperations[Ctx].SubmitInfo);
 
 			// Wait for other inflight operations to finish.
-			Result = Ctx->engine_wait({ device::operation::TRANSFER_AND_COMPUTE, device::operation::GRAPHICS_AND_COMPUTE });
-
-			// Execute all transfer device operations.
-			Result = Ctx->engine_execute(device::operation::TRANSFER_AND_COMPUTE, UpdateOperations[Ctx].SubmitInfo);
+			Result = Ctx->wait(device::operation::TRANSFER_AND_COMPUTE );
 
 			// Unlock device context.
 			Ctx->Mutex.unlock();
@@ -236,13 +237,13 @@ namespace geodesy {
 		for (std::shared_ptr<context> Ctx : Context) {
 			// Lock Context for execution.
 			Ctx->Mutex.lock();
+			
+			// Execute all transfer device operations.
+			Result = Ctx->execute(device::operation::GRAPHICS_AND_COMPUTE, RenderInfo[Ctx].SubmitInfo);
 
 			// Wait for other inflight operations to finish.
-			Result = Ctx->engine_wait({ device::operation::TRANSFER_AND_COMPUTE, device::operation::GRAPHICS_AND_COMPUTE });
-
-			// Execute all transfer device operations.
-			Result = Ctx->engine_execute(device::operation::GRAPHICS_AND_COMPUTE, RenderInfo[Ctx].SubmitInfo);
-
+			Result = Ctx->wait(device::operation::GRAPHICS_AND_COMPUTE);
+			
 			// Unlock device context.
 			Ctx->Mutex.unlock();
 		}

@@ -90,11 +90,11 @@ namespace geodesy::bltn {
 			double t2 = timer::get_time();
 
 			// Update host resources.
-			Result = Engine->update_resources(this);
+			this->update(Engine->ThreadController.total_time());
 
 			double t3 = timer::get_time();
 
-			// Execute render operations.
+			// Execute gpu workloads.
 			Result = Engine->execute_render_operations(this);
 
 			double t4 = timer::get_time();
