@@ -1,6 +1,7 @@
 #include <geodesy/bltn/obj/camera3d.h>
 
 #include <iostream>
+#include <algorithm>
 
 namespace geodesy::bltn::obj {
 
@@ -97,16 +98,18 @@ namespace geodesy::bltn::obj {
 		size_t 							aFrameIndex
 	) {
 		VkResult Result = VK_SUCCESS;
+		// Get Mesh & Material Data from mesh instance.
+		auto Mesh = aObject->Model->Mesh[aMeshInstance->MeshIndex];
+		auto Material = aObject->Model->Material[aMeshInstance->MaterialIndex];
+		auto Node = aMeshInstance->Parent;
+		// Get mesh instance world position center.
+		math::vec<float, 3> MeshPosition = Node->transform().minor(3,3) * math::vec<float, 3>(0.0f, 0.0f, 0.0f);
 		// Get distance from subject.
-		// TODO: We need to calculate center of mass for mesh instance using node hierarchy.
-		this->DistanceFromSubject = math::length(aObject->Position - aCamera3D->Position);
+		this->DistanceFromSubject = math::length(MeshPosition - aCamera3D->Position);
 		// Get transparency mode for draw call data structure.
-		this->TransparencyMode = (material::transparency)aObject->Model->Material[aMeshInstance->MaterialIndex]->UniformData.Transparency;
+		this->TransparencyMode = (material::transparency)Material->UniformData.Transparency;
 		// Load Context
 		this->Context = aObject->Context;
-		// Get Mesh & Material Data from mesh instance.
-		std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[aMeshInstance->MeshIndex];
-		std::shared_ptr<material> Material = aObject->Model->Material[aMeshInstance->MaterialIndex];
 		// Load up desired images which draw call will render to.
 		std::vector<std::shared_ptr<image>> ImageOutputList = {
 			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Color"],
@@ -131,7 +134,7 @@ namespace geodesy::bltn::obj {
 		DescriptorArray->bind(0, 3, 0, Material->UniformBuffer); 				// Material Properties
 
 		// Bind Material Textures.
-		DescriptorArray->bind(1, 0, 0, Material->Texture["Color"]);
+		DescriptorArray->bind(1, 0, 0, Material->Texture["Albedo"]);
 		DescriptorArray->bind(1, 1, 0, Material->Texture["Opacity"]);
 		DescriptorArray->bind(1, 2, 0, Material->Texture["Normal"]);
 		DescriptorArray->bind(1, 3, 0, Material->Texture["Height"]);
@@ -178,11 +181,13 @@ namespace geodesy::bltn::obj {
 			// Opaque Rasterization
 			"assets/shader/camera3d/opaque.frag",
 			// Transulucent Rasterization
+			"assets/shader/camera3d/translucent.frag",
 			// Opaque Lighting & Shadows
 			"assets/shader/camera3d/opaque.rgen",
 			"assets/shader/camera3d/opaque.rmiss",
 			"assets/shader/camera3d/opaque.rchit"
 			// Translucent Renderings
+			
 			// Final Post Processing
 		};
 
@@ -192,54 +197,7 @@ namespace geodesy::bltn::obj {
 		// Allocate GPU resources.
 		this->Framechain = std::dynamic_pointer_cast<framechain>(std::make_shared<geometry_buffer>(aContext, aCamera3DCreator->Resolution, aCamera3DCreator->FrameRate, aCamera3DCreator->FrameCount));
 
-		// Grab shaders from asset list, compile, and link.
-		std::shared_ptr<gpu::shader> VertexShader = std::dynamic_pointer_cast<gpu::shader>(Asset[0]);
-		std::shared_ptr<gpu::shader> PixelShader = std::dynamic_pointer_cast<gpu::shader>(Asset[1]);
-		std::vector<std::shared_ptr<gpu::shader>> ShaderList = { VertexShader, PixelShader };
-		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::make_shared<pipeline::rasterizer>(ShaderList, aCamera3DCreator->Resolution);
-
-		// How to intepret vertex data in rasterization.
-		Rasterizer->InputAssembly.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		Rasterizer->InputAssembly.primitiveRestartEnable	= false;
-
-		// Rasterizer Info
-		Rasterizer->Rasterizer.rasterizerDiscardEnable		= VK_FALSE;
-		Rasterizer->Rasterizer.polygonMode					= VK_POLYGON_MODE_FILL;
-		Rasterizer->Rasterizer.cullMode						= VK_CULL_MODE_BACK_BIT;
-		Rasterizer->Rasterizer.frontFace					= VK_FRONT_FACE_COUNTER_CLOCKWISE;
-
-		// Copy Paste
-		Rasterizer->Multisample.rasterizationSamples		= VK_SAMPLE_COUNT_1_BIT;
-
-		// Oncoming Depth Value [OPERATOR] Depth Value In Buffer
-		// Needed for 3D graphics.
-		Rasterizer->DepthStencil.depthTestEnable			= VK_TRUE;
-		Rasterizer->DepthStencil.depthWriteEnable			= VK_TRUE;
-		Rasterizer->DepthStencil.depthCompareOp				= VK_COMPARE_OP_LESS; // Camera, +z is closer.
-		Rasterizer->DepthStencil.minDepthBounds				= 0.0f;
-		Rasterizer->DepthStencil.maxDepthBounds				= 1.0f;
-
-		// This code specifies how the vextex data is to be interpreted from the bound vertex buffers.
-		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 0, offsetof(gfx::mesh::vertex, Position));
-		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 1, offsetof(gfx::mesh::vertex, Normal));
-		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 2, offsetof(gfx::mesh::vertex, Tangent));
-		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 3, offsetof(gfx::mesh::vertex, Bitangent));
-		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 4, offsetof(gfx::mesh::vertex, TextureCoordinate));
-		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 5, offsetof(gfx::mesh::vertex, Color));
-		Rasterizer->bind(1, sizeof(gfx::mesh::vertex::weight), 6, offsetof(gfx::mesh::vertex::weight, BoneID));
-		Rasterizer->bind(1, sizeof(gfx::mesh::vertex::weight), 7, offsetof(gfx::mesh::vertex::weight, BoneWeight));
-		
-		// Select output attachments for pipeline.
-		Rasterizer->attach(0, this->Framechain->draw_frame()["OGB.Color"]);
-		Rasterizer->attach(1, this->Framechain->draw_frame()["OGB.Position"]);
-		Rasterizer->attach(2, this->Framechain->draw_frame()["OGB.Normal"]);
-		Rasterizer->attach(3, this->Framechain->draw_frame()["OGB.Emissive"]);
-		Rasterizer->attach(4, this->Framechain->draw_frame()["OGB.SS"]);
-		Rasterizer->attach(5, this->Framechain->draw_frame()["OGB.ORM"]);
-		Rasterizer->attach(6, this->Framechain->draw_frame()["OGB.Depth"]);
-
-		// Create render pipeline for camera3d.
-		this->Pipeline = Context->create_pipeline(Rasterizer);
+		this->Pipeline = this->create_opaque_rasterizing_pipeline(aCamera3DCreator);
 
 		buffer::create_info UBCI;
 		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
@@ -312,7 +270,7 @@ namespace geodesy::bltn::obj {
 	// this->RenderingOperations[0]: Clears all images in geometry buffer.
 	// this->RenderingOperations[1]: Opaque Mesh Instance Renderings
 	// this->RenderingOperations[2]: Transparent Mesh Instance Renderings
-	// this->RenderingOperations[3]: Translucent Mesh Instance Renderings for ray tracing.
+	// this->RenderingOperations[3]: Translucent Mesh Instance Renderings generate ray casting data for ray tracer.
 	// this->RenderingOperations[4]: Lighting & Shadows on Opaque Geometry Buffer
 	// this->RenderingOperations[5]: Ray Tracing informed by Translucent Outputs.
 	// this->RenderingOperations[6]: Post Processing to Final Color Output.
@@ -326,97 +284,80 @@ namespace geodesy::bltn::obj {
 		// Predraw operations.
 		this->RenderingOperations += this->Framechain->predraw();
 
-		std::list<std::shared_ptr<draw_call>> OpaqueList;
-		std::list<std::shared_ptr<draw_call>> TransparentList;
-		std::list<std::shared_ptr<draw_call>> TranslucentList;
+		// Collect all draw calls and separate by type in a single pass
+		std::vector<std::vector<std::shared_ptr<draw_call>>> AllDrawCalls(aStage->Object.size());
 
-		// Iterate through all draw calls and sort based on assigned material to mesh instance.
-		for (auto& Object : aStage->Object) {
-			std::vector<std::shared_ptr<draw_call>> DrawCallList = Object->draw(this);
-			for (auto& DrawCall : DrawCallList) {
-				// Use insert sort to sort draw calls by distance from camera.
-				switch(DrawCall->TransparencyMode) {
-					case gfx::material::transparency::OPAQUE: {
-							// Sort nearest to the camera first.
-							// insert 2.0
-							// 0.2 | 0.7 | 3.3 | 4.5
-							// Rewrite code, when list empty, push back, and fix if larger than all elements.
-							bool Inserted = false;
-							for (auto it = OpaqueList.begin(); it != OpaqueList.end(); ++it) {
-								if (DrawCall->DistanceFromSubject < (*it)->DistanceFromSubject) {
-									OpaqueList.insert(it, DrawCall);
-									Inserted = true;
-									break;
-								}
-							}
-							// If not inserted, push back.
-							if (!Inserted) {
-								OpaqueList.push_back(DrawCall);
-							}
-						}
-						break;
-					case gfx::material::transparency::TRANSPARENT: {
-							// This section sorts by farthest to the camera first.
-							// insert 2.0
-							// 4.5 | 3.3 | 0.7 | 0.2
-							// Copy the opaque code but in reverse order.
-							bool Inserted = false;
-							for (auto it = TransparentList.begin(); it != TransparentList.end(); ++it) {
-								if (DrawCall->DistanceFromSubject > (*it)->DistanceFromSubject) {
-									TransparentList.insert(it, DrawCall);
-									Inserted = true;
-									break;
-								}
-							}
-							// If not inserted, push back.
-							if (!Inserted) {
-								TransparentList.push_back(DrawCall);
-							}
-						}
-						break;
-					case gfx::material::transparency::TRANSLUCENT: {
-							// This section sorts by farthest to the camera first.
-							// insert 2.0
-							// 4.5 | 3.3 | 0.7 | 0.2
-							// Repeat the transparent code.
-							bool Inserted = false;
-							for (auto it = TranslucentList.begin(); it != TranslucentList.end(); ++it) {
-								if (DrawCall->DistanceFromSubject > (*it)->DistanceFromSubject) {
-									TranslucentList.insert(it, DrawCall);
-									Inserted = true;
-									break;
-								}
-							}
-							// If not inserted, push back.
-							if (!Inserted) {
-								TranslucentList.push_back(DrawCall);
-							}
-						}
-						break;
-					default:
-						break;
+		for (size_t i = 0; i < aStage->Object.size(); i++) {
+			AllDrawCalls[i] = aStage->Object[i]->draw(this);
+		}
+
+		// Count draw calls by type for optimal memory allocation
+		size_t OpaqueCount = 0, TransparentCount = 0, TranslucentCount = 0;
+		for (size_t i = 0; i < AllDrawCalls.size(); i++) {
+			for (size_t j = 0; j < AllDrawCalls[i].size(); j++) {
+				switch(AllDrawCalls[i][j]->TransparencyMode) {
+				case gfx::material::transparency::OPAQUE:
+					OpaqueCount++;
+					break;
+				case gfx::material::transparency::TRANSPARENT:
+					TransparentCount++;
+					break;
+				case gfx::material::transparency::TRANSLUCENT:
+					TranslucentCount++;
+					break;
+				default:
+					break;
 				}
 			}
 		}
 
-		// Convert Linked List objects into command batches.
-		{
-			std::vector<std::shared_ptr<draw_call>> OpaqueVector(OpaqueList.begin(), OpaqueList.end());
-			std::vector<std::shared_ptr<draw_call>> TransparentVector(TransparentList.begin(), TransparentList.end());
-			std::vector<std::shared_ptr<draw_call>> TranslucentVector(TranslucentList.begin(), TranslucentList.end());
-			// Convert to Command Buffer arrays.
-			std::vector<VkCommandBuffer> OpaqueCommandBuffer = convert(OpaqueVector);
-			std::vector<VkCommandBuffer> TransparentCommandBuffer = convert(TransparentVector);
-			std::vector<VkCommandBuffer> TranslucentCommandBuffer = convert(TranslucentVector);
-			// Convert to Command Batches.
-			command_batch OpaqueBatch(OpaqueCommandBuffer);
-			command_batch TransparentBatch(TransparentCommandBuffer);
-			command_batch TranslucentBatch(TranslucentCommandBuffer);
-			// Add to Rendering Operations.
-			this->RenderingOperations += OpaqueBatch;
-			this->RenderingOperations += TransparentBatch;
-			this->RenderingOperations += TranslucentBatch;
+		// Pre-allocate vectors with exact sizes to avoid reallocations
+		std::vector<std::shared_ptr<draw_call>> OpaqueVector(OpaqueCount);
+		std::vector<std::shared_ptr<draw_call>> TransparentVector(TransparentCount);
+		std::vector<std::shared_ptr<draw_call>> TranslucentVector(TranslucentCount);
+
+		// Separate draw calls by type using indexed assignment
+		size_t OpaqueIndex = 0, TransparentIndex = 0, TranslucentIndex = 0;
+		for (size_t i = 0; i < AllDrawCalls.size(); i++) {
+			for (size_t j = 0; j < AllDrawCalls[i].size(); j++) {
+				switch(AllDrawCalls[i][j]->TransparencyMode) {
+				case gfx::material::transparency::OPAQUE:
+					OpaqueVector[OpaqueIndex++] = AllDrawCalls[i][j];
+					break;
+				case gfx::material::transparency::TRANSPARENT:
+					TransparentVector[TransparentIndex++] = AllDrawCalls[i][j];
+					break;
+				case gfx::material::transparency::TRANSLUCENT:
+					TranslucentVector[TranslucentIndex++] = AllDrawCalls[i][j];
+					break;
+				default:
+					break;
+				}
+			}
 		}
+
+		// Sort all vectors efficiently: O(n log n) instead of O(n²)
+		// Opaque: nearest first (ascending distance)
+		std::sort(OpaqueVector.begin(), OpaqueVector.end(), 
+			[](const auto& a, const auto& b) {
+				return a->DistanceFromSubject < b->DistanceFromSubject;
+			});
+
+		// Transparent/Translucent: farthest first (descending distance)  
+		std::sort(TransparentVector.begin(), TransparentVector.end(),
+			[](const auto& a, const auto& b) {
+				return a->DistanceFromSubject > b->DistanceFromSubject;
+			});
+
+		std::sort(TranslucentVector.begin(), TranslucentVector.end(),
+			[](const auto& a, const auto& b) {
+				return a->DistanceFromSubject > b->DistanceFromSubject;
+			});
+
+		// Add to Rendering Operations.
+		this->RenderingOperations += command_batch(convert(OpaqueVector));
+		this->RenderingOperations += command_batch(convert(TransparentVector));
+		this->RenderingOperations += command_batch(convert(TranslucentVector));
 
 		// Shadow & Lighting Operations on Opaque Geometry Buffer.
 
@@ -435,5 +376,56 @@ namespace geodesy::bltn::obj {
 		return build(this->RenderingOperations);
 	}
 	//*/
+
+	std::shared_ptr<core::gpu::pipeline> camera3d::create_opaque_rasterizing_pipeline(creator* aCamera3DCreator) {
+		// Grab shaders from asset list, compile, and link.
+		std::shared_ptr<gpu::shader> VertexShader = std::dynamic_pointer_cast<gpu::shader>(Asset[0]);
+		std::shared_ptr<gpu::shader> PixelShader = std::dynamic_pointer_cast<gpu::shader>(Asset[1]);
+		std::vector<std::shared_ptr<gpu::shader>> ShaderList = { VertexShader, PixelShader };
+		std::shared_ptr<pipeline::rasterizer> Rasterizer = geodesy::make<pipeline::rasterizer>(ShaderList, aCamera3DCreator->Resolution);
+
+		// How to intepret vertex data in rasterization.
+		Rasterizer->InputAssembly.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		Rasterizer->InputAssembly.primitiveRestartEnable	= false;
+
+		// Rasterizer Info
+		Rasterizer->Rasterizer.rasterizerDiscardEnable		= VK_FALSE;
+		Rasterizer->Rasterizer.polygonMode					= VK_POLYGON_MODE_FILL;
+		Rasterizer->Rasterizer.cullMode						= VK_CULL_MODE_BACK_BIT;
+		Rasterizer->Rasterizer.frontFace					= VK_FRONT_FACE_COUNTER_CLOCKWISE;
+
+		// Copy Paste
+		Rasterizer->Multisample.rasterizationSamples		= VK_SAMPLE_COUNT_1_BIT;
+
+		// Oncoming Depth Value [OPERATOR] Depth Value In Buffer
+		// Needed for 3D graphics.
+		Rasterizer->DepthStencil.depthTestEnable			= VK_TRUE;
+		Rasterizer->DepthStencil.depthWriteEnable			= VK_TRUE;
+		Rasterizer->DepthStencil.depthCompareOp				= VK_COMPARE_OP_LESS; // Camera, +z is closer.
+		Rasterizer->DepthStencil.minDepthBounds				= 0.0f;
+		Rasterizer->DepthStencil.maxDepthBounds				= 1.0f;
+
+		// This code specifies how the vextex data is to be interpreted from the bound vertex buffers.
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 0, offsetof(gfx::mesh::vertex, Position));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 1, offsetof(gfx::mesh::vertex, Normal));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 2, offsetof(gfx::mesh::vertex, Tangent));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 3, offsetof(gfx::mesh::vertex, Bitangent));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 4, offsetof(gfx::mesh::vertex, TextureCoordinate));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 5, offsetof(gfx::mesh::vertex, Color));
+		Rasterizer->bind(1, sizeof(gfx::mesh::vertex::weight), 6, offsetof(gfx::mesh::vertex::weight, BoneID));
+		Rasterizer->bind(1, sizeof(gfx::mesh::vertex::weight), 7, offsetof(gfx::mesh::vertex::weight, BoneWeight));
+		
+		// Select output attachments for pipeline.
+		Rasterizer->attach(0, this->Framechain->draw_frame()["OGB.Color"]);
+		Rasterizer->attach(1, this->Framechain->draw_frame()["OGB.Position"]);
+		Rasterizer->attach(2, this->Framechain->draw_frame()["OGB.Normal"]);
+		Rasterizer->attach(3, this->Framechain->draw_frame()["OGB.Emissive"]);
+		Rasterizer->attach(4, this->Framechain->draw_frame()["OGB.SS"]);
+		Rasterizer->attach(5, this->Framechain->draw_frame()["OGB.ORM"]);
+		Rasterizer->attach(6, this->Framechain->draw_frame()["OGB.Depth"]);
+
+		// Create render pipeline for camera3d.
+		return Context->create_pipeline(Rasterizer);
+	}
 
 }

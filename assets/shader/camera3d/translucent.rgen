@@ -18,88 +18,83 @@ struct light {
 };
 
 struct material {
-	// Material Metadata
-	int Type;
-	// Albedo
-	float AlbedoVertexWeight;
-	float AlbedoTextureWeight;
-	float AlbedoColorWeight;
-	int AlbedoTextureIndex;
-	vec3 Albedo;
-	// Opacity
-	float OpacityTextureWeight;
-	float OpacityWeight;
-	int OpacityTextureIndex;
-	float Opacity;
-	// Normal Vector Properties
-	float NormalVertexWeight;
-	float NormalTextureWeight;
-	int NormalTextureIndex;
-	// Height Map
-	int HeightTextureIndex;
-	float HeightScale;
-	int HeightStepCount;
-	// Emissive
-	float EmissiveTextureWeight;
-	float EmissiveWeight;
-	int EmissiveTextureIndex;
-	vec3 Emissive;
-	// Specular
-	float SpecularTextureWeight;
-	float SpecularWeight;
-	int SpecularTextureIndex;
-	vec3 Specular;
-	// Shininess
-	float ShininessTextureWeight;
-	float ShininessWeight;
-	int ShininessTextureIndex;
-	float Shininess;
-	// AOC/Metallic/Roughness
-	int ARMTextureIndex;
-	float AmbientOcclusionTextureWeight;
-	float AmbientOcclusionWeight;
-	float AmbientOcclusion;
-	float RoughnessTextureWeight;
-	float RoughnessWeight;
-	float Roughness;
-	float MetallicTextureWeight;
-	float MetallicWeight;
-	float Metallic;
-	// Refraction Properties
-	float IORVertexWeight;			// Not Supported
-	float IORTextureWeight; 		// Not Supported yet
-	float IORWeight;				// Default Material Property
-	int IORTextureIndex; 			// -1
-	float IOR; 						// Material Property.
-	// Sheen
-	float SheenColorTextureWeight;
-	int SheenColorTextureIndex;
-	float SheenColorWeight;
-	vec3 SheenColor;
-	float SheenMaskTextureWeight; // Containts Roughness & Intensity
-	int SheenMaskTextureIndex;
-	float SheenMaskWeight;
-	float SheenRoughness;
-	float SheenIntensity;
-	// Clear Coat
-	float ClearCoatFactorRoughnessTextureWeight;
-	int ClearCoatFactorRoughnessTextureIndex;
-	float ClearCoatFactorRoughnessWeight;
-	float ClearCoatFactor;
-	float ClearCoatRoughness;
-	float ClearCoatNormalTextureWeight;
-	int ClearCoatNormalTextureIndex;
-	float ClearCoatNormalWeight;
-	vec3 ClearCoatNormal;
-	float ClearCoatTintTextureWeight;
-	int ClearCoatTintTextureIndex;
-	float ClearCoatTintWeight;
-	vec3 ClearCoatTint;
-	float ClearCoatIOR;
-	float ClearCoatThickness;
-	// TODO: Anistropic Properties
-	// TODO: Subsurface Scattering
-	// float SubsurfaceScattering;
+	int 	Transparency;
+	float 	AlbedoVertexWeight;
+	float 	AlbedoTextureWeight;
+	float 	AlbedoWeight;
+	int 	AlbedoTextureIndex;
+	vec3 	Albedo;
+	float 	OpacityTextureWeight;
+	float 	OpacityWeight;
+	int 	OpacityTextureIndex;
+	float 	Opacity;
+	float 	NormalVertexWeight;
+	float 	NormalTextureWeight;
+	int 	NormalTextureIndex;
+	int 	HeightTextureIndex;
+	float 	HeightScale;
+	int 	HeightStepCount;
+	float 	AmbientLightingTextureWeight;
+	float 	AmbientLightingWeight;
+	int 	AmbientLightingTextureIndex;
+	vec3 	AmbientLighting;
+	float 	EmissiveTextureWeight;
+	float 	EmissiveWeight;
+	int 	EmissiveTextureIndex;
+	vec3 	Emissive;
+	float 	SpecularTextureWeight;
+	float 	SpecularWeight;
+	int 	SpecularTextureIndex;
+	vec3 	Specular;
+	float 	ShininessTextureWeight;
+	float 	ShininessWeight;
+	int 	ShininessTextureIndex;
+	float 	Shininess;
+	float 	AmbientOcclusionTextureWeight;
+	float 	AmbientOcclusionWeight;
+	int 	AmbientOcclusionTextureIndex;
+	float 	AmbientOcclusion;
+	float 	MetallicTextureWeight;
+	float 	MetallicWeight;
+	int 	MetallicTextureIndex;
+	float 	Metallic;
+	float 	RoughnessTextureWeight;
+	float 	RoughnessWeight;
+	int 	RoughnessTextureIndex;
+	float 	Roughness;
+	float 	IORVertexWeight;
+	float 	IORTextureWeight;
+	float 	IORWeight;
+	int 	IORTextureIndex;
+	float 	IOR;
+	float 	SheenColorTextureWeight;
+	float 	SheenColorWeight;
+	int 	SheenColorTextureIndex;
+	vec3 	SheenColor;
+	float 	SheenIntensityTextureWeight;
+	float 	SheenIntensityWeight;
+	float 	SheenRoughnessTextureWeight;
+	float 	SheenRoughnessWeight;
+	int 	SheenMaskTextureIndex;
+	float 	SheenRoughness;
+	float 	SheenIntensity;
+	float 	ClearCoatStrengthTextureWeight;
+	float 	ClearCoatStrengthWeight;
+	float 	ClearCoatRoughnessTextureWeight;
+	float 	ClearCoatRoughnessWeight;
+	int 	ClearCoatStrengthRoughnessTextureIndex;
+	float 	ClearCoatStrength;
+	float 	ClearCoatRoughness;
+	float 	ClearCoatNormalTextureWeight;
+	float 	ClearCoatNormalWeight;
+	int 	ClearCoatNormalTextureIndex;
+	vec3 	ClearCoatNormal;
+	float 	ClearCoatTintTextureWeight;
+	float 	ClearCoatTintWeight;
+	int 	ClearCoatTintTextureIndex;
+	vec3 	ClearCoatTint;
+	float 	ClearCoatIOR;
+	float 	ClearCoatThickness;
 };
 
 struct payload {

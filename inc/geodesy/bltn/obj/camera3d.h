@@ -79,6 +79,13 @@ namespace geodesy::bltn::obj {
 		std::shared_ptr<renderer> default_renderer(runtime::object* aObject) override;
 		// core::gpu::submission_batch render(runtime::stage* aStage) override;
 
+		// These will create the pipelines for the camera3d.
+		std::shared_ptr<core::gpu::pipeline> create_opaque_rasterizing_pipeline(creator* aCamera3DCreator);
+		// std::shared_ptr<core::gpu::pipeline> create_translucent_rasterizing_pipeline(creator* aCamera3DCreator);
+		// std::shared_ptr<core::gpu::pipeline> create_opaque_ray_tracing_pipeline(creator* aCamera3DCreator);
+		// std::shared_ptr<core::gpu::pipeline> create_translucent_ray_tracing_pipeline(creator* aCamera3DCreator);
+		// std::shared_ptr<core::gpu::pipeline> create_final_compositor_pipeline(creator* aCamera3DCreator);	
+
 	};
 
 }

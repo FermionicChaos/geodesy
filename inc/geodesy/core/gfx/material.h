@@ -35,76 +35,86 @@ namespace geodesy::core::gfx {
 		// enum orm_packing : int {};
 
 		struct uniform_data {
-			alignas(4) int 						RenderingSystem; 					// Rendering System for the Material
-			alignas(4) int 						Transparency; 						// Transparency of the Material
-
-			// ----- Material Property Constants & Control Weights ----- //
-			alignas(4) float 					VertexColorWeight; 					// Determines whether vertex, texture, or constant color is used.
-			alignas(4) float 					TextureColorWeight;
-			alignas(4) float 					ColorWeight;
-			alignas(16) math::vec<float, 3> 	Color;								// Material Color Constant
-			
-			alignas(4) float 					TextureSpecularWeight; 				// Determines whether texture or constant specular is used.
-			alignas(4) float 					SpecularWeight;
-			alignas(16) math::vec<float, 3> 	Specular;							// Specular Color of the Material
-
-			alignas(4) float 					TextureAmbientWeight; 				// Determines whether texture or constant ambient is used.
-			alignas(4) float 					AmbientWeight;
-			alignas(16) math::vec<float, 3> 	AmbientLighting;					// Ambient Lighting Color of the Material
-
-			alignas(4) float 					TextureEmissiveWeight; 				// Determines whether texture or constant emissive is used.
-			alignas(4) float 					EmissiveWeight;
-			alignas(16) math::vec<float, 3> 	Emissive;							// Emissive Color of the Material
-
-			alignas(4) float 					TextureShininessWeight; 			// Determines whether texture or constant shininess is used.
-			alignas(4) float 					ShininessWeight;
-			alignas(4) float 					Shininess;							// Shininess of the Material
-
-			alignas(4) float 					TextureOpacityWeight; 				// Determines whether texture or constant opacity is used.
-			alignas(4) float 					OpacityWeight;
-			alignas(4) float  					Opacity; 							// Opacity of the Material
-
-			alignas(4) float 					VertexNormalWeight; 				// Determines whether vertex normal or texture normal is used.
-			alignas(4) float 					TextureNormalWeight;
-
-			alignas(4) float 					TextureAmbientOcclusionWeight; 		// Determines whether texture or constant ambient occlusion is used.
-			alignas(4) float 					AmbientOcclusionWeight;
-			alignas(4) float 					AmbientOcclusion;
-
-			alignas(4) float 					TextureReflectionWeight; 			// Determines whether texture or constant reflection is used.
-			alignas(4) float 					ReflectionWeight;
-			alignas(4) float 					Reflection;
-
-			alignas(4) float 					TextureMetallicWeight; 				// Determines whether texture or constant metallic is used.
-			alignas(4) float 					MetallicWeight;
-			alignas(4) float 					Metallic;							// Metallic Value of the Material
-
-			alignas(4) float 					TextureRoughnessWeight; 			// Determines whether texture or constant roughness is used.
-			alignas(4) float 					RoughnessWeight;
-			alignas(4) float 					Roughness;							// Roughness Value of the Material
-
-			alignas(4) float 					TextureSheenWeight; 				// Determines whether texture or constant sheen is used.
-			alignas(4) float 					SheenWeight;
-			alignas(16) math::vec<float, 3> 	SheenColor;							// Sheen Value of the Material
-			alignas(4) float 					SheenRoughness;
-
-			alignas(4) float 					TextureClearCoatWeight; 			// Determines whether texture or constant clear coat is used.
-			alignas(4) float 					ClearCoatWeight;
-			alignas(4) float 					ClearCoat;							// ClearCoat Value of the Material
-			alignas(4) float 					ClearCoatRoughness;
-			// alignas(4) float ClearCoatNormalStrength; 								// Clear coat normal strength
-
-			// ----- Extraneous Material Properties ----- //
-			alignas(4) float 					RefractionIndex;      				// Light bending (Glass/Water)
-
-			alignas(4) float 					Anisotropy;           				// Brushed Metal Reflection
-			alignas(16) math::vec<float, 3> 	AnisotropyDirection; 				// Preferred anisotropic direction
-
-			alignas(4) float 					SubsurfaceScattering; 				// Light diffusion under surface
-
-			alignas(4) float 					ParallaxScale;
-			alignas(4) int 						ParallaxIterationCount;
-
+			alignas(4) int 								Transparency;
+			alignas(4) float 							AlbedoVertexWeight;
+			alignas(4) float 							AlbedoTextureWeight;
+			alignas(4) float 							AlbedoWeight;
+			alignas(4) int 								AlbedoTextureIndex;
+			alignas(16) math::vec<float, 3> 			Albedo;
+			alignas(4) float 							OpacityTextureWeight;
+			alignas(4) float 							OpacityWeight;
+			alignas(4) int 								OpacityTextureIndex;
+			alignas(4) float 							Opacity;
+			alignas(4) float 							NormalVertexWeight;
+			alignas(4) float 							NormalTextureWeight;
+			alignas(4) int 								NormalTextureIndex;
+			alignas(4) int 								HeightTextureIndex;
+			alignas(4) float 							HeightScale;
+			alignas(4) int 								HeightStepCount;
+			alignas(4) float 							AmbientLightingTextureWeight;
+			alignas(4) float 							AmbientLightingWeight;
+			alignas(4) int 								AmbientLightingTextureIndex;
+			alignas(16) math::vec<float, 3> 			AmbientLighting;
+			alignas(4) float 							EmissiveTextureWeight;
+			alignas(4) float 							EmissiveWeight;
+			alignas(4) int 								EmissiveTextureIndex;
+			alignas(16) math::vec<float, 3> 			Emissive;
+			alignas(4) float 							SpecularTextureWeight;
+			alignas(4) float 							SpecularWeight;
+			alignas(4) int 								SpecularTextureIndex;
+			alignas(16) math::vec<float, 3> 			Specular;
+			alignas(4) float 							ShininessTextureWeight;
+			alignas(4) float 							ShininessWeight;
+			alignas(4) int 								ShininessTextureIndex;
+			alignas(4) float 							Shininess;
+			alignas(4) float 							AmbientOcclusionTextureWeight;
+			alignas(4) float 							AmbientOcclusionWeight;
+			alignas(4) int 								AmbientOcclusionTextureIndex;
+			alignas(4) float 							AmbientOcclusion;
+			alignas(4) float 							MetallicTextureWeight;
+			alignas(4) float 							MetallicWeight;
+			alignas(4) int 								MetallicTextureIndex;
+			alignas(4) float 							Metallic;
+			alignas(4) float 							RoughnessTextureWeight;
+			alignas(4) float 							RoughnessWeight;
+			alignas(4) int 								RoughnessTextureIndex;
+			alignas(4) float 							Roughness;
+			alignas(4) float 							IORVertexWeight;
+			alignas(4) float 							IORTextureWeight;
+			alignas(4) float 							IORWeight;
+			alignas(4) int 								IORTextureIndex;
+			alignas(4) float 							IOR;
+			alignas(4) float 							SheenColorTextureWeight;
+			alignas(4) float 							SheenColorWeight;
+			alignas(4) int 								SheenColorTextureIndex;
+			alignas(16) math::vec<float, 3> 			SheenColor;
+			alignas(4) float 							SheenIntensityTextureWeight;
+			alignas(4) float 							SheenIntensityWeight;
+			alignas(4) float 							SheenRoughnessTextureWeight;
+			alignas(4) float 							SheenRoughnessWeight;
+			alignas(4) int 								SheenMaskTextureIndex;
+			alignas(4) float 							SheenRoughness;
+			alignas(4) float 							SheenIntensity;
+			alignas(4) float 							ClearCoatStrengthTextureWeight;
+			alignas(4) float 							ClearCoatStrengthWeight;
+			alignas(4) float 							ClearCoatRoughnessTextureWeight;
+			alignas(4) float 							ClearCoatRoughnessWeight;
+			alignas(4) int 								ClearCoatStrengthRoughnessTextureIndex;
+			alignas(4) float 							ClearCoatStrength;
+			alignas(4) float 							ClearCoatRoughness;
+			alignas(4) float 							ClearCoatNormalTextureWeight;
+			alignas(4) float 							ClearCoatNormalWeight;
+			alignas(4) int 								ClearCoatNormalTextureIndex;
+			alignas(16) math::vec<float, 3> 			ClearCoatNormal;
+			alignas(4) float 							ClearCoatTintTextureWeight;
+			alignas(4) float 							ClearCoatTintWeight;
+			alignas(4) int 								ClearCoatTintTextureIndex;
+			alignas(16) math::vec<float, 3> 			ClearCoatTint;
+			alignas(4) float 							ClearCoatIOR;
+			alignas(4) float 							ClearCoatThickness;
+			// TODO: Anistropic Properties
+			// TODO: Subsurface Scattering
+			// float SubsurfaceScattering;
 			uniform_data();
 		};
 
