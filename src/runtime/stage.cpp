@@ -34,11 +34,12 @@ namespace geodesy::runtime {
 			NodeCountTotal += Obj->LinearizedNodeTree.size();
 		}
 
+		this->NodeCache.resize(NodeCountTotal);
+
 		size_t NodeIndex = 0;
-		std::vector<phys::node*> NodeList(NodeCountTotal);
 		for (size_t i = 0; i < this->Object.size(); i++) {
 			for (size_t j = 0; j < this->Object[i]->LinearizedNodeTree.size(); j++) {
-				NodeList[NodeIndex++] = this->Object[i]->LinearizedNodeTree[j];
+				this->NodeCache[NodeIndex++] = this->Object[i]->LinearizedNodeTree[j];
 			}
 		}
 
@@ -66,18 +67,19 @@ namespace geodesy::runtime {
 		// After collision has been completed, and response forces determined, update objects accordingly.
 
 		// Determine workload for each thread.
-		std::vector<workload> DistributedThreadWorkload = stage::determine_thread_workload(this->Object.size(), omp_get_max_threads());
+		std::vector<workload> DistributedThreadWorkload = stage::determine_thread_workload(this->NodeCache.size(), omp_get_max_threads());
 		#pragma omp parallel
 		{
 			size_t ThreadIndex = omp_get_thread_num();
-			size_t ObjectStartIndex = DistributedThreadWorkload[ThreadIndex].Start;
-			size_t ObjectEndIndex = DistributedThreadWorkload[ThreadIndex].Start + DistributedThreadWorkload[ThreadIndex].Count;
-			for (size_t i = ObjectStartIndex; i < ObjectEndIndex; i++) {
-				Object[i]->update(aDeltaTime);
+			size_t StartIndex = DistributedThreadWorkload[ThreadIndex].Start;
+			size_t EndIndex = DistributedThreadWorkload[ThreadIndex].Start + DistributedThreadWorkload[ThreadIndex].Count;
+			for (size_t i = StartIndex; i < EndIndex; i++) {
+				object* Object = static_cast<object*>(this->NodeCache[i]->Root);
+				this->NodeCache[i]->update(aDeltaTime, this->Time, Object->AnimationWeights, Object->Model->Animation);
 			}
 		}
 #else
-		for (auto& Node : NodeList) {
+		for (auto& Node : this->NodeCache) {
 			object* Object = static_cast<object*>(Node->Root);
 			Node->update(aDeltaTime, this->Time, Object->AnimationWeights, Object->Model->Animation);
 		}

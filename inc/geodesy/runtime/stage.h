@@ -55,6 +55,7 @@ namespace geodesy::runtime {
 
 		std::string											Name;
 		double												Time;
+		std::vector<core::phys::node*>						NodeCache; // This is a list of all nodes in the stage, used for updating.
 		std::shared_ptr<core::gpu::context> 				Context;
 		std::vector<std::shared_ptr<object>>				Object;
 		std::map<std::string, std::shared_ptr<object>> 		ObjectLookup;

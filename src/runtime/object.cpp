@@ -64,6 +64,7 @@ namespace geodesy::runtime {
 	}
 
 	object::object(std::shared_ptr<core::gpu::context> aContext, stage* aStage, creator* aCreator) : core::gfx::node() {
+		// this->Type 				= core::phys::node::type::OBJECT;
 		this->Name 				= aCreator->Name;
 		this->Stage 			= aStage;
 		this->Engine 			= aContext->Device->Engine;
