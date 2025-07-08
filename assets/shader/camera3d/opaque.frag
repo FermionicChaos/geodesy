@@ -360,5 +360,5 @@ void main() {
 	PixelPosition = vec4(WorldPosition, 1.0) + PixelNormal*texture(MaterialHeightMap, aUV).r;
 
 	// Move over material color.
-	PixelColor = vec4(MP.Albedo, 1.0);//*0.01 + PixelARM*0.9;
+	PixelColor = vec4(MP.Albedo, texture(MaterialColor, aUV).a * MP.Opacity);//*0.01 + PixelARM*0.9;
 }

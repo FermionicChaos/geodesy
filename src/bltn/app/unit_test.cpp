@@ -31,7 +31,7 @@ namespace geodesy::bltn {
 		std::set<std::string> ExtensionList = system_window::context_extensions();
 		// Add ray tracing extensions to the device context.
 		// TODO: Check if ray tracing is supported by the device. Disabled for now.
-		// ExtensionList.insert(context::RayTracingExtensions.begin(), context::RayTracingExtensions.end());
+		ExtensionList.insert(context::RayTracingExtensions.begin(), context::RayTracingExtensions.end());
 		// Engine create device context for gpu operations.
 		DeviceContext = Engine->create_device_context(Engine->PrimaryDevice, OperationList, LayerList, ExtensionList);
 	}

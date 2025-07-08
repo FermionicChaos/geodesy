@@ -403,23 +403,23 @@ namespace geodesy::bltn::obj {
 			}
 		}
 
-		// Sort all vectors efficiently: O(n log n) instead of O(n²)
-		// Opaque: nearest first (ascending distance)
-		std::sort(OpaqueVector.begin(), OpaqueVector.end(), 
-			[](const auto& a, const auto& b) {
-				return a->RenderingPriority > b->RenderingPriority;
-			});
+		// // Sort all vectors efficiently: O(n log n) instead of O(n²)
+		// // Opaque: nearest first (ascending distance)
+		// std::sort(OpaqueVector.begin(), OpaqueVector.end(), 
+		// 	[](const auto& a, const auto& b) {
+		// 		return a->RenderingPriority > b->RenderingPriority;
+		// 	});
 
-		// Transparent/Translucent: farthest first (descending distance)  
-		std::sort(TransparentVector.begin(), TransparentVector.end(),
-			[](const auto& a, const auto& b) {
-				return a->RenderingPriority > b->RenderingPriority;
-			});
+		// // Transparent/Translucent: farthest first (descending distance)  
+		// std::sort(TransparentVector.begin(), TransparentVector.end(),
+		// 	[](const auto& a, const auto& b) {
+		// 		return a->RenderingPriority > b->RenderingPriority;
+		// 	});
 
-		std::sort(TranslucentVector.begin(), TranslucentVector.end(),
-			[](const auto& a, const auto& b) {
-				return a->RenderingPriority > b->RenderingPriority;
-			});
+		// std::sort(TranslucentVector.begin(), TranslucentVector.end(),
+		// 	[](const auto& a, const auto& b) {
+		// 		return a->RenderingPriority > b->RenderingPriority;
+		// 	});
 
 		// Add to Rendering Operations.
 		this->RenderingOperations += command_batch(convert(OpaqueVector));
@@ -471,6 +471,37 @@ namespace geodesy::bltn::obj {
 		Rasterizer->DepthStencil.depthCompareOp				= VK_COMPARE_OP_GREATER; // Camera, +z is closer.
 		Rasterizer->DepthStencil.minDepthBounds				= 0.0f;
 		Rasterizer->DepthStencil.maxDepthBounds				= 1.0f;
+
+		// Color Blending operations.
+		std::vector<VkPipelineColorBlendAttachmentState> AlphaBlendOperation(Rasterizer->ColorAttachment.size());
+		for (auto& AB : AlphaBlendOperation) {
+			AB.blendEnable 			= VK_FALSE;
+			// AB.colorWriteMask 		= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+			// // Color Blending Operation
+			// AB.srcColorBlendFactor 	= VK_BLEND_FACTOR_SRC_ALPHA;
+			// AB.dstColorBlendFactor 	= VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+			// AB.colorBlendOp 		= VK_BLEND_OP_ADD;
+			// // Alpha Blending Operation
+			// AB.srcAlphaBlendFactor 	= VK_BLEND_FACTOR_ONE;
+			// AB.dstAlphaBlendFactor 	= VK_BLEND_FACTOR_ZERO;
+			// AB.alphaBlendOp 		= VK_BLEND_OP_ADD;
+		}
+		// Enable color blending only for the first attachment, the color layer.
+		AlphaBlendOperation[0].blendEnable 			= VK_TRUE;
+		AlphaBlendOperation[0].colorWriteMask 		= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		// Color Blending Operation
+		AlphaBlendOperation[0].srcColorBlendFactor 	= VK_BLEND_FACTOR_SRC_ALPHA;
+		AlphaBlendOperation[0].dstColorBlendFactor 	= VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		AlphaBlendOperation[0].colorBlendOp 		= VK_BLEND_OP_ADD;
+		// Alpha Blending Operation
+		AlphaBlendOperation[0].srcAlphaBlendFactor 	= VK_BLEND_FACTOR_ONE;
+		AlphaBlendOperation[0].dstAlphaBlendFactor 	= VK_BLEND_FACTOR_ZERO;
+		AlphaBlendOperation[0].alphaBlendOp 		= VK_BLEND_OP_ADD;
+
+		Rasterizer->ColorBlend.logicOpEnable 		= VK_FALSE;
+		Rasterizer->ColorBlend.logicOp 				= VK_LOGIC_OP_COPY;
+		Rasterizer->ColorBlend.attachmentCount 		= AlphaBlendOperation.size();
+		Rasterizer->ColorBlend.pAttachments 		= AlphaBlendOperation.data();
 
 		// This code specifies how the vextex data is to be interpreted from the bound vertex buffers.
 		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 0, offsetof(gfx::mesh::vertex, Position));

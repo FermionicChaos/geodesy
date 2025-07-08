@@ -118,6 +118,8 @@ is highly experimental. Efforts have made the engine easy to use on multiple pla
 
 ## TODO List:
 
+- Gui Toolkit
+
 - Exit Conditions (Such as all windows being closed.)
 
 - Create model animation caching system.

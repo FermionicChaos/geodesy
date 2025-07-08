@@ -82,7 +82,7 @@ namespace geodesy::bltn::stg {
 		Lantern.ModelPath 					= "dep/gltf-models/2.0/Lantern/glTF/Lantern.gltf";
 		Lantern.Position 					= { 00.0f, 0.0f, 0.0f };
 		Lantern.Direction 					= { -90.0f, 0.0f };
-		Lantern.Scale 						= { 0.1f, 0.1f, 0.1f };
+		Lantern.Scale 						= { 0.6f, 0.6f, 0.6f };
 		ObjectList.push_back(Lantern);
 
 		// Full PBR Test
