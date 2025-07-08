@@ -46,8 +46,8 @@ namespace geodesy::bltn::obj {
 		std::vector<std::shared_ptr<buffer>> VertexBuffer = { Mesh->VertexBuffer, aMeshInstance->VertexWeightBuffer };
 
 		// Allocate GPU resources to interface with pipeline.
-		Framebuffer 		= Context->create_framebuffer(aWindow->Pipeline, ImageOutputList, aWindow->Framechain->Resolution);
-		DescriptorArray 	= Context->create_descriptor_array(aWindow->Pipeline);
+		Framebuffer 		= Context->create_framebuffer(aWindow->Pipeline[0], ImageOutputList, aWindow->Framechain->Resolution);
+		DescriptorArray 	= Context->create_descriptor_array(aWindow->Pipeline[0]);
 		DrawCommand 		= aWindow->CommandPool->allocate();
 
 		// Bind Object Uniform Buffers
@@ -59,7 +59,7 @@ namespace geodesy::bltn::obj {
 		DescriptorArray->bind(1, 0, 0, Material->Texture["Color"]);
 
 		Result = Context->begin(DrawCommand);
-		aWindow->Pipeline->draw(DrawCommand, Framebuffer, VertexBuffer, Mesh->IndexBuffer, DescriptorArray);
+		aWindow->Pipeline[0]->draw(DrawCommand, Framebuffer, VertexBuffer, Mesh->IndexBuffer, DescriptorArray);
 		Result = Context->end(DrawCommand);
 	}
 
@@ -143,7 +143,8 @@ namespace geodesy::bltn::obj {
 		// Define Output Attachments
 		Rasterizer->attach(0, aWindowCreator->PixelFormat);
 
-		this->Pipeline = Context->create_pipeline(Rasterizer);
+		this->Pipeline = std::vector<std::shared_ptr<core::gpu::pipeline>>(1);
+		this->Pipeline[0] = Context->create_pipeline(Rasterizer);
 
 		// Allocate Uniform Buffer Info.
 		buffer::create_info UBCI;

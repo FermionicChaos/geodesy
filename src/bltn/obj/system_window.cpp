@@ -404,7 +404,7 @@ namespace geodesy::bltn::obj {
 		swapchain *Swapchain = dynamic_cast<swapchain*>(this->Framechain.get());
 
 		// Cast to rasterizer.
-		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::dynamic_pointer_cast<pipeline::rasterizer>(this->Pipeline->CreateInfo);
+		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::dynamic_pointer_cast<pipeline::rasterizer>(this->Pipeline[0]->CreateInfo);
 
 		// Get next frame semaphore from queue.
 		this->NextFrameSemaphore = Swapchain->NextFrameSemaphoreList.front();
@@ -487,11 +487,11 @@ namespace geodesy::bltn::obj {
 				this->Framechain = std::dynamic_pointer_cast<framechain>(NewSwapchain);
 		
 				// Rebuild pipeline.
-				if (this->Pipeline->CreateInfo->BindPoint == pipeline::type::RASTERIZER) {
+				if (this->Pipeline[0]->CreateInfo->BindPoint == pipeline::type::RASTERIZER) {
 					// Resize rasterizer.
 					Rasterizer->resize(this->Framechain->Resolution);
 					// Rebuild pipeline.
-					this->Pipeline = this->Context->create_pipeline(Rasterizer);
+					this->Pipeline[0] = this->Context->create_pipeline(Rasterizer);
 				}
 			}
 	

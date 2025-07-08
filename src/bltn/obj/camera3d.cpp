@@ -126,8 +126,8 @@ namespace geodesy::bltn::obj {
 		// Acquire Mesh Vertex Buffer, and Mesh Instance Vertex Weight Buffer.
 		std::vector<std::shared_ptr<buffer>> VertexBuffer = { Mesh->VertexBuffer, MeshInstance->VertexWeightBuffer };
 		// Load up GPU interface data to interface resources with pipeline.
-		Framebuffer = Context->create_framebuffer(aCamera3D->Pipeline, ImageOutputList, aCamera3D->Framechain->Resolution);
-		DescriptorArray = Context->create_descriptor_array(aCamera3D->Pipeline);
+		Framebuffer = Context->create_framebuffer(aCamera3D->Pipeline[0], ImageOutputList, aCamera3D->Framechain->Resolution);
+		DescriptorArray = Context->create_descriptor_array(aCamera3D->Pipeline[0]);
 		DrawCommand = aCamera3D->CommandPool->allocate();
 
 		// Bind Object Uniform Buffers
@@ -159,7 +159,7 @@ namespace geodesy::bltn::obj {
 			device::access::DEPTH_STENCIL_ATTACHMENT_WRITE, 	device::access::DEPTH_STENCIL_ATTACHMENT_READ | device::access::DEPTH_STENCIL_ATTACHMENT_WRITE
 		);
 		// Issue Draw Call.
-		aCamera3D->Pipeline->draw(DrawCommand, Framebuffer, VertexBuffer, Mesh->IndexBuffer, DescriptorArray);
+		aCamera3D->Pipeline[0]->draw(DrawCommand, Framebuffer, VertexBuffer, Mesh->IndexBuffer, DescriptorArray);
 		Result = Context->end(DrawCommand);
 	}
 
@@ -241,7 +241,8 @@ namespace geodesy::bltn::obj {
 		// Allocate GPU resources.
 		this->Framechain = std::dynamic_pointer_cast<framechain>(std::make_shared<geometry_buffer>(aContext, aCamera3DCreator->Resolution, aCamera3DCreator->FrameRate, aCamera3DCreator->FrameCount));
 
-		this->Pipeline = this->create_opaque_rasterizing_pipeline(aCamera3DCreator);
+		this->Pipeline = std::vector<std::shared_ptr<core::gpu::pipeline>>(1);
+		this->Pipeline[0] = this->create_opaque_rasterizing_pipeline(aCamera3DCreator);
 
 		buffer::create_info UBCI;
 		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;

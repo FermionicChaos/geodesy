@@ -59,7 +59,8 @@ namespace geodesy::runtime {
 		};
 
 		std::shared_ptr<framechain> 								Framechain;
-		std::shared_ptr<core::gpu::pipeline> 						Pipeline;
+		std::vector<std::shared_ptr<core::gpu::framebuffer>> 		Framebuffer;
+		std::vector<std::shared_ptr<core::gpu::pipeline>> 			Pipeline;
 		std::shared_ptr<core::gpu::command_pool>					CommandPool;
 		std::shared_ptr<core::gpu::semaphore_pool> 					SemaphorePool;
 		std::vector<core::gpu::command_batch>						RenderingOperations;

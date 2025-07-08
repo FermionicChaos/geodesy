@@ -27,8 +27,8 @@ namespace geodesy::bltn::obj {
 		// Acquire Mesh Vertex Buffer, and Mesh Instance Vertex Weight Buffer.
 		std::vector<std::shared_ptr<buffer>> VertexBuffer = { Mesh->VertexBuffer, aMeshInstance->VertexWeightBuffer };
 
-		Framebuffer 		= Context->create_framebuffer(aSubjectTarget->Pipeline, ImageOutputList, aSubjectTarget->Framechain->Resolution);
-		DescriptorArray 	= Context->create_descriptor_array(aSubjectTarget->Pipeline);
+		Framebuffer 		= Context->create_framebuffer(aSubjectTarget->Pipeline[0], ImageOutputList, aSubjectTarget->Framechain->Resolution);
+		DescriptorArray 	= Context->create_descriptor_array(aSubjectTarget->Pipeline[0]);
 		DrawCommand 		= aSubjectTarget->CommandPool->allocate();
 
 		// Bind Object Uniform Buffers
@@ -41,7 +41,7 @@ namespace geodesy::bltn::obj {
 		DescriptorArray->bind(1, 0, 0, aSubjectSource->Framechain->Image[aSourceFrameIndex]["OGB.Color"]);
 
 		Result = Context->begin(DrawCommand);
-		aSubjectTarget->Pipeline->draw(DrawCommand, Framebuffer, VertexBuffer, Mesh->IndexBuffer, DescriptorArray);
+		aSubjectTarget->Pipeline[0]->draw(DrawCommand, Framebuffer, VertexBuffer, Mesh->IndexBuffer, DescriptorArray);
 		Result = Context->end(DrawCommand);
 	}
 
