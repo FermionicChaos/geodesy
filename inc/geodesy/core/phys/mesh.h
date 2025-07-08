@@ -53,13 +53,12 @@ namespace geodesy::core::phys {
 			std::vector<weight>				Vertex;
 			math::mat<float, 4, 4>			Offset;
 		};
-
-		// Metadata.
-		std::string 					Name;
-		float 							BoundingRadius;
-
+		
 		// Host Memory Objects
+		std::string 					Name;
 		float 							Mass;
+		math::vec<float, 3> 			CenterOfMass;
+		float 							BoundingRadius;
 		std::vector<vertex> 			Vertex;
 		topology 						Topology;
 
@@ -67,6 +66,10 @@ namespace geodesy::core::phys {
 
 		vertex operator[](size_t aIndex) const;
 		vertex& operator[](size_t aIndex);
+
+		// Calculates various properties of the mesh.
+		math::vec<float, 3> center_of_mass() const;
+		float bounding_radius() const;
 
 	};
 

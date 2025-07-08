@@ -34,13 +34,19 @@ namespace geodesy::runtime {
 		// A draw call represents a singular draw call for a single mesh instance in
 		// the node hiearchy of the model. Distance from the camera is determined
 		struct draw_call {
-			float 													DistanceFromSubject;
 			core::gfx::material::transparency 						TransparencyMode;
+			float 													RenderingPriority;
 			std::shared_ptr<core::gpu::context> 					Context;
 			std::shared_ptr<core::gpu::framebuffer> 				Framebuffer;
 			std::shared_ptr<core::gpu::descriptor::array> 			DescriptorArray;
 			VkCommandBuffer 										DrawCommand;
 			draw_call();
+			virtual void update(
+				subject* aSubject, 
+				size_t aFrameIndex,
+				object* aObject, 
+				size_t aMeshInstanceIndex
+			);
 		};
 
 		struct renderer {
@@ -56,7 +62,11 @@ namespace geodesy::runtime {
 
 			std::vector<std::shared_ptr<draw_call>> operator[](size_t aIndex) const;
 
-			// void update(double aDeltaTime);
+			virtual void update(
+				double aDeltaTime = 0.0f, 
+				double aTime = 0.0f
+			);
+
 		};
 
 		struct creator {
@@ -93,6 +103,7 @@ namespace geodesy::runtime {
 		// ^ This is the data that exists on the GPU.
 		std::shared_ptr<core::gfx::model>											Model;
 		std::vector<core::phys::node*> 												LinearizedNodeTree;
+		std::vector<core::gfx::mesh::instance*> 									TotalMeshInstance;
 		std::shared_ptr<core::gpu::buffer> 											UniformBuffer;
 		std::map<subject*, std::shared_ptr<renderer>>								Renderer;
 

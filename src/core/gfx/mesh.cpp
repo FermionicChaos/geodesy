@@ -244,10 +244,18 @@ namespace geodesy::core::gfx {
 				Topology.Data32[3*i + 2] = (uint)aMesh->mFaces[i].mIndices[2];
 			}
 		}
+
+		// Calculate properties of the mesh.
+		this->CenterOfMass = this->center_of_mass();
+		this->BoundingRadius = this->bounding_radius();
 	}
 	
 	mesh::mesh(std::shared_ptr<gpu::context> aContext, std::shared_ptr<mesh> aMesh) {
 		this->HostMesh = aMesh;
+		this->Name = aMesh->Name;
+		this->Mass = aMesh->Mass;
+		this->CenterOfMass = aMesh->CenterOfMass;
+		this->BoundingRadius = aMesh->BoundingRadius;
 		this->Context = aContext;
 		if ((aContext != nullptr) && (aMesh != nullptr)) {
 			// Vertex Buffer Creation Info

@@ -36,10 +36,17 @@ namespace geodesy::runtime {
 	}
 
 	object::draw_call::draw_call() {
-		DistanceFromSubject 	= 0.0f;
 		TransparencyMode 		= gfx::material::transparency::OPAQUE;
+		RenderingPriority 		= 0.0f;
 		DrawCommand 			= VK_NULL_HANDLE;
 	}
+
+	void object::draw_call::update(
+		subject* aSubject, 
+		size_t aFrameIndex,
+		object* aObject, 
+		size_t aMeshInstanceIndex
+	) {}
 
 	object::renderer::renderer() {}
 
@@ -61,6 +68,20 @@ namespace geodesy::runtime {
 
 	std::vector<std::shared_ptr<object::draw_call>> object::renderer::operator[](size_t aIndex) const {
 		return this->DrawCallList[aIndex];
+	}
+
+	void object::renderer::update(
+		double aDeltaTime, 
+		double aTime
+	) {
+		// Update the renderer with the current time and delta time.
+		// This is where you would update the draw calls based on the object's state.
+		for (size_t i = 0; i < this->DrawCallList.size(); i++) {
+			for (size_t j = 0; j < this->DrawCallList[i].size(); j++) {
+				// Update each draw call based on updated scene data.
+				this->DrawCallList[i][j]->update(this->Subject, i, this->Object, j);
+			}
+		}
 	}
 
 	object::object(std::shared_ptr<core::gpu::context> aContext, stage* aStage, creator* aCreator) : core::gfx::node() {
@@ -118,6 +139,9 @@ namespace geodesy::runtime {
 		// Linearize node tree for faster processing.
 		this->LinearizedNodeTree = this->linearize();
 
+		// Gather mesh instances.
+		this->TotalMeshInstance = this->gather_instances();
+
 		// Object Uniform Buffer Creation from GPU Device Context.
 		buffer::create_info UBCI;
 		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
@@ -169,11 +193,14 @@ namespace geodesy::runtime {
 
 		core::gfx::node::update(aDeltaTime, aTime, this->AnimationWeights, this->Model->Animation);
 
-		// TODO: Add update using angular momentum to change orientation of object over time.
-
 		this->DirectionRight			= {  std::sin(Phi), 					-std::cos(Phi), 					0.0f 			};
 		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
 		this->DirectionFront			= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
+
+		// Update renderers.
+		for (auto& R : this->Renderer) {
+			R.second->update(aDeltaTime, aTime);
+		}
 
 		*(uniform_data*)this->UniformBuffer->Ptr = uniform_data(
 			this->Position, 

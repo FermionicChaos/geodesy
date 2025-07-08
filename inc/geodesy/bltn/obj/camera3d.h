@@ -47,11 +47,17 @@ namespace geodesy::bltn::obj {
 
 		struct deferred_draw_call : object::draw_call {
 			deferred_draw_call(
-				object* 								aObject, 
-				core::gfx::mesh::instance* 				aMeshInstance,
-				camera3d* 								aCamera3D,
-				size_t 									aFrameIndex
+				camera3d* 	aCamera3D,
+				size_t 		aFrameIndex,
+				object* 	aObject, 
+				size_t 		aMeshInstanceIndex
 			);
+			void update(
+				subject* 	aSubject, 
+				size_t 		aFrameIndex,
+				object* 	aObject, 
+				size_t 		aMeshInstanceIndex
+			) override;
 		};
 
 		struct deferred_renderer : object::renderer {
@@ -83,7 +89,7 @@ namespace geodesy::bltn::obj {
 			const std::vector<core::phys::force>& 		aAppliedForces = {}
 		) override;
 		std::shared_ptr<renderer> default_renderer(runtime::object* aObject) override;
-		// core::gpu::submission_batch render(runtime::stage* aStage) override;
+		core::gpu::submission_batch render(runtime::stage* aStage) override;
 
 		// These will create the pipelines for the camera3d.
 		std::shared_ptr<core::gpu::pipeline> create_opaque_rasterizing_pipeline(creator* aCamera3DCreator);

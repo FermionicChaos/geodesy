@@ -1,5 +1,7 @@
 #include <geodesy/bltn/obj/camera3d.h>
 
+#include <geodesy/runtime/stage.h>
+
 #include <iostream>
 #include <algorithm>
 
@@ -92,22 +94,23 @@ namespace geodesy::bltn::obj {
 	}
 
 	camera3d::deferred_draw_call::deferred_draw_call(
-		object* 						aObject, 
-		core::gfx::mesh::instance* 		aMeshInstance,
-		camera3d* 						aCamera3D,
-		size_t 							aFrameIndex
+		camera3d* 	aCamera3D,
+		size_t 		aFrameIndex,
+		object* 	aObject, 
+		size_t 		aMeshInstanceIndex
 	) {
 		VkResult Result = VK_SUCCESS;
 		// Get Mesh & Material Data from mesh instance.
-		auto Mesh = aObject->Model->Mesh[aMeshInstance->MeshIndex];
-		auto Material = aObject->Model->Material[aMeshInstance->MaterialIndex];
-		auto Node = aMeshInstance->Parent;
+		auto MeshInstance = aObject->TotalMeshInstance[aMeshInstanceIndex];
+		auto Mesh = aObject->Model->Mesh[MeshInstance->MeshIndex];
+		auto Material = aObject->Model->Material[MeshInstance->MaterialIndex];
+		auto Node = MeshInstance->Parent;
 		// Get mesh instance world position center.
 		math::vec<float, 3> MeshPosition = Node->transform().minor(3,3) * math::vec<float, 3>(0.0f, 0.0f, 0.0f);
-		// Get distance from subject.
-		this->DistanceFromSubject = math::length(MeshPosition - aCamera3D->Position);
 		// Get transparency mode for draw call data structure.
 		this->TransparencyMode = (material::transparency)Material->UniformData.Transparency;
+		// Set rendering priority.
+		this->update(aCamera3D, aFrameIndex, aObject, aMeshInstanceIndex);
 		// Load Context
 		this->Context = aObject->Context;
 		// Load up desired images which draw call will render to.
@@ -121,7 +124,7 @@ namespace geodesy::bltn::obj {
 			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Depth"]
 		};
 		// Acquire Mesh Vertex Buffer, and Mesh Instance Vertex Weight Buffer.
-		std::vector<std::shared_ptr<buffer>> VertexBuffer = { Mesh->VertexBuffer, aMeshInstance->VertexWeightBuffer };
+		std::vector<std::shared_ptr<buffer>> VertexBuffer = { Mesh->VertexBuffer, MeshInstance->VertexWeightBuffer };
 		// Load up GPU interface data to interface resources with pipeline.
 		Framebuffer = Context->create_framebuffer(aCamera3D->Pipeline, ImageOutputList, aCamera3D->Framechain->Resolution);
 		DescriptorArray = Context->create_descriptor_array(aCamera3D->Pipeline);
@@ -130,7 +133,7 @@ namespace geodesy::bltn::obj {
 		// Bind Object Uniform Buffers
 		DescriptorArray->bind(0, 0, 0, aCamera3D->CameraUniformBuffer);			// Camera Position, Orientation, Projection
 		DescriptorArray->bind(0, 1, 0, aObject->UniformBuffer);					// Object Position, Orientation, Scale
-		DescriptorArray->bind(0, 2, 0, aMeshInstance->UniformBuffer); 			// Mesh Instance Transform
+		DescriptorArray->bind(0, 2, 0, MeshInstance->UniformBuffer); 			// Mesh Instance Transform
 		DescriptorArray->bind(0, 3, 0, Material->UniformBuffer); 				// Material Properties
 
 		// Bind Material Textures.
@@ -160,16 +163,50 @@ namespace geodesy::bltn::obj {
 		Result = Context->end(DrawCommand);
 	}
 
+	void camera3d::deferred_draw_call::update(
+		subject* 	aSubject, 
+		size_t 		aFrameIndex,
+		object* 	aObject, 
+		size_t 		aMeshInstanceIndex
+	) {
+		camera3d* aCamera3D = (camera3d*)aSubject;
+		auto MeshInstance = aObject->TotalMeshInstance[aMeshInstanceIndex];
+		auto Mesh = aObject->Model->Mesh[MeshInstance->MeshIndex];
+		auto Material = aObject->Model->Material[MeshInstance->MaterialIndex];
+		auto Node = MeshInstance->Parent;
+		// Get Mesh Position with respect to parent node.
+		math::vec<float, 3> MeshPosition = Node->transform(aObject->AnimationWeights, aObject->Model->Animation, aObject->Stage->Time).minor(3,3) * math::vec<float, 3>(0.0f, 0.0f, 0.0f);
+		// Some meshes are not centered at the origin.
+		float Distance = math::length(MeshPosition + Mesh->CenterOfMass - aCamera3D->Position);
+		// Calculate Rendering Priority.
+		switch(this->TransparencyMode) {
+		case material::transparency::OPAQUE:
+			// Opaque objects nearest are rendered first.
+			// Rendering Priority Parameters are as follows:
+			// 1. How far mesh instance is away from the camera.
+			// 2. How large the mesh instance is in the camera's view.
+			this->RenderingPriority = -Distance;
+			break;
+		case material::transparency::TRANSPARENT:
+			// Transparent objects, furthest are rendered first.
+			this->RenderingPriority = Distance;
+			break;
+		case material::transparency::TRANSLUCENT:
+			// Translucent objects, furthest are rendered first.
+			this->RenderingPriority = Distance;
+			break;
+		default:
+			break;
+		}
+	}
+
 	camera3d::deferred_renderer::deferred_renderer(object* aObject, camera3d* aCamera3D) : runtime::object::renderer(aObject, aCamera3D) {
-		// Gather list of mesh instances throughout model hierarchy.
-		std::vector<mesh::instance*> MeshInstance = aObject->gather_instances();
-
-		this->DrawCallList = std::vector<std::vector<std::shared_ptr<draw_call>>>(aCamera3D->Framechain->Image.size(), std::vector<std::shared_ptr<draw_call>>(MeshInstance.size()));
-
+		// Size is the number of frames times the number of mesh instances.
+		this->DrawCallList = std::vector<std::vector<std::shared_ptr<draw_call>>>(aCamera3D->Framechain->Image.size(), std::vector<std::shared_ptr<draw_call>>(aObject->TotalMeshInstance.size()));
 		// Generates draw calls for each frame in the frame chain and mesh instance.
 		for (size_t i = 0; i < aCamera3D->Framechain->Image.size(); i++) {
-			for (size_t j = 0; j < MeshInstance.size(); j++) {
-				DrawCallList[i][j] = geodesy::make<deferred_draw_call>(aObject, MeshInstance[j], aCamera3D, i);
+			for (size_t j = 0; j < aObject->TotalMeshInstance.size(); j++) {
+				DrawCallList[i][j] = geodesy::make<deferred_draw_call>(aCamera3D, i, aObject, j);
 			}
 		}
 	}
@@ -289,7 +326,7 @@ namespace geodesy::bltn::obj {
 	// this->RenderingOperations[5]: Ray Tracing informed by Translucent Outputs.
 	// this->RenderingOperations[6]: Post Processing to Final Color Output.
 	// this->RenderingOperations[7]: postdraw operations.
-	/*
+	///*
 	core::gpu::submission_batch camera3d::render(runtime::stage* aStage) {
 
 		// Get next frame.
@@ -354,18 +391,18 @@ namespace geodesy::bltn::obj {
 		// Opaque: nearest first (ascending distance)
 		std::sort(OpaqueVector.begin(), OpaqueVector.end(), 
 			[](const auto& a, const auto& b) {
-				return a->DistanceFromSubject < b->DistanceFromSubject;
+				return a->RenderingPriority > b->RenderingPriority;
 			});
 
 		// Transparent/Translucent: farthest first (descending distance)  
 		std::sort(TransparentVector.begin(), TransparentVector.end(),
 			[](const auto& a, const auto& b) {
-				return a->DistanceFromSubject > b->DistanceFromSubject;
+				return a->RenderingPriority > b->RenderingPriority;
 			});
 
 		std::sort(TranslucentVector.begin(), TranslucentVector.end(),
 			[](const auto& a, const auto& b) {
-				return a->DistanceFromSubject > b->DistanceFromSubject;
+				return a->RenderingPriority > b->RenderingPriority;
 			});
 
 		// Add to Rendering Operations.
