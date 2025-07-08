@@ -273,22 +273,32 @@ namespace geodesy::bltn::obj {
 
 	void camera3d::input(const core::hid::input& aInputState) {
 		float LinearSpeed = 20.0f;
-		if (aInputState.Keyboard[hid::keyboard::KEY_LEFT_SHIFT]) LinearSpeed *= 2.0f;
 		float RotationSpeed = 0.75f;
-		float ForwardSpeed = 0.0f, RightSpeed = 0.0f;		
+		float ForwardSpeed = 0.0f, RightSpeed = 0.0f;
 		float DeltaTheta = 0.0f, DeltaPhi = 0.0f;
+		
+		// ----- WASD Control ----- //
+		
+		// Shift Speed Boost
+		if (aInputState.Keyboard[hid::keyboard::KEY_LEFT_SHIFT]) LinearSpeed 	*= 2.5f;
+		if (aInputState.Keyboard[hid::keyboard::KEY_W]) ForwardSpeed 			+= LinearSpeed;
+		if (aInputState.Keyboard[hid::keyboard::KEY_S]) ForwardSpeed 			-= LinearSpeed;
+		if (aInputState.Keyboard[hid::keyboard::KEY_A]) RightSpeed 				-= LinearSpeed;
+		if (aInputState.Keyboard[hid::keyboard::KEY_D]) RightSpeed 				+= LinearSpeed;
 
-		if (aInputState.Keyboard[hid::keyboard::KEY_W]) ForwardSpeed 	+= LinearSpeed;
-		if (aInputState.Keyboard[hid::keyboard::KEY_S]) ForwardSpeed 	-= LinearSpeed;
-		if (aInputState.Keyboard[hid::keyboard::KEY_A]) RightSpeed 		-= LinearSpeed;
-		if (aInputState.Keyboard[hid::keyboard::KEY_D]) RightSpeed 		+= LinearSpeed;
+		// ----- Mouse Control ----- //
 
 		// TODO: Lock look angles to prevent gimbal lock.
-		this->Theta 	+= math::radians(aInputState.Mouse.Velocity[1]) * RotationSpeed;
-		this->Phi 		-= math::radians(aInputState.Mouse.Velocity[0]) * RotationSpeed;
+		if (!std::isinf(aInputState.Mouse.Velocity[1]) && !std::isnan(aInputState.Mouse.Velocity[1])) {
+			this->Theta 	+= math::radians(aInputState.Mouse.Velocity[1]) * RotationSpeed;
+		}
+		if (!std::isinf(aInputState.Mouse.Velocity[0]) && !std::isnan(aInputState.Mouse.Velocity[0])) {
+			this->Phi 		-= math::radians(aInputState.Mouse.Velocity[0]) * RotationSpeed;
+		}
 		if (this->Theta > math::constant::pi) this->Theta = math::constant::pi;
 		if (this->Theta < 0) this->Theta = 0;
-		this->InputVelocity = this->DirectionFront * ForwardSpeed + this->DirectionRight * RightSpeed;
+
+		this->InputVelocity = this->DirectionFront*ForwardSpeed + this->DirectionRight*RightSpeed;
 
 	}
 
