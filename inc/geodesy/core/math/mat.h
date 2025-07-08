@@ -315,6 +315,17 @@ namespace geodesy::core::math {
 		return I;                                                    // now A⁻¹
 	}
 
+	// Generates orthographic projection matrix for Geodesy → Vulkan NDC
+	template <typename T> inline
+	mat<T, 4, 4> orthographic(T aDeltaX, T aDeltaY, T aNear, T aFar) {
+		return mat<T, 4, 4>(
+			2 / aDeltaX,		0,					0,							0,
+			0,					-2 / aDeltaY,		0,							0, 							// Flipped Y for Vulkan
+			0,					0,					-1 / (aFar - aNear),		aFar / (aFar - aNear), 		// Z: [Near,Far] → [1,0] (reversed)
+			0,					0,					0,							1 							// Translation for reverse depth
+		);
+	}
+
 	// Generates a projection matrix
 	template <typename T> inline 
 	mat<T, 4, 4> perspective(T FOV, T AspectRatio, T Near, T Far) {

@@ -8,37 +8,40 @@ namespace geodesy::bltn::obj {
 	using namespace gpu;
 
 	subject_window::forward_draw_call::forward_draw_call(
-		object* 							aObject, 
-		core::gfx::mesh::instance* 			aMeshInstance,
-		runtime::subject* 					aSubjectSource,
-		size_t 								aSourceFrameIndex,
-		window* 							aSubjectTarget,
-		size_t 								aTargetFrameIndex
+		window* 			aSubjectTarget,
+		size_t 				aTargetFrameIndex,
+		runtime::subject* 	aSubjectSource,
+		size_t 				aSourceFrameIndex,
+		object* 			aObject,
+		size_t 				aMeshInstanceIndex
 	) {
 		// Get references for readability.
 		VkResult Result = VK_SUCCESS;
-		std::shared_ptr<core::gpu::context> Context = aObject->Context;
-		std::shared_ptr<gfx::mesh> Mesh = aObject->Model->Mesh[aMeshInstance->MeshIndex];
-		std::shared_ptr<gfx::material> Material = aObject->Model->Material[aMeshInstance->MaterialIndex];
+		auto Context = aObject->Context;
+		auto MeshInstance = aObject->TotalMeshInstance[aMeshInstanceIndex];
+		auto Mesh = aObject->Model->Mesh[MeshInstance->MeshIndex];
+		auto Material = aObject->Model->Material[MeshInstance->MaterialIndex];
 
 		std::vector<std::shared_ptr<gpu::image>> ImageOutputList = {
 			aSubjectTarget->Framechain->Image[aTargetFrameIndex]["Color"],
 		};
 		// Acquire Mesh Vertex Buffer, and Mesh Instance Vertex Weight Buffer.
-		std::vector<std::shared_ptr<buffer>> VertexBuffer = { Mesh->VertexBuffer, aMeshInstance->VertexWeightBuffer };
+		std::vector<std::shared_ptr<buffer>> VertexBuffer = { Mesh->VertexBuffer, MeshInstance->VertexWeightBuffer };
 
 		Framebuffer 		= Context->create_framebuffer(aSubjectTarget->Pipeline[0], ImageOutputList, aSubjectTarget->Framechain->Resolution);
 		DescriptorArray 	= Context->create_descriptor_array(aSubjectTarget->Pipeline[0]);
 		DrawCommand 		= aSubjectTarget->CommandPool->allocate();
 
 		// Bind Object Uniform Buffers
-		DescriptorArray->bind(0, 0, 0, aSubjectTarget->WindowUniformBuffer);		// Window Size, etc
+		DescriptorArray->bind(0, 0, 0, aSubjectTarget->SubjectUniformBuffer);		// Camera Position, Orientation, Projection
 		DescriptorArray->bind(0, 1, 0, aObject->UniformBuffer);						// Object Position, Orientation, Scale
-		DescriptorArray->bind(0, 2, 0, Material->UniformBuffer); 					// Material Properties
+		DescriptorArray->bind(0, 2, 0, MeshInstance->UniformBuffer); 				// Mesh Instance Transform
+		DescriptorArray->bind(0, 3, 0, Material->UniformBuffer); 					// Material Properties
 
 		// Bind Material Textures.
 		// ! This is where the contents of another render target are forwarded.
 		DescriptorArray->bind(1, 0, 0, aSubjectSource->Framechain->Image[aSourceFrameIndex]["OGB.Color"]);
+		DescriptorArray->bind(1, 1, 0, Material->Texture["Opacity"]);
 
 		Result = Context->begin(DrawCommand);
 		aSubjectTarget->Pipeline[0]->draw(DrawCommand, Framebuffer, VertexBuffer, Mesh->IndexBuffer, DescriptorArray);
@@ -68,7 +71,7 @@ namespace geodesy::bltn::obj {
 					// Convert Subject Target to base class window.
 					window* Window = dynamic_cast<window*>(aSubjectTarget);
 					// Load draw calls per target frame, per source frame, per mesh instance.
-					OverridenDrawCallList[i][j][k] = geodesy::make<forward_draw_call>(aObject, MeshInstance[k], aSubjectSource, j, Window, i);
+					OverridenDrawCallList[i][j][k] = geodesy::make<forward_draw_call>(Window, i, aSubjectSource, j, aObject, k);
 				}
 			}
 		}

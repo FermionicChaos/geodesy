@@ -36,11 +36,11 @@ layout (location = 5) in vec4 InterpolatedVertexColor;
 
 // -------------------- UNIFORM DATA -------------------- //
 
-layout (set = 0, binding = 0) uniform Camera3DUBO {
+layout (set = 0, binding = 0) uniform SubjectUBO {
 	vec3 Position;
 	mat4 Rotation;
 	mat4 Projection;
-} Camera3D;
+} Subject;
 
 layout (set = 0, binding = 3) uniform MaterialUBO {
 	int 	Transparency;
@@ -157,7 +157,7 @@ vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
 	mat3 ITBN = transpose(aTBN);
 
 	// Converts the view direction from world space to tangent space.
-	vec3 InvertedViewDir = ITBN * normalize(Camera3D.Position - WorldPosition);
+	vec3 InvertedViewDir = ITBN * normalize(Subject.Position - WorldPosition);
 
 	// This determines the maximum aUV offset that can be applied. while still possibly
 	// containing the correct aUV coordinate that can possibly intersect the view dir

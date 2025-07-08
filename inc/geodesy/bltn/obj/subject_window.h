@@ -24,12 +24,12 @@ namespace geodesy::bltn::obj {
 
 		struct forward_draw_call : runtime::object::draw_call {
 			forward_draw_call(
-				object* 							aObject, 
-				core::gfx::mesh::instance* 			aMeshInstance,
-				runtime::subject* 						aSubjectSource,
-				size_t 								aSourceFrameIndex,
-				window* 							aSubjectTarget,
-				size_t 								aTargetFrameIndex
+				window* 			aSubjectTarget,
+				size_t 				aTargetFrameIndex,
+				runtime::subject* 	aSubjectSource,
+				size_t 				aSourceFrameIndex,
+				object* 			aObject,
+				size_t 				aMeshInstanceIndex
 			);
 		};
 

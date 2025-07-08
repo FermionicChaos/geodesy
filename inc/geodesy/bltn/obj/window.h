@@ -11,10 +11,10 @@ namespace geodesy::bltn::obj {
 
 		struct window_draw_call : object::draw_call {
 			window_draw_call(
-				object* 								aObject, 
-				core::gfx::mesh::instance* 				aMeshInstance,
-				window* 								aWindow,
-				size_t 									aFrameIndex
+				window* aWindow,
+				size_t 	aFrameIndex,
+				object* aObject, 
+				size_t 	aMeshInstanceIndex
 			);
 		};
 

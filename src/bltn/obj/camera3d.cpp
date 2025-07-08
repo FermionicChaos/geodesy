@@ -11,27 +11,6 @@ namespace geodesy::bltn::obj {
 	using namespace geodesy::core::gfx;
 	using namespace geodesy::core::gpu;
 
-	camera3d::uniform_data::uniform_data(
-		math::vec<float, 3> aPosition, 
-		math::vec<float, 3> aDirRight,
-		math::vec<float, 3> aDirUp,
-		math::vec<float, 3> aDirForward,
-		float aFOV,
-		math::vec<uint, 3> aResolution,
-		float aNear,
-		float aFar
-	) {
-		float AspectRatio = static_cast<float>(aResolution[0]) / static_cast<float>(aResolution[1]);
-		this->Position = aPosition;
-		this->Rotation = math::mat<float, 4, 4>(
-			 aDirRight[0], 		 aDirRight[1], 		 aDirRight[2], 			0.0f,
-			-aDirUp[0], 		-aDirUp[1], 		-aDirUp[2], 			0.0f,
-			 aDirForward[0], 	 aDirForward[1], 	 aDirForward[2], 		0.0f,
-			 0.0f, 				 0.0f, 				 0.0f, 					1.0f
-		);
-		this->Projection = math::perspective(math::radians(aFOV), AspectRatio, aNear, aFar);
-	}
-
 	camera3d::geometry_buffer::geometry_buffer(
 		std::shared_ptr<context> 	aContext, 
 		math::vec<uint, 3> 			aResolution, 
@@ -131,7 +110,7 @@ namespace geodesy::bltn::obj {
 		DrawCommand = aCamera3D->CommandPool->allocate();
 
 		// Bind Object Uniform Buffers
-		DescriptorArray->bind(0, 0, 0, aCamera3D->CameraUniformBuffer);			// Camera Position, Orientation, Projection
+		DescriptorArray->bind(0, 0, 0, aCamera3D->SubjectUniformBuffer);			// Camera Position, Orientation, Projection
 		DescriptorArray->bind(0, 1, 0, aObject->UniformBuffer);					// Object Position, Orientation, Scale
 		DescriptorArray->bind(0, 2, 0, MeshInstance->UniformBuffer); 			// Mesh Instance Transform
 		DescriptorArray->bind(0, 3, 0, Material->UniformBuffer); 				// Material Properties
@@ -221,10 +200,10 @@ namespace geodesy::bltn::obj {
 		// List of assets Camera3D will load into memory.
 		std::vector<std::string> AssetList = {
 			// Standard Vertex Shader
-			"assets/shader/camera3d/standard.vert",
+			"assets/shader/standard.vert",
 			// Opaque Rasterization
 			"assets/shader/camera3d/opaque.frag",
-			// Transulucent Rasterization
+			// Translucent Rasterization
 			"assets/shader/camera3d/translucent.frag",
 			// Opaque Lighting & Shadows
 			"assets/shader/camera3d/opaque.rgen",
@@ -241,8 +220,34 @@ namespace geodesy::bltn::obj {
 		// Allocate GPU resources.
 		this->Framechain = std::dynamic_pointer_cast<framechain>(std::make_shared<geometry_buffer>(aContext, aCamera3DCreator->Resolution, aCamera3DCreator->FrameRate, aCamera3DCreator->FrameCount));
 
+		// Create GPU Pipelines for camera3d
 		this->Pipeline = std::vector<std::shared_ptr<core::gpu::pipeline>>(1);
 		this->Pipeline[0] = this->create_opaque_rasterizing_pipeline(aCamera3DCreator);
+
+		// // Frame Index, Pipeline Index, Attachement Index
+		// std::vector<std::vector<std::vector<std::shared_ptr<image>>>> ImageOutputList(this->Framechain->Image.size());
+		// for (size_t i = 0; i < this->Framechain->Image.size(); i++) {
+		// 	// Opaque Geometry Buffer (OGB) Images.
+		// 	ImageOutputList[i].push_back({
+		// 		this->Framechain->Image[i]["OGB.Color"],
+		// 		this->Framechain->Image[i]["OGB.Position"],
+		// 		this->Framechain->Image[i]["OGB.Normal"],
+		// 		this->Framechain->Image[i]["OGB.Emissive"],
+		// 		this->Framechain->Image[i]["OGB.SS"],
+		// 		this->Framechain->Image[i]["OGB.ORM"],
+		// 		this->Framechain->Image[i]["OGB.Depth"]
+		// 	});
+		// 	// Translucent Geometry Buffer (TGB) Images.
+		// }
+
+		// // Frame Index, Pipeline Index
+		// this->Framebuffer = std::vector<std::vector<std::shared_ptr<core::gpu::framebuffer>>>(this->Framechain->Image.size(), std::vector<std::shared_ptr<core::gpu::framebuffer>>(this->Pipeline.size()));
+		// for (size_t i = 0; i < this->Framechain->Image.size(); i++) {
+		// 	for (size_t j = 0; j < this->Pipeline.size(); j++) {
+		// 		// Create Framebuffer for each frame in the frame chain.
+		// 		this->Framebuffer[i][j] = aContext->create_framebuffer(this->Pipeline[j], ImageOutputList[i][j], aCamera3DCreator->Resolution);
+		// 	}
+		// }
 
 		buffer::create_info UBCI;
 		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
@@ -258,8 +263,8 @@ namespace geodesy::bltn::obj {
 			this->Near,
 			this->Far
 		);
-		this->CameraUniformBuffer = Context->create_buffer(UBCI, sizeof(UniformData), &UniformData);
-		this->CameraUniformBuffer->map_memory(0, sizeof(UniformData));
+		this->SubjectUniformBuffer = Context->create_buffer(UBCI, sizeof(UniformData), &UniformData);
+		this->SubjectUniformBuffer->map_memory(0, sizeof(UniformData));
 	}
 
 	camera3d::~camera3d() {
@@ -302,7 +307,7 @@ namespace geodesy::bltn::obj {
 		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
 		this->DirectionFront			= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
 
-		*(uniform_data*)this->CameraUniformBuffer->Ptr = uniform_data(
+		*(uniform_data*)this->SubjectUniformBuffer->Ptr = uniform_data(
 			this->Position, 
 			this->DirectionRight, 
 			this->DirectionUp, 
