@@ -149,6 +149,13 @@ namespace geodesy::bltn::obj {
 
 		// Actual Draw Call.
 		Result = Context->begin(DrawCommand);
+		// The goal of this barrier is to keep the gpu busy while still waiting on the depth results of the previous draw call.
+		pipeline::barrier(DrawCommand, 
+			/* Src ---> Dst */
+			pipeline::stage::LATE_FRAGMENT_TESTS, 				pipeline::stage::EARLY_FRAGMENT_TESTS,
+			device::access::DEPTH_STENCIL_ATTACHMENT_WRITE, 	device::access::DEPTH_STENCIL_ATTACHMENT_READ | device::access::DEPTH_STENCIL_ATTACHMENT_WRITE
+		);
+		// Issue Draw Call.
 		aCamera3D->Pipeline->draw(DrawCommand, Framebuffer, VertexBuffer, Mesh->IndexBuffer, DescriptorArray);
 		Result = Context->end(DrawCommand);
 	}
