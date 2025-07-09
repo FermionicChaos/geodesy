@@ -176,11 +176,11 @@ namespace geodesy::core::gpu {
 			};
 
 			struct shader_binding_table {
-				std::shared_ptr<buffer> 		Buffer;
-				VkStridedDeviceAddressRegionKHR Raygen;
-				VkStridedDeviceAddressRegionKHR Miss;
-				VkStridedDeviceAddressRegionKHR Hit;
-				VkStridedDeviceAddressRegionKHR Callable;
+				std::shared_ptr<buffer> 			Buffer;
+				VkStridedDeviceAddressRegionKHR 	Raygen;
+				VkStridedDeviceAddressRegionKHR 	Miss;
+				VkStridedDeviceAddressRegionKHR 	Hit;
+				VkStridedDeviceAddressRegionKHR 	Callable;
 			};
 
 			uint32_t 						MaxRecursionDepth;

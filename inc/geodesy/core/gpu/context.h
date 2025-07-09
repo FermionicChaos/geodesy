@@ -74,6 +74,8 @@ namespace geodesy::core::gpu {
 		std::shared_ptr<framebuffer> create_framebuffer(std::shared_ptr<pipeline> aPipeline, std::vector<std::shared_ptr<image>> aImageAttachements, math::vec<uint, 3> aResolution);
 		std::shared_ptr<framebuffer> create_framebuffer(std::shared_ptr<pipeline> aPipeline, std::map<std::string, std::shared_ptr<image>> aImage, std::vector<std::string> aAttachmentSelection, math::vec<uint, 3> aResolution);
 		std::shared_ptr<pipeline> create_pipeline(std::shared_ptr<pipeline::rasterizer> aRasterizer, VkRenderPass aRenderPass = VK_NULL_HANDLE, uint32_t aSubpassIndex = 0);
+		std::shared_ptr<pipeline> create_pipeline(std::shared_ptr<pipeline::raytracer> aRayTracer);
+		// std::shared_ptr<pipeline> create_pipeline(std::shared_ptr<pipeline::compute> aComputePipeline);
 		std::shared_ptr<gfx::model> create_model(std::shared_ptr<gfx::model> aModel, gpu::image::create_info aCreateInfo = {});
 
 		// ----- Command Buffer Recording ----- //

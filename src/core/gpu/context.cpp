@@ -461,6 +461,11 @@ namespace geodesy::core::gpu {
 		return NewDeviceResource;
 	}
 
+	std::shared_ptr<pipeline> context::create_pipeline(std::shared_ptr<pipeline::raytracer> aRayTracer) {
+		std::shared_ptr<pipeline> NewDeviceResource = geodesy::make<pipeline>(this->shared_from_this(), aRayTracer);
+		return NewDeviceResource;
+	}
+
 	std::shared_ptr<gfx::model> context::create_model(std::shared_ptr<gfx::model> aModel, gpu::image::create_info aCreateInfo) {
 		std::shared_ptr<gfx::model> NewDeviceResource = std::shared_ptr<gfx::model>(new gfx::model(this->shared_from_this(), aModel, aCreateInfo));
 		return NewDeviceResource;
