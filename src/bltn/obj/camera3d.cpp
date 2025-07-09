@@ -526,4 +526,12 @@ namespace geodesy::bltn::obj {
 		return Context->create_pipeline(Rasterizer);
 	}
 
+	std::shared_ptr<core::gpu::pipeline> camera3d::create_opaque_ray_tracing_pipeline(creator* aCamera3DCreator) {
+
+		std::vector<gpu::pipeline::raytracer::shader_group> ShaderGroup;
+		std::shared_ptr<gpu::pipeline::raytracer> RayTracer = geodesy::make<pipeline::raytracer>(ShaderGroup, 1u);
+
+		return Context->create_pipeline(RayTracer);
+	}
+
 }
