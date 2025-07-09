@@ -369,6 +369,10 @@ namespace geodesy::core::gpu {
 		static size_t channel_count(int aFormat);
 		static VkImageAspectFlags aspect_flag(int aFormat);
 
+		float 											OpaquePercentage;
+		float 											TransparentPercentage;
+		float 											TranslucentPercentage;
+
 		// Image Handle Info
 		std::shared_ptr<context> 						Context;
 		VkImageCreateInfo 								CreateInfo;

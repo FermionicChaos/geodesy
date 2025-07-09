@@ -739,28 +739,58 @@ namespace geodesy::core::gpu {
 		// Check if the image file is HDR, or standard.
 		if (!stbi_is_hdr(aFilePath.c_str())) {
 			this->HostData = (void*)stbi_load(aFilePath.c_str(), &lWidth, &lHeight, &lChannels, STBI_rgb_alpha);
-			lChannels += 1;
-			lChannels = std::min(lChannels, 4);
-			// Determine VkFormat based on the number of channels.
-			switch (lChannels) {
-			case 1: this->CreateInfo.format = VK_FORMAT_R8_SRGB; break;
-			case 2: this->CreateInfo.format = VK_FORMAT_R8G8_SRGB; break;
-			case 3: this->CreateInfo.format = VK_FORMAT_R8G8B8_SRGB; break;
-			case 4: this->CreateInfo.format = VK_FORMAT_R8G8B8A8_SRGB; break;
-			}
+			lChannels = 4; // Force 4 channels for standard images.
+			this->CreateInfo.format = VK_FORMAT_R8G8B8A8_SRGB;
 			this->HostSize = lWidth * lHeight * lChannels * sizeof(char);
+
+			// Analyze Transparency of the image.
+			float TotalPixels = (float)(lWidth * lHeight);
+			math::vec<uchar, 4> *Pixel = (math::vec<uchar, 4> *)this->HostData;
+			for (size_t i = 0; i < lWidth*lHeight; i++) {
+				// Inspect each alpha channel pixel.
+				if (Pixel[i][3] == 0xFF) {
+					this->OpaquePercentage += 1.0f;
+				}
+				else if (Pixel[i][3] == 0x00) {
+					this->TransparentPercentage += 1.0f;
+				}
+				else {
+					this->TranslucentPercentage += 1.0f;
+				}
+			}
+
+			// Normalize the percentages.
+			this->OpaquePercentage /= TotalPixels;
+			this->TransparentPercentage /= TotalPixels;
+			this->TranslucentPercentage /= TotalPixels;
 		}
 		else {
 			// Load the HDR image file.
-			this->HostData = (void*)stbi_loadf(aFilePath.c_str(), &lWidth, &lHeight, &lChannels, 0);
-			// Determine VkFormat based on the number of channels.
-			switch (lChannels) {
-			case 1: this->CreateInfo.format = VK_FORMAT_R32_SFLOAT; break;
-			case 2: this->CreateInfo.format = VK_FORMAT_R32G32_SFLOAT; break;
-			case 3: this->CreateInfo.format = VK_FORMAT_R32G32B32_SFLOAT; break;
-			case 4: this->CreateInfo.format = VK_FORMAT_R32G32B32A32_SFLOAT; break;
-			}
+			this->HostData = (void*)stbi_loadf(aFilePath.c_str(), &lWidth, &lHeight, &lChannels, STBI_rgb_alpha);
+			lChannels = 4; // Force 4 channels for HDR images.
+			this->CreateInfo.format = VK_FORMAT_R32G32B32A32_SFLOAT;
 			this->HostSize = lWidth * lHeight * lChannels * sizeof(float);
+
+			// Analyze Transparency of the image.
+			float TotalPixels = (float)(lWidth * lHeight);
+			math::vec<float, 4> *Pixel = (math::vec<float, 4> *)this->HostData;
+			for (size_t i = 0; i < lWidth*lHeight; i++) {
+				// Inspect each alpha channel pixel.
+				if (Pixel[i][3] >= 0.999f) {
+					this->OpaquePercentage += 1.0f;
+				}
+				else if (Pixel[i][3] <= 0.001f) {
+					this->TransparentPercentage += 1.0f;
+				}
+				else {
+					this->TranslucentPercentage += 1.0f;
+				}
+			}
+
+			// Normalize the percentages.
+			this->OpaquePercentage /= TotalPixels;
+			this->TransparentPercentage /= TotalPixels;
+			this->TranslucentPercentage /= TotalPixels;
 		}
 		this->CreateInfo.imageType = VK_IMAGE_TYPE_2D;
 		this->CreateInfo.extent.width = lWidth;
@@ -1441,6 +1471,9 @@ namespace geodesy::core::gpu {
 	}
 
 	void image::zero_out() {
+		this->OpaquePercentage 						= 0.0f;
+		this->TransparentPercentage 				= 0.0f;
+		this->TranslucentPercentage 				= 0.0f;
 		this->Context								= nullptr;
 		this->CreateInfo							= {};
 		this->Handle								= VK_NULL_HANDLE;

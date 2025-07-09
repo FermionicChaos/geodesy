@@ -461,7 +461,43 @@ namespace geodesy::core::gfx {
 			this->Texture["Metallic"] = PBR["Metallic"];
 			this->Texture["Roughness"] = PBR["Roughness"];
 		}
-		//*/
+
+		// Determine Material Transparency
+		if (this->UniformData.Opacity == 1.0f) {
+			if (this->UniformData.OpacityTextureIndex == -1) {
+				// Opacity texture does not exist, so check for albedo texture alpha channel.
+				if (this->UniformData.AlbedoTextureIndex != -1) {
+					// Albedo texture exists, so check pixel data for alpha channel.
+					auto Albedo = this->Texture["Albedo"];
+					if (Albedo->OpaquePercentage == 1.0f) {
+						// All alpha pixels are opaque, so this material is opaque.
+						this->UniformData.Transparency = material::transparency::OPAQUE;
+					}
+					else if ((Albedo->OpaquePercentage < 1.0f) && (Albedo->TranslucentPercentage < 0.05f)) {
+						// Some alpha pixels are translucent, but not enough to be considered translucent.
+						// Assuming a large percentage are opaque or transparent.
+						this->UniformData.Transparency = material::transparency::TRANSPARENT;
+					}
+					else {
+						// A significant amount of alpha pixels are translucent, so this material is translucent.
+						this->UniformData.Transparency = material::transparency::TRANSLUCENT;
+					}
+				} 
+				else {
+					// No opacity layer, or color layer, so assume material is opaque.
+					this->UniformData.Transparency = material::transparency::OPAQUE;
+				}
+			}
+			else {
+				// TODO: Deeper inspection of Opacity Texture later.
+				// Opacity texture exists, so this material is translucent.
+				this->UniformData.Transparency = material::transparency::TRANSLUCENT;
+			}
+		}
+		else {
+			// Automatically assumed to be translucent if not opaque.
+			this->UniformData.Transparency = material::transparency::TRANSLUCENT;
+		}
 	}
 
 	material::material(std::shared_ptr<gpu::context> aContext, gpu::image::create_info aCreateInfo, std::shared_ptr<material> aMaterial) : material() {
