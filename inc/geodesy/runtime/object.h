@@ -24,9 +24,7 @@ namespace geodesy::runtime {
 			alignas(16) core::math::vec<float, 3> 					Scale;
 			uniform_data(
 				core::math::vec<float, 3> aPosition, 
-				core::math::vec<float, 3> aDirRight, 
-				core::math::vec<float, 3> aDirUp, 
-				core::math::vec<float, 3> aDirForward,
+				core::math::vec<float, 2> aDirection,
 				core::math::vec<float, 3> aScale
 			);
 		};
@@ -93,9 +91,6 @@ namespace geodesy::runtime {
 		// * Object Input and Physics
 		std::string																	Name;				// Name of the object.
 		float 																		Theta, Phi;			// Radians			[rad]
-		core::math::vec<float, 3>													DirectionRight;		// Right			[Normalized]
-		core::math::vec<float, 3>													DirectionUp;		// Up				[Normalized]
-		core::math::vec<float, 3>													DirectionFront;		// Backward			[Normalized]
 		std::vector<float> 															AnimationWeights;
 		std::vector<std::shared_ptr<core::io::file>> 								Asset;
 

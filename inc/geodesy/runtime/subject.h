@@ -56,18 +56,14 @@ namespace geodesy::runtime {
 			alignas(16) core::math::mat<float, 4, 4> 	Projection;
 			uniform_data(
 				core::math::vec<float, 3> 		aPosition, 
-				core::math::vec<float, 3> 		aDirRight,
-				core::math::vec<float, 3> 		aDirUp,
-				core::math::vec<float, 3> 		aDirForward,
+				core::math::vec<float, 2> 		aDirection,
 				core::math::vec<float, 3> 		aScale,
 				float 							aNear,
 				float 							aFar
 			);
 			uniform_data(
 				core::math::vec<float, 3> 		aPosition, 
-				core::math::vec<float, 3> 		aDirRight,
-				core::math::vec<float, 3> 		aDirUp,
-				core::math::vec<float, 3> 		aDirForward,
+				core::math::vec<float, 2> 		aDirection,
 				float 							aFOV,
 				core::math::vec<uint, 3> 		aResolution,
 				float 							aNear,

@@ -132,9 +132,7 @@ namespace geodesy::bltn::obj {
 		// Allocate Uniform Buffer Info.
 		subject::uniform_data UBO = subject::uniform_data(
 			this->Position, 
-			this->DirectionRight, 
-			this->DirectionUp, 
-			this->DirectionFront, 
+			{ this->Theta, this->Phi },
 			this->Scale,
 			-1.0f,
 			1.0f

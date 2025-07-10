@@ -142,32 +142,32 @@ namespace geodesy::core::gpu {
 				VkAccelerationStructureInstanceKHR ASI{};
 				gfx::mesh* Mesh = Object->Model->Mesh[MeshInstance->MeshIndex].get();
 
-				// ! Object Transformation Info.
-				// Create Translation Matrix.
-				math::mat<float, 4, 4> ObjectTranslation = {
-					1.0f, 0.0f, 0.0f, Object->Position[0],
-					0.0f, 1.0f, 0.0f, Object->Position[1],
-					0.0f, 0.0f, 1.0f, Object->Position[2],
-					0.0f, 0.0f, 0.0f, 1.0f
-				};
-				// Create Orientation Matrix.
-				math::mat<float, 4, 4> ObjectOrientation = {
-					Object->DirectionRight[0], 		Object->DirectionFront[0], 		Object->DirectionUp[0], 	0.0f,
-					Object->DirectionRight[1], 		Object->DirectionFront[1], 		Object->DirectionUp[1], 	0.0f,
-					Object->DirectionRight[2], 		Object->DirectionFront[2], 		Object->DirectionUp[2], 	0.0f,
-					0.0f, 							0.0f, 							0.0f, 						1.0f
-				};
-				// Create Scale Matrix.
-				math::mat<float, 4, 4> ObjectScale = {
-					Object->Scale[0], 	0.0f, 				0.0f, 				0.0f,
-					0.0f, 				Object->Scale[1], 	0.0f, 				0.0f,
-					0.0f, 				0.0f, 				Object->Scale[2], 	0.0f,
-					0.0f, 				0.0f, 				0.0f, 				1.0f
-				};
-				math::mat<float, 4, 4> ObjectTransform = ObjectTranslation * ObjectOrientation * ObjectScale;
+				// // ! Object Transformation Info.
+				// // Create Translation Matrix.
+				// math::mat<float, 4, 4> ObjectTranslation = {
+				// 	1.0f, 0.0f, 0.0f, Object->Position[0],
+				// 	0.0f, 1.0f, 0.0f, Object->Position[1],
+				// 	0.0f, 0.0f, 1.0f, Object->Position[2],
+				// 	0.0f, 0.0f, 0.0f, 1.0f
+				// };
+				// // Create Orientation Matrix.
+				// math::mat<float, 4, 4> ObjectOrientation = {
+				// 	Object->DirectionRight[0], 		Object->DirectionFront[0], 		Object->DirectionUp[0], 	0.0f,
+				// 	Object->DirectionRight[1], 		Object->DirectionFront[1], 		Object->DirectionUp[1], 	0.0f,
+				// 	Object->DirectionRight[2], 		Object->DirectionFront[2], 		Object->DirectionUp[2], 	0.0f,
+				// 	0.0f, 							0.0f, 							0.0f, 						1.0f
+				// };
+				// // Create Scale Matrix.
+				// math::mat<float, 4, 4> ObjectScale = {
+				// 	Object->Scale[0], 	0.0f, 				0.0f, 				0.0f,
+				// 	0.0f, 				Object->Scale[1], 	0.0f, 				0.0f,
+				// 	0.0f, 				0.0f, 				Object->Scale[2], 	0.0f,
+				// 	0.0f, 				0.0f, 				0.0f, 				1.0f
+				// };
+				// math::mat<float, 4, 4> ObjectTransform = ObjectTranslation * ObjectOrientation * ObjectScale;
 
 				// Matrix Transform, get global transform to world space. (Include Object Transform.)
-				math::mat<float, 4, 4> WorldTransform = ObjectTransform * MeshInstance->Parent->transform();
+				math::mat<float, 4, 4> WorldTransform = MeshInstance->Parent->transform();
 				for (int Row = 0; Row < 3; Row++) {
 					for (int Col = 0; Col < 4; Col++) {
 						// Convert from memory internal format to vulkan using proper accessors.

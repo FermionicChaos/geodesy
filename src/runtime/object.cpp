@@ -8,18 +8,11 @@ namespace geodesy::runtime {
 
 	object::uniform_data::uniform_data(
 		math::vec<float, 3> aPosition, 
-		math::vec<float, 3> aDirRight, 
-		math::vec<float, 3> aDirUp, 
-		math::vec<float, 3> aDirForward,
+		math::vec<float, 2> aDirection,
 		math::vec<float, 3> aScale
 	) {
 		this->Position = aPosition;
-		this->Orientation = {
-			aDirRight[0], 	aDirForward[0], 	aDirUp[0], 		0.0f,
-			aDirRight[1], 	aDirForward[1], 	aDirUp[1], 		0.0f,
-			aDirRight[2], 	aDirForward[2], 	aDirUp[2], 		0.0f,
-			0.0f, 			0.0f, 				0.0f, 			1.0f
-		};
+		this->Orientation = math::orientation(aDirection[0], aDirection[1]);
 		this->Scale = aScale;
 	}
 
@@ -92,9 +85,6 @@ namespace geodesy::runtime {
 		this->Position 			= aCreator->Position;
 		this->Theta 			= math::radians(aCreator->Direction[0] + 90.0f);
 		this->Phi 				= math::radians(aCreator->Direction[1] + 90.0f);
-		this->DirectionRight 	= {  std::sin(Phi), 					-std::cos(Phi), 					0.0f 			};
-		this->DirectionUp 		= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
-		this->DirectionFront 	= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
 		this->Scale 			= aCreator->Scale;
 
 		this->Context 			= aContext;
@@ -149,9 +139,7 @@ namespace geodesy::runtime {
 
 		uniform_data UniformData = uniform_data(
 			this->Position, 
-			this->DirectionRight, 
-			this->DirectionUp, 
-			this->DirectionFront,
+			{ this->Theta, this->Phi }, // Direction is now a vec2 for Theta and Phi angles.
 			this->Scale
 		);
 		this->UniformBuffer = aContext->create_buffer(UBCI, sizeof(uniform_data), &UniformData);
@@ -193,10 +181,6 @@ namespace geodesy::runtime {
 
 		core::gfx::node::update(aDeltaTime, aTime, this->AnimationWeights, this->Model->Animation);
 
-		this->DirectionRight			= {  std::sin(Phi), 					-std::cos(Phi), 					0.0f 			};
-		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
-		this->DirectionFront			= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
-
 		// Update renderers.
 		for (auto& R : this->Renderer) {
 			R.second->update(aDeltaTime, aTime);
@@ -204,9 +188,7 @@ namespace geodesy::runtime {
 
 		*(uniform_data*)this->UniformBuffer->Ptr = uniform_data(
 			this->Position, 
-			this->DirectionRight, 
-			this->DirectionUp, 
-			this->DirectionFront,
+			{ this->Theta, this->Phi }, // Direction is now a vec2 for Theta and Phi angles.
 			this->Scale
 		);
 	}

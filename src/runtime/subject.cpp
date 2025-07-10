@@ -8,40 +8,26 @@ namespace geodesy::runtime {
 
 	subject::uniform_data::uniform_data(
 		core::math::vec<float, 3> 		aPosition, 
-		core::math::vec<float, 3> 		aDirRight,
-		core::math::vec<float, 3> 		aDirUp,
-		core::math::vec<float, 3> 		aDirForward,
+		core::math::vec<float, 2> 		aDirection,
 		core::math::vec<float, 3> 		aScale,
 		float 							aNear,
 		float 							aFar
 	) {
 		this->Position = aPosition;
-		this->Rotation = math::mat<float, 4, 4>(
-			 aDirRight[0], 		 aDirRight[1], 		 aDirRight[2], 			0.0f,
-			-aDirUp[0], 		-aDirUp[1], 		-aDirUp[2], 			0.0f,
-			 aDirForward[0], 	 aDirForward[1], 	 aDirForward[2], 		0.0f,
-			 0.0f, 				 0.0f, 				 0.0f, 					1.0f
-		);
+		this->Rotation = math::rotation(aDirection[0], aDirection[1]);
 		this->Projection = math::orthographic(aScale[0], aScale[1], aNear, aFar);
 	}
 
 	subject::uniform_data::uniform_data(
-		math::vec<float, 3> aPosition, 
-		math::vec<float, 3> aDirRight,
-		math::vec<float, 3> aDirUp,
-		math::vec<float, 3> aDirForward,
-		float aFOV,
-		math::vec<uint, 3> aResolution,
-		float aNear,
-		float aFar
+		core::math::vec<float, 3> 		aPosition, 
+		core::math::vec<float, 2> 		aDirection,
+		float 							aFOV,
+		core::math::vec<uint, 3> 		aResolution,
+		float 							aNear,
+		float 							aFar
 	) {
 		this->Position = aPosition;
-		this->Rotation = math::mat<float, 4, 4>(
-			aDirRight[0], 		 aDirRight[1], 		 aDirRight[2], 			0.0f,
-			-aDirUp[0], 		-aDirUp[1], 		-aDirUp[2], 			0.0f,
-			aDirForward[0], 	 aDirForward[1], 	 aDirForward[2], 		0.0f,
-			0.0f, 				 0.0f, 				 0.0f, 					1.0f
-		);
+		this->Rotation = math::rotation(aDirection[0], aDirection[1]);
 		float AspectRatio = static_cast<float>(aResolution[0]) / static_cast<float>(aResolution[1]);
 		this->Projection = math::perspective(math::radians(aFOV), AspectRatio, aNear, aFar);
 	}
@@ -57,7 +43,7 @@ namespace geodesy::runtime {
 
 	subject::framechain::~framechain() {
 
-    for (size_t i = 0; i < this->PredrawFrameOperation.size(); i++) {
+		for (size_t i = 0; i < this->PredrawFrameOperation.size(); i++) {
 			this->Context->release_command_buffer(device::operation::GRAPHICS_AND_COMPUTE, this->PredrawFrameOperation[i].CommandBufferList);
 		}
 		for (size_t i = 0; i < this->PostdrawFrameOperation.size(); i++) {

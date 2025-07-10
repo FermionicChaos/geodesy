@@ -255,9 +255,7 @@ namespace geodesy::bltn::obj {
 
 		uniform_data UniformData = uniform_data(
 			this->Position, 
-			this->DirectionRight, 
-			this->DirectionUp, 
-			this->DirectionFront, 
+			{ this->Theta, this->Phi },
 			this->FOV, 
 			this->Framechain->Resolution, 
 			this->Near,
@@ -298,8 +296,12 @@ namespace geodesy::bltn::obj {
 		if (this->Theta > math::constant::pi) this->Theta = math::constant::pi;
 		if (this->Theta < 0) this->Theta = 0;
 
-		this->InputVelocity = this->DirectionFront*ForwardSpeed + this->DirectionRight*RightSpeed;
+		math::mat<float, 3, 3> OrientationMatrix = math::orientation(this->Theta, this->Phi).minor(3,3);
+		math::vec<float, 3> DirectionRight = OrientationMatrix * math::vec<float, 3>(1.0f, 0.0f, 0.0f);
+		math::vec<float, 3> DirectionForward = OrientationMatrix * math::vec<float, 3>(0.0f, 1.0f, 0.0f);
+		math::vec<float, 3> DirectionUp = OrientationMatrix * math::vec<float, 3>(0.0f, 0.0f, 1.0f);
 
+		this->InputVelocity = DirectionForward * ForwardSpeed + DirectionRight * RightSpeed;
 	}
 
 	void camera3d::update(
@@ -313,15 +315,9 @@ namespace geodesy::bltn::obj {
 		this->LinearMomentum += (this->InputForce) * aDeltaTime;
 		this->Position += (this->LinearMomentum / this->Mass + this->InputVelocity) * aDeltaTime;
 
-		this->DirectionRight			= {  std::sin(Phi), 					-std::cos(Phi), 					0.0f 			};
-		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
-		this->DirectionFront			= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
-
 		*(uniform_data*)this->SubjectUniformBuffer->Ptr = uniform_data(
 			this->Position, 
-			this->DirectionRight, 
-			this->DirectionUp, 
-			this->DirectionFront, 
+			{ this->Theta, this->Phi },
 			this->FOV, 
 			this->Framechain->Resolution, 
 			this->Near,
