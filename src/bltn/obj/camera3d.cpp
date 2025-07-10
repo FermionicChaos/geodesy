@@ -296,7 +296,7 @@ namespace geodesy::bltn::obj {
 		if (this->Theta > math::constant::pi) this->Theta = math::constant::pi;
 		if (this->Theta < 0) this->Theta = 0;
 
-		math::mat<float, 3, 3> OrientationMatrix = math::orientation(this->Theta, this->Phi).minor(3,3);
+		math::mat<float, 3, 3> OrientationMatrix = math::mat<float, 4, 4>(math::orientation(this->Theta, this->Phi)).minor(3,3);
 		math::vec<float, 3> DirectionRight = OrientationMatrix * math::vec<float, 3>(1.0f, 0.0f, 0.0f);
 		math::vec<float, 3> DirectionForward = OrientationMatrix * math::vec<float, 3>(0.0f, 1.0f, 0.0f);
 		math::vec<float, 3> DirectionUp = OrientationMatrix * math::vec<float, 3>(0.0f, 0.0f, 1.0f);

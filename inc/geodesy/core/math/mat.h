@@ -411,7 +411,7 @@ namespace geodesy::core::math {
 	}
 
 	template<typename T> inline
-	mat<T, 4, 4> orientation(T aTheta, T aPhi) {
+	quaternion<T> orientation(T aTheta, T aPhi) {
 		const T CosTheta = std::cos(aTheta);
 		const T SinTheta = std::sin(aTheta);
 		const T CosPhi = std::cos(aPhi);
@@ -422,11 +422,11 @@ namespace geodesy::core::math {
 			0.0f,                       CosTheta,               SinTheta,               0.0f,
 			0.0f,                       0.0f,                   0.0f,                   1.0f
 		};
-		return OrientationMatrix;
+		return quat(OrientationMatrix);
 	}
 
 	template<typename T> inline
-	mat<T, 4, 4> rotation(T aTheta, T aPhi) {
+	quaternion<T> rotation(T aTheta, T aPhi) {
 		const T CosTheta = std::cos(aTheta);
 		const T SinTheta = std::sin(aTheta);
 		const T CosPhi = std::cos(aPhi);
@@ -437,7 +437,7 @@ namespace geodesy::core::math {
 			SinTheta * CosPhi,          SinTheta * SinPhi,      CosTheta,               0.0f,
 			0.0f,                       0.0f,                   0.0f,                   1.0f
 		};
-		return RotationMatrix;
+		return quat(RotationMatrix);
 	}
 
 	template <typename T, std::size_t M, std::size_t N> inline
