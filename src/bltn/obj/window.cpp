@@ -33,9 +33,8 @@ namespace geodesy::bltn::obj {
 
 		// Bind Object Uniform Buffers
 		DescriptorArray->bind(0, 0, 0, aWindow->SubjectUniformBuffer);			// Camera Position, Orientation, Projection
-		DescriptorArray->bind(0, 1, 0, aObject->UniformBuffer);					// Object Position, Orientation, Scale
-		DescriptorArray->bind(0, 2, 0, MeshInstance->UniformBuffer); 			// Mesh Instance Transform
-		DescriptorArray->bind(0, 3, 0, Material->UniformBuffer); 				// Material Properties
+		DescriptorArray->bind(0, 1, 0, MeshInstance->UniformBuffer); 			// Mesh Instance Transform
+		DescriptorArray->bind(0, 2, 0, Material->UniformBuffer); 				// Material Properties
 
 		// Bind Material Textures.
 		DescriptorArray->bind(1, 0, 0, Material->Texture["Color"]);

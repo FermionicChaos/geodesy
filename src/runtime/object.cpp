@@ -6,16 +6,6 @@ namespace geodesy::runtime {
 	using namespace core;
 	using namespace gpu;
 
-	object::uniform_data::uniform_data(
-		math::vec<float, 3> aPosition, 
-		math::vec<float, 2> aDirection,
-		math::vec<float, 3> aScale
-	) {
-		this->Position = aPosition;
-		this->Orientation = math::orientation(aDirection[0], aDirection[1]);
-		this->Scale = aScale;
-	}
-
 	object::creator::creator() {
 		this->Name 					= "";
 		this->ModelPath 			= "";
@@ -134,19 +124,6 @@ namespace geodesy::runtime {
 
 		// Gather mesh instances.
 		this->TotalMeshInstance = this->gather_instances();
-
-		// Object Uniform Buffer Creation from GPU Device Context.
-		buffer::create_info UBCI;
-		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
-		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
-
-		uniform_data UniformData = uniform_data(
-			this->Position, 
-			{ this->Theta, this->Phi }, // Direction is now a vec2 for Theta and Phi angles.
-			this->Scale
-		);
-		this->UniformBuffer = aContext->create_buffer(UBCI, sizeof(uniform_data), &UniformData);
-		this->UniformBuffer->map_memory(0, sizeof(uniform_data));
 	}
 
 	object::~object() {}
@@ -220,13 +197,6 @@ namespace geodesy::runtime {
 		for (auto& R : this->Renderer) {
 			R.second->update(aDeltaTime, aTime);
 		}
-
-		// Update object uniform buffer (this is being phased out)
-		*(uniform_data*)this->UniformBuffer->Ptr = uniform_data(
-			this->Position, 
-			{ this->Theta, this->Phi }, // Direction is now a vec2 for Theta and Phi angles.
-			this->Scale
-		);
 	}
 
 	std::vector<std::shared_ptr<object::draw_call>> object::draw(subject* aSubject) {

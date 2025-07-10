@@ -42,7 +42,7 @@ layout (set = 0, binding = 0) uniform SubjectUBO {
 	mat4 Projection;
 } Subject;
 
-layout (set = 0, binding = 3) uniform MaterialUBO {
+layout (set = 0, binding = 2) uniform MaterialUBO {
 	int 	Transparency;
 	float 	AlbedoVertexWeight;
 	float 	AlbedoTextureWeight;

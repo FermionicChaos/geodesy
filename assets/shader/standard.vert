@@ -20,13 +20,7 @@ layout (set = 0, binding = 0) uniform SubjectUBO {
 	mat4 Projection;
 } Subject;
 
-layout (set = 0, binding = 1) uniform ObjectUBO {
-	vec3 Position;
-	mat4 Orientation;
-	vec3 Scale;
-} Object;
-
-layout (set = 0, binding = 2) uniform MeshUBO {
+layout (set = 0, binding = 1) uniform MeshUBO {
 	mat4 DefaultTransform;
 	mat4 BoneTransform[MAX_BONE_COUNT];
 	mat4 OffsetTransform[MAX_BONE_COUNT];

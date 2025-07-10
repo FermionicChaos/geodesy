@@ -18,17 +18,6 @@ namespace geodesy::runtime {
 	class object : public core::gfx::node {
 	public:
 
-		struct uniform_data {
-			alignas(16) core::math::vec<float, 3> 					Position;
-			alignas(16) core::math::mat<float, 4, 4> 				Orientation;
-			alignas(16) core::math::vec<float, 3> 					Scale;
-			uniform_data(
-				core::math::vec<float, 3> aPosition, 
-				core::math::vec<float, 2> aDirection,
-				core::math::vec<float, 3> aScale
-			);
-		};
-
 		// A draw call represents a singular draw call for a single mesh instance in
 		// the node hiearchy of the model. Distance from the camera is determined
 		struct draw_call {
@@ -99,7 +88,6 @@ namespace geodesy::runtime {
 		std::shared_ptr<core::gfx::model>											Model;
 		std::vector<core::phys::node*> 												LinearizedNodeTree;
 		std::vector<core::gfx::mesh::instance*> 									TotalMeshInstance;
-		std::shared_ptr<core::gpu::buffer> 											UniformBuffer;
 		std::map<subject*, std::shared_ptr<renderer>>								Renderer;
 
 		object(std::shared_ptr<core::gpu::context> aContext, stage* aStage, creator* aCreator);
