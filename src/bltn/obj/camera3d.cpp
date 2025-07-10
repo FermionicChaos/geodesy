@@ -85,7 +85,7 @@ namespace geodesy::bltn::obj {
 		auto Material = aObject->Model->Material[MeshInstance->MaterialIndex];
 		auto Node = MeshInstance->Parent;
 		// Get mesh instance world position center.
-		math::vec<float, 3> MeshPosition = Node->transform().minor(3,3) * math::vec<float, 3>(0.0f, 0.0f, 0.0f);
+		math::vec<float, 3> MeshPosition = Node->GlobalTransform.minor(3,3) * math::vec<float, 3>(0.0f, 0.0f, 0.0f);
 		// Get transparency mode for draw call data structure.
 		this->TransparencyMode = (material::transparency)Material->UniformData.Transparency;
 		// Set rendering priority.
@@ -154,7 +154,7 @@ namespace geodesy::bltn::obj {
 		auto Material = aObject->Model->Material[MeshInstance->MaterialIndex];
 		auto Node = MeshInstance->Parent;
 		// Get Mesh Position with respect to parent node.
-		math::vec<float, 3> MeshPosition = Node->transform(aObject->AnimationWeights, aObject->Model->Animation, aObject->Stage->Time).minor(3,3) * math::vec<float, 3>(0.0f, 0.0f, 0.0f);
+		math::vec<float, 3> MeshPosition = Node->GlobalTransform.minor(3,3) * math::vec<float, 3>(0.0f, 0.0f, 0.0f);
 		// Some meshes are not centered at the origin.
 		float Distance = math::length(MeshPosition + Mesh->CenterOfMass - aCamera3D->Position);
 		// Calculate Rendering Priority.
@@ -270,7 +270,7 @@ namespace geodesy::bltn::obj {
 	}
 
 	void camera3d::input(const core::hid::input& aInputState) {
-		float LinearSpeed = 20.0f;
+		float LinearSpeed = 7.5f;
 		float RotationSpeed = 0.75f;
 		float ForwardSpeed = 0.0f, RightSpeed = 0.0f;
 		float DeltaTheta = 0.0f, DeltaPhi = 0.0f;
@@ -304,16 +304,30 @@ namespace geodesy::bltn::obj {
 		this->InputVelocity = DirectionForward * ForwardSpeed + DirectionRight * RightSpeed;
 	}
 
-	void camera3d::update(
-		double 									aDeltaTime, 
-		double 									aTime, 
-		const std::vector<float>& 				aAnimationWeight, 
-		const std::vector<phys::animation>& 	aPlaybackAnimation,
-		const std::vector<phys::force>& 		aAppliedForces
+	void camera3d::host_update(
+		double 											aDeltaTime, 
+		double 											aTime, 
+		const std::vector<float>& 						aAnimationWeight, 
+		const std::vector<core::phys::animation>& 		aPlaybackAnimation,
+		const std::vector<core::phys::force>& 			aAppliedForces
 	) {
+
+		object::host_update(aDeltaTime, aTime, aAnimationWeight, aPlaybackAnimation, aAppliedForces);
+
 		// How the object will move according to its current momentum.
 		this->LinearMomentum += (this->InputForce) * aDeltaTime;
 		this->Position += (this->LinearMomentum / this->Mass + this->InputVelocity) * aDeltaTime;
+	}
+
+	void camera3d::device_update(
+		double 											DeltaTime, 
+		double 											Time, 
+		const std::vector<float>& 						AnimationWeight, 
+		const std::vector<core::phys::animation>& 		PlaybackAnimation,
+		const std::vector<core::phys::force>& 			AppliedForces
+	) {
+
+		object::device_update(DeltaTime, Time, AnimationWeight, PlaybackAnimation, AppliedForces);
 
 		*(uniform_data*)this->SubjectUniformBuffer->Ptr = uniform_data(
 			this->Position, 

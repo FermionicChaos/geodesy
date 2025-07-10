@@ -44,8 +44,6 @@ namespace geodesy::core::gfx {
 		model(std::shared_ptr<gpu::context> aContext, std::shared_ptr<model> aModel, gpu::image::create_info aCreateInfo = {});
 		~model();
 
-		void update(double aDeltaTime, const std::vector<float>& aAnimationWeights);
-
 	};
 
 }

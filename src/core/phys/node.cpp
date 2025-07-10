@@ -26,7 +26,14 @@ namespace geodesy::core::phys {
 		this->Scale 			= { 1.0f, 1.0f, 1.0f }; // Default scale to 1 in all dimensions.
 		this->LinearMomentum 	= { 0.0f, 0.0f, 0.0f }; // Default linear momentum to zero.
 		this->AngularMomentum 	= { 0.0f, 0.0f, 0.0f }; // Default angular momentum to zero.
-		this->Transformation 	= {
+		this->DefaultTransform 	= {
+			1.0f, 0.0f, 0.0f, 0.0f,
+			0.0f, 1.0f, 0.0f, 0.0f,
+			0.0f, 0.0f, 1.0f, 0.0f,
+			0.0f, 0.0f, 0.0f, 1.0f
+		};
+		this->CurrentTransform = this->DefaultTransform;
+		this->GlobalTransform = {
 			1.0f, 0.0f, 0.0f, 0.0f,
 			0.0f, 1.0f, 0.0f, 0.0f,
 			0.0f, 0.0f, 1.0f, 0.0f,
@@ -50,54 +57,13 @@ namespace geodesy::core::phys {
 	}
 
 	// The main transform function that calculates the model transform for this node.
-	math::mat<float, 4, 4> node::transform(const std::vector<float>& aAnimationWeight, const std::vector<phys::animation>& aPlaybackAnimation, double aTime) const {
-		// This calculates the global transform of the node which it is
-		// being called from. If there are no animations associated with 
-		// the node hierarchy, the bind pose transformations will be used
-		// instead. If there are animations associated with the node hierarchy,
-		// Then the animation transformations will be used in a weighted average.
-
-		//tex:
-		// It is the responsibility of the model class to insure that the sum of the contribution
-		// factors (weights) is equal to 1.
-		// $$ 1 = w^{b} + \sum_{\forall A \in Anim} w_{i} $$
-		// $$ T = T^{base} \cdot w^{base} + \sum_{\forall i \in A} T_{i}^{A} \cdot w_{i}^{A} $$ 
-		//
-
-		// Bind Pose Transform
-		math::mat<float, 4, 4> NodeTransform = (this->Transformation * aAnimationWeight[0]);
-
-		// TODO: Figure out how to load animations per node. Also incredibly slow right now. Optimize Later.
-		// Overrides/Averages Animation Transformations with Bind Pose Transform based on weights.
-		for (size_t i = 0; i < aPlaybackAnimation.size(); i++) {
-			// Check if Animation Data exists for this node, if not, use bind pose.
-			// Pull animation for readability.
-			auto& NodeAnimation = aPlaybackAnimation[i][this->Identifier];
-			float Weight = aAnimationWeight[i + 1];
-			if (NodeAnimation.exists()) {
-				// Calculate time in ticks
-				float TickerTime = aTime * aPlaybackAnimation[i].TicksPerSecond;
-				// Ensure TickerTime is within the bounds of the animation.
-				float BoundedTickerTime = std::fmod(TickerTime, aPlaybackAnimation[i].Stop - aPlaybackAnimation[i].Start) + aPlaybackAnimation[i].Start;
-				if (this->Root == this) {
-					NodeTransform += this->Transformation * NodeAnimation[BoundedTickerTime] * Weight;
-				}
-				else {
-					NodeTransform += NodeAnimation[BoundedTickerTime] * Weight;
-				}
-			}
-			else {
-				// Animation Data Does Not Exist, use bind pose animation.
-				NodeTransform += this->Transformation * Weight;
-			}
-		}
-
-		// Recursively apply parent transformations.
+	math::mat<float, 4, 4> node::transform() const {
+		// Recursively calculates the world transform for this node using current state of the node hierarchy.
 		if (this->Root != this) {
-			return this->Parent->transform(aAnimationWeight, aPlaybackAnimation, aTime) * NodeTransform;
+			return this->Parent->transform() * this->CurrentTransform;
 		}
 		else {
-			return NodeTransform;
+			return this->CurrentTransform; // If this is the root node, return the current transform.
 		}
 	}
 
@@ -144,7 +110,9 @@ namespace geodesy::core::phys {
 		this->Scale = aNode->Scale;
 		this->LinearMomentum = aNode->LinearMomentum;
 		this->AngularMomentum = aNode->AngularMomentum;
-		this->Transformation = aNode->Transformation;
+		this->DefaultTransform = aNode->DefaultTransform;
+		this->CurrentTransform = aNode->CurrentTransform; // Copy the current transform.
+		this->GlobalTransform = aNode->GlobalTransform; // Copy the global transform.
 		this->CollisionMesh = aNode->CollisionMesh; // Copy the collision mesh if it exists.
 	}
 
@@ -166,35 +134,56 @@ namespace geodesy::core::phys {
 		}
 	}
 
-	void node::update(
+	void node::host_update(
 		double 							aDeltaTime, 
 		double 							aTime, 
 		const std::vector<float>& 		aAnimationWeight, 
 		const std::vector<animation>& 	aPlaybackAnimation,
 		const std::vector<force>& 		aAppliedForces
 	) {
-		// Go to child nodes and update children nodes.
-		// for (auto Chd : this->Child) {
-		// 	Chd->update(
-		// 		aDeltaTime, 
-		// 		aTime, 
-		// 		aAnimationWeight, 
-		// 		aPlaybackAnimation
-		// 	);
-		// }
-		
-		// //update_info UpdateInfo;
-		// // Newtons First Law: An object in motion tends to stay in motion.
-		// // Newtons Second Law: The change in momentum of an object is equal to the forces applied to it.
-		// // Newtons Third Law: For every action, there is an equal and opposite reaction.
-		// math::mat<float, 3, 3> InvertedInertiaTensor = math::inverse(this->InertiaTensor);
+		//tex:
+		// It is the responsibility of the model class to insure that the sum of the contribution
+		// factors (weights) is equal to 1.
+		// $$ 1 = w^{b} + \sum_{\forall A \in Anim} w_{i} $$
+		// $$ T = T^{base} \cdot w^{base} + \sum_{\forall i \in A} T_{i}^{A} \cdot w_{i}^{A} $$ 
 
-		// // How the momentum of the object will change when a force is applied to it.
-		// this->AngularMomentum += aAppliedTorque * aDeltaTime;
+		// Bind Pose Transform
+		this->CurrentTransform = (this->DefaultTransform * aAnimationWeight[0]);
 
-		// // How the object will move according to its current momentum.
-		// this->LinearMomentum += (aAppliedForce + this->InputForce) * aDeltaTime;
-		// this->Position += (this->LinearMomentum / this->Mass + this->InputVelocity) * aDeltaTime;
+		// TODO: Figure out how to load animations per node. Also incredibly slow right now. Optimize Later.
+		// Overrides/Averages Animation Transformations with Bind Pose Transform based on weights.
+		for (size_t i = 0; i < aPlaybackAnimation.size(); i++) {
+			// Check if Animation Data exists for this node, if not, use bind pose.
+			// Pull animation for readability.
+			auto& NodeAnimation = aPlaybackAnimation[i][this->Identifier];
+			float Weight = aAnimationWeight[i + 1];
+			if (NodeAnimation.exists()) {
+				// Calculate time in ticks
+				float TickerTime = aTime * aPlaybackAnimation[i].TicksPerSecond;
+				// Ensure TickerTime is within the bounds of the animation.
+				float BoundedTickerTime = std::fmod(TickerTime, aPlaybackAnimation[i].Stop - aPlaybackAnimation[i].Start) + aPlaybackAnimation[i].Start;
+				if (this->Root == this) {
+					this->CurrentTransform += this->DefaultTransform * NodeAnimation[BoundedTickerTime] * Weight;
+				}
+				else {
+					this->CurrentTransform += NodeAnimation[BoundedTickerTime] * Weight;
+				}
+			}
+			else {
+				// Animation Data Does Not Exist, use bind pose animation.
+				this->CurrentTransform += this->DefaultTransform * Weight;
+			}
+		}
+	}
+
+	void node::device_update(
+		double 									aDeltaTime, 
+		double 									aTime, 
+		const std::vector<float>& 				aAnimationWeight, 
+		const std::vector<phys::animation>& 	aPlaybackAnimation,
+		const std::vector<phys::force>& 		aAppliedForces
+	) {
+		// Does nothing, by definition, agnostic of GPU module.
 	}
 	
 }

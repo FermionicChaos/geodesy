@@ -67,15 +67,8 @@ void main() {
 	t = nt * t;
 	b = nt * b;
 
-	// Orient object in model space.
-	vec3 InverseObjectScale = vec3(1.0f / Object.Scale.x, 1.0f / Object.Scale.y, 1.0f / Object.Scale.z);
-	v = Object.Orientation * vec4(Object.Scale * v.xyz, 1.0);
-	n = Object.Orientation * vec4(InverseObjectScale * n.xyz, 1.0);
-	t = Object.Orientation * vec4(InverseObjectScale * t.xyz, 1.0);
-	b = Object.Orientation * vec4(InverseObjectScale * b.xyz, 1.0);
-
 	// Convert to world space.
-	v = vec4(v.xyz + Object.Position, 1.0f);
+	v = vec4(v.xyz, 1.0f);
 	n = vec4(normalize(n.xyz), 1.0f);
 	t = vec4(normalize(t.xyz), 1.0f);
 	b = vec4(normalize(b.xyz), 1.0f);

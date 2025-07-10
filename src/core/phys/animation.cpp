@@ -82,29 +82,13 @@ namespace geodesy::core::phys {
 	}
 
 	mat<float, 4, 4> animation::node::operator[](double aTime) const {
-		mat<float, 4, 4> T = {
-			1.0f, 0.0f, 0.0f, 0.0f,
-			0.0f, 1.0f, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
-		};
-		mat<float, 4, 4> R = {
-			1.0f, 0.0f, 0.0f, 0.0f,
-			0.0f, 1.0f, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
-		};
-		mat<float, 4, 4> S = {
-			1.0f, 0.0f, 0.0f, 0.0f,
-			0.0f, 1.0f, 0.0f, 0.0f,
-			0.0f, 0.0f, 1.0f, 0.0f,
-			0.0f, 0.0f, 0.0f, 1.0f
-		};
+		vec<float, 3> Tf;
+		quaternion<float> Qf;
+		vec<float, 3> Sf;
 
 		// Calculates interpolated translation matrix
 		if (this->PositionKey.size() > 0) {
 			std::pair<key<vec<float, 3>>, key<vec<float, 3>>> TP = find_value_pair(this->PositionKey, aTime);
-			vec<float, 3> Tf;
 			if ((aTime >= this->PositionKey.front().Time) && (aTime <= this->PositionKey.back().Time)) {
 				// Time exists in key frame set.
 				float p = interpolation_factor(TP, aTime);
@@ -114,12 +98,6 @@ namespace geodesy::core::phys {
 				// Out of bounds, use first or last key.
 				Tf = TP.first.Value;
 			}
-			T = mat<float, 4, 4>(
-				1.0f, 0.0f, 0.0f, Tf[0],
-				0.0f, 1.0f, 0.0f, Tf[1],
-				0.0f, 0.0f, 1.0f, Tf[2],
-				0.0f, 0.0f, 0.0f, 1.0f
-			);
 		}
 
 		// Calculates interpolated quaternion.
@@ -134,7 +112,6 @@ namespace geodesy::core::phys {
 					Q2 = -Q2;  // Negate Q2 for shorter path
 					CosTheta = -CosTheta;
 				}
-				quaternion<float> Qf;
 				if (std::abs(CosTheta) > 0.999f) {
 					// Cartesian LERP.
 					Qf = (1.0f - p) * Q1 + p * Q2;
@@ -144,18 +121,16 @@ namespace geodesy::core::phys {
 					float Theta = std::acos(CosTheta);
 					Qf = ((std::sin((1.0f - p) * Theta) * Q1 + std::sin(p * Theta) * Q2) / std::sin(Theta));
 				}
-				R = math::mat<float, 4, 4>(normalize(Qf));
 			}
 			else {
 				// Out of bounds, use first or last key.
-				R = math::mat<float, 4, 4>(normalize(RP.first.Value));
+				Qf = RP.first.Value;
 			}
 		}
 
 		// Calculates interpolated scaling matrix
 		if (this->ScalingKey.size() > 0) {
 			std::pair<key<vec<float, 3>>, key<vec<float, 3>>> SP = find_value_pair(this->ScalingKey, aTime);
-			vec<float, 3> Sf;
 			if ((aTime < this->ScalingKey.front().Time) || (aTime > this->ScalingKey.back().Time)) {
 				float p = interpolation_factor(SP, aTime);
 				Sf = (1.0f - p) * SP.first.Value + p * SP.second.Value;
@@ -164,16 +139,10 @@ namespace geodesy::core::phys {
 				// Out of bounds, use first or last key.
 				Sf = SP.first.Value;				
 			}
-			S = mat<float, 4, 4>(
-				Sf[0], 0.0f, 0.0f, 0.0f,
-				0.0f, Sf[1], 0.0f, 0.0f,
-				0.0f, 0.0f, Sf[2], 0.0f,
-				0.0f, 0.0f, 0.0f, 1.0f
-			);
 		}
 
 		// Order matters, scaling is applied first, then the object is rotated, then translated.
-		return T * R * S;
+		return calculate_transform(Tf, Qf, Sf);
 	}
 
 	bool animation::node::exists() const {

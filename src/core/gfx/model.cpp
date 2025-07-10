@@ -219,10 +219,4 @@ namespace geodesy::core::gfx {
 
 	}
 
-	void model::update(double aDeltaTime, const std::vector<float>& aAnimationWeights) {
-		this->Time += aDeltaTime;
-		// Choose animation here.
-		this->Hierarchy->update(aDeltaTime, this->Time, aAnimationWeights, this->Animation);
-	}
-
 }

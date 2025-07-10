@@ -55,7 +55,9 @@ namespace geodesy::core::phys {
 		math::vec<float, 3>						Position;			// Meter			[m]
 		math::quaternion<float>					Orientation;		// Quaternion		[Dimensionless]
 		math::vec<float, 3> 					Scale;				// Scaling Factor	[Dimensionless]
-		math::mat<float, 4, 4> 					Transformation; 	// Node transformation matrix
+		math::mat<float, 4, 4> 					DefaultTransform; 	// Node transformation matrix
+		math::mat<float, 4, 4> 					CurrentTransform;   // Final Node Transform each frame after physics and animation
+		math::mat<float, 4, 4> 					GlobalTransform;    // Node Transform to World Space.
 		math::vec<float, 3>						LinearMomentum;		// Linear Momentum	[kg*m/s]
 		math::vec<float, 3>						AngularMomentum;	// Angular Momentum [kg*m/s]
 		std::shared_ptr<phys::mesh>				CollisionMesh;		// Mesh Data
@@ -67,7 +69,7 @@ namespace geodesy::core::phys {
 		size_t node_count() const;
 
 		// For this node, it will calculate the model transform for a node at a particular time.
-		math::mat<float, 4, 4> transform(const std::vector<float>& aAnimationWeight = { 1.0f }, const std::vector<animation>& aPlaybackAnimation = {}, double aTime = 0.0f) const;
+		math::mat<float, 4, 4> transform() const;
 
 		// Returns the node with the given name in the hierarchy. Will return
 		// nullptr if the node is not found in the hierarchy.
@@ -82,12 +84,19 @@ namespace geodesy::core::phys {
 		virtual void copy_data(const node* aNode);
 		virtual void copy(const node* aNode);
 		virtual void swap(node* aNode);
-		virtual void update(
+		virtual void host_update(
 			double 								aDeltaTime = 0.0f, 
 			double 								aTime = 0.0f, 
 			const std::vector<float>& 			aAnimationWeight = { 1.0f }, 
 			const std::vector<animation>& 		aPlaybackAnimation = {},
 			const std::vector<force>& 			aAppliedForces = {}
+		);
+		virtual void device_update(
+			double 									aDeltaTime = 0.0f, 
+			double 									aTime = 0.0f, 
+			const std::vector<float>& 				aAnimationWeight = { 1.0f }, 
+			const std::vector<phys::animation>& 	aPlaybackAnimation = {},
+			const std::vector<phys::force>& 		aAppliedForces = {}
 		);
 		
 	};

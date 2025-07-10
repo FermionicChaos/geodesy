@@ -333,7 +333,8 @@ namespace geodesy::bltn::obj {
 		glfwPollEvents();
 	}
 
-	system_window::creator::creator() {		
+	system_window::creator::creator() {
+		this->Direction 		= { -90.0f, 0.0f }; // Default direction is looking down the negative Z-axis.
 		this->Display			= nullptr;
 		this->ColorSpace		= swapchain::colorspace::SRGB_NONLINEAR;
 		this->CompositeAlpha	= swapchain::composite::ALPHA_OPAQUE;
@@ -385,13 +386,16 @@ namespace geodesy::bltn::obj {
 		this->destroy_window_handle(this->WindowHandle);
 	}
 
-	void system_window::update(
+	void system_window::host_update(
 		double 									aDeltaTime, 
 		double 									aTime, 
 		const std::vector<float>& 				aAnimationWeight, 
 		const std::vector<phys::animation>& 	aPlaybackAnimation,
 		const std::vector<phys::force>& 		aAppliedForces
 	) {
+		// Call base class update.
+		object::host_update(aDeltaTime, aTime, aAnimationWeight, aPlaybackAnimation, aAppliedForces);
+		// Update input state.
 		this->InputState.Mouse.update(aDeltaTime);
 	}
 

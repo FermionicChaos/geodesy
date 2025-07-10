@@ -167,7 +167,7 @@ namespace geodesy::core::gpu {
 				// math::mat<float, 4, 4> ObjectTransform = ObjectTranslation * ObjectOrientation * ObjectScale;
 
 				// Matrix Transform, get global transform to world space. (Include Object Transform.)
-				math::mat<float, 4, 4> WorldTransform = MeshInstance->Parent->transform();
+				math::mat<float, 4, 4> WorldTransform = MeshInstance->Parent->GlobalTransform;
 				for (int Row = 0; Row < 3; Row++) {
 					for (int Col = 0; Col < 4; Col++) {
 						// Convert from memory internal format to vulkan using proper accessors.

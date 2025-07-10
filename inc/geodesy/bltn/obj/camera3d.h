@@ -64,7 +64,14 @@ namespace geodesy::bltn::obj {
 
 		// Implement input
 		void input(const core::hid::input& aInput) override;
-		void update(
+		void host_update(
+			double 										aDeltaTime = 0.0f, 
+			double 										aTime = 0.0f, 
+			const std::vector<float>& 					aAnimationWeight = { 1.0f }, 
+			const std::vector<core::phys::animation>& 	aPlaybackAnimation = {},
+			const std::vector<core::phys::force>& 		aAppliedForces = {}
+		) override;
+		virtual void device_update(
 			double 										aDeltaTime = 0.0f, 
 			double 										aTime = 0.0f, 
 			const std::vector<float>& 					aAnimationWeight = { 1.0f }, 

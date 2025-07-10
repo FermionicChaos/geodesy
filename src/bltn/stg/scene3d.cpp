@@ -8,7 +8,7 @@ namespace geodesy::bltn::stg {
 		// Create Info for stage camera.
 		obj::camera3d::creator CameraCreateInfo;
 		CameraCreateInfo.Name 				= "Camera3D";
-		CameraCreateInfo.Position 			= { 0.0f, -50.0f, 10.0f };
+		CameraCreateInfo.Position 			= { 0.0f, -10.0f, 5.0f };
 		CameraCreateInfo.Direction 			= { 0.0f, 0.0f };
 		CameraCreateInfo.Resolution 		= { 2*1920, 2*1080, 1 };
 		CameraCreateInfo.FrameRate 			= 500.0f;
@@ -19,6 +19,22 @@ namespace geodesy::bltn::stg {
 
 		// Create Temp Array of objects to be created..
 		std::vector<runtime::object::creator> ObjectList;
+
+		runtime::object::creator Sponza;
+		Sponza.Name 						= "Sponza";
+		Sponza.ModelPath 					= "dep/gltf-models/2.0/Sponza/glTF/Sponza.gltf";
+		Sponza.Position 					= { 0.0f, 0.0f, 0.0f };
+		Sponza.Direction 					= { -90.0f, 90.0 };
+		Sponza.Scale 						= { 0.1f, 0.1f, 0.1f };
+		ObjectList.push_back(Sponza);
+
+		runtime::object::creator PirateMap;
+		PirateMap.Name 						= "PirateMap";
+		PirateMap.ModelPath 				= "assets/models/pirate_map/scene.gltf";
+		PirateMap.Position 					= { 0.0f, 0.0f, 0.0f };
+		PirateMap.Direction 				= { 0.0f, 0.0f };
+		PirateMap.Scale 					= { 0.01f, 0.01f, 0.01f };
+		ObjectList.push_back(PirateMap);
 
 		// Simple Boxes
 
@@ -76,56 +92,38 @@ namespace geodesy::bltn::stg {
 		Gizmo.Name 							= "Gizmo";
 		Gizmo.ModelPath 					= "assets/models/gizmo/scene.gltf";
 		Gizmo.Position 						= { 0.0f, 0.0f, 0.0f };
-		Gizmo.Direction 					= { -90.0f, 0.0f };
+		Gizmo.Direction 					= { 0.0f, 0.0f };
 		Gizmo.Scale 						= { 1.0f, 1.0f, 1.0f };
 		ObjectList.push_back(Gizmo);
 
-		// Tests Transforms.
-
-		runtime::object::creator Sponza;
-		Sponza.Name 						= "Sponza";
-		Sponza.ModelPath 					= "dep/gltf-models/2.0/Sponza/glTF/Sponza.gltf";
-		Sponza.Position 					= { 0.0f, 0.0f, 0.0f };
-		Sponza.Direction 					= { -90.0f, 90.0f };
-		Sponza.Scale 						= { 10.0f, 10.0f, 10.0f };
-		ObjectList.push_back(Sponza);
-
-		// runtime::object::creator PirateMap;
-		// PirateMap.Name 						= "PirateMap";
-		// PirateMap.ModelPath 				= "assets/models/pirate_map/scene.gltf";
-		// PirateMap.Position 					= { 0.0f, 0.0f, 0.0f };
-		// PirateMap.Direction 				= { 0.0f, 0.0f };
-		// PirateMap.Scale 					= { 0.01f, 0.01f, 0.01f };
-		// ObjectList.push_back(PirateMap);
-
 		// Tests Complex Animations
 
-		// runtime::object::creator BrainStem;
-		// BrainStem.Name 						= "BrainStem";
-		// BrainStem.ModelPath 				= "dep/gltf-models/2.0/BrainStem/glTF/BrainStem.gltf";
-		// BrainStem.Position 					= { 5.0f, 0.0f, 0.0f };
-		// BrainStem.Direction 				= { 0.0f, 0.0f };
-		// BrainStem.Scale 					= { 5.0f, 5.0f, 5.0f };
-		// BrainStem.AnimationWeights 			= { 0.0f, 1.0f };
-		// ObjectList.push_back(BrainStem);
+		runtime::object::creator BrainStem;
+		BrainStem.Name 						= "BrainStem";
+		BrainStem.ModelPath 				= "dep/gltf-models/2.0/BrainStem/glTF/BrainStem.gltf";
+		BrainStem.Position 					= { 2.0f, -2.0f, 0.0f };
+		BrainStem.Direction 				= { 0.0f, 0.0f };
+		BrainStem.Scale 					= { 1.0f, 1.0f, 1.0f };
+		BrainStem.AnimationWeights 			= { 0.0f, 1.0f };
+		ObjectList.push_back(BrainStem);
 
-		// runtime::object::creator CesiumMilkTruck;
-		// CesiumMilkTruck.Name 				= "CesiumMilkTruck";
-		// CesiumMilkTruck.ModelPath 			= "dep/gltf-models/2.0/CesiumMilkTruck/glTF/CesiumMilkTruck.gltf";
-		// CesiumMilkTruck.Position 			= { 0.0f, 30.0f, 0.0f };
-		// CesiumMilkTruck.Direction 			= { 0.0f, 0.0f };
-		// CesiumMilkTruck.Scale 				= { 5.0f, 5.0f, 5.0f };
-		// CesiumMilkTruck.AnimationWeights 	= { 0.0f, 1.0f };
-		// ObjectList.push_back(CesiumMilkTruck);
+		runtime::object::creator CesiumMilkTruck;
+		CesiumMilkTruck.Name 				= "CesiumMilkTruck";
+		CesiumMilkTruck.ModelPath 			= "dep/gltf-models/2.0/CesiumMilkTruck/glTF/CesiumMilkTruck.gltf";
+		CesiumMilkTruck.Position 			= { 0.0f, 12.0f, 0.0f };
+		CesiumMilkTruck.Direction 			= { -180.0f, 0.0f };
+		CesiumMilkTruck.Scale 				= { 1.0f, 1.0f, 1.0f };
+		CesiumMilkTruck.AnimationWeights 	= { 0.0f, 1.0f };
+		ObjectList.push_back(CesiumMilkTruck);
 
-		// runtime::object::creator CesiumMan;
-		// CesiumMan.Name 						= "CesiumMan";
-		// CesiumMan.ModelPath 				= "dep/gltf-models/2.0/CesiumMan/glTF/CesiumMan.gltf";
-		// CesiumMan.Position 					= { -5.0f, 0.0f, 0.0f };
-		// CesiumMan.Direction 				= { 0.0f, 0.0f };
-		// CesiumMan.Scale 					= { 5.0f, 5.0f, 5.0f };
-		// CesiumMan.AnimationWeights 			= { 0.0f, 1.0f };
-		// ObjectList.push_back(CesiumMan);
+		runtime::object::creator CesiumMan;
+		CesiumMan.Name 						= "CesiumMan";
+		CesiumMan.ModelPath 				= "dep/gltf-models/2.0/CesiumMan/glTF/CesiumMan.gltf";
+		CesiumMan.Position 					= { -2.0f, -2.0f, 0.0f };
+		CesiumMan.Direction 				= { 0.0f, 0.0f };
+		CesiumMan.Scale 					= { 1.0f, 1.0f, 1.0f };
+		CesiumMan.AnimationWeights 			= { 0.0f, 1.0f };
+		ObjectList.push_back(CesiumMan);
 
 		// Tests Parallax Mapping.
 		// runtime::object::creator ParallaxPlane;
@@ -136,41 +134,41 @@ namespace geodesy::bltn::stg {
 		// ParallaxPlane.Scale 				= { 5.0f, 5.0f, 5.0f };
 		// ObjectList.push_back(ParallaxPlane);
 
-		// // Test Emissive Lighting
-		// runtime::object::creator Lantern;
-		// Lantern.Name 						= "Lantern";
-		// Lantern.ModelPath 					= "dep/gltf-models/2.0/Lantern/glTF/Lantern.gltf";
-		// Lantern.Position 					= { 00.0f, 0.0f, 0.0f };
-		// Lantern.Direction 					= { 0.0f, 0.0f };
-		// Lantern.Scale 						= { 0.6f, 0.6f, 0.6f };
-		// ObjectList.push_back(Lantern);
+		// Test Emissive Lighting
+		runtime::object::creator Lantern;
+		Lantern.Name 						= "Lantern";
+		Lantern.ModelPath 					= "dep/gltf-models/2.0/Lantern/glTF/Lantern.gltf";
+		Lantern.Position 					= { 0.0f, -2.0f, 0.0f };
+		Lantern.Direction 					= { -90.0f, 0.0f };
+		Lantern.Scale 						= { 0.2f, 0.2f, 0.2f };
+		ObjectList.push_back(Lantern);
 
-		// // Full PBR Test
-		// runtime::object::creator DamagedHelmet;
-		// DamagedHelmet.Name 					= "DamagedHelmet";
-		// DamagedHelmet.ModelPath 			= "dep/gltf-models/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf";
-		// DamagedHelmet.Position 				= { 10.0f, 0.0f, 0.0f };
-		// DamagedHelmet.Direction 			= { 0.0f, 0.0f };
-		// DamagedHelmet.Scale 				= { 1.0f, 1.0f, 1.0f };
-		// ObjectList.push_back(DamagedHelmet);
+		// Full PBR Test
+		runtime::object::creator DamagedHelmet;
+		DamagedHelmet.Name 					= "DamagedHelmet";
+		DamagedHelmet.ModelPath 			= "dep/gltf-models/2.0/DamagedHelmet/glTF/DamagedHelmet.gltf";
+		DamagedHelmet.Position 				= { 8.0f, 0.0f, 0.0f };
+		DamagedHelmet.Direction 			= { -180.0f, 0.0f };
+		DamagedHelmet.Scale 				= { 1.0f, 1.0f, 1.0f };
+		ObjectList.push_back(DamagedHelmet);
 
 		// Special Case Objects
 
-		// runtime::object::creator IridescenceLamp;
-		// IridescenceLamp.Name 				= "IridescenceLamp";
-		// IridescenceLamp.ModelPath 			= "dep/gltf-models/2.0/IridescenceLamp/glTF/IridescenceLamp.gltf";
-		// IridescenceLamp.Position 			= { 0.0f, -10.0f, 0.0f };
-		// IridescenceLamp.Direction 			= { -90.0f, 0.0f };
-		// IridescenceLamp.Scale 				= { 10.0f, 10.0f, 10.0f };
-		// ObjectList.push_back(IridescenceLamp);
+		runtime::object::creator IridescenceLamp;
+		IridescenceLamp.Name 				= "IridescenceLamp";
+		IridescenceLamp.ModelPath 			= "dep/gltf-models/2.0/IridescenceLamp/glTF/IridescenceLamp.gltf";
+		IridescenceLamp.Position 			= { 0.0f, -10.0f, 0.0f };
+		IridescenceLamp.Direction 			= { -90.0f, 0.0f };
+		IridescenceLamp.Scale 				= { 2.0f, 2.0f, 2.0f };
+		ObjectList.push_back(IridescenceLamp);
 
-		// runtime::object::creator MosquitoInAmber;
-		// MosquitoInAmber.Name 				= "MosquitoInAmber";
-		// MosquitoInAmber.ModelPath 			= "dep/gltf-models/2.0/MosquitoInAmber/glTF/MosquitoInAmber.gltf";
-		// MosquitoInAmber.Position 			= { -10.0f, 0.0f, 0.0f };
-		// MosquitoInAmber.Direction 			= { 0.0f, 0.0f };
-		// MosquitoInAmber.Scale 				= { 50.0f, 50.0f, 50.0f };
-		// ObjectList.push_back(MosquitoInAmber);
+		runtime::object::creator MosquitoInAmber;
+		MosquitoInAmber.Name 				= "MosquitoInAmber";
+		MosquitoInAmber.ModelPath 			= "dep/gltf-models/2.0/MosquitoInAmber/glTF/MosquitoInAmber.gltf";
+		MosquitoInAmber.Position 			= { -10.0f, 0.0f, 0.0f };
+		MosquitoInAmber.Direction 			= { 0.0f, 0.0f };
+		MosquitoInAmber.Scale 				= { 10.0f, 10.0f, 10.0f };
+		ObjectList.push_back(MosquitoInAmber);
 
 		// // Sheen Rendering.
 

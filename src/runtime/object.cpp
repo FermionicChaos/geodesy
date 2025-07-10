@@ -20,7 +20,7 @@ namespace geodesy::runtime {
 		this->Name 					= "";
 		this->ModelPath 			= "";
 		this->Position 				= { 0.0f, 0.0f, 0.0f };
-		this->Direction 			= { -90.0f, 0.0f };
+		this->Direction 			= { 0.0f, 0.0f };
 		this->Scale 				= { 1.0f, 1.0f, 1.0f };
 		this->AnimationWeights 		= std::vector<float>(1, 1.0f);
 		this->MotionType 			= motion::STATIC;
@@ -78,14 +78,17 @@ namespace geodesy::runtime {
 	}
 
 	object::object(std::shared_ptr<core::gpu::context> aContext, stage* aStage, creator* aCreator) : core::gfx::node() {
-		// this->Type 				= core::phys::node::type::OBJECT;
+		// Default direction in stage space is +y
+		this->Type 				= core::phys::node::type::OBJECT;
+		this->Theta 			= math::radians(aCreator->Direction[0] + 90.0f);
+		this->Phi 				= math::radians(aCreator->Direction[1] + 90.0f);
 		this->Name 				= aCreator->Name;
 		this->Stage 			= aStage;
 		this->Engine 			= aContext->Device->Engine;
 		this->Position 			= aCreator->Position;
-		this->Theta 			= math::radians(aCreator->Direction[0] + 90.0f);
-		this->Phi 				= math::radians(aCreator->Direction[1] + 90.0f);
+		this->Orientation 		= math::orientation(this->Theta, this->Phi);
 		this->Scale 			= aCreator->Scale;
+		this->DefaultTransform  = phys::calculate_transform(this->Position, this->Orientation, this->Scale);
 
 		this->Context 			= aContext;
 
@@ -151,15 +154,15 @@ namespace geodesy::runtime {
 	void object::copy_data(const core::phys::node* aNode) {
 		// This is ideally for root nodes, ignore base transform data.
 		this->Identifier = aNode->Identifier;
-		this->Transformation = aNode->Transformation;
 
 		// Copy over physics mesh.
 		this->CollisionMesh = aNode->CollisionMesh; // Copy the collision mesh if it exists.
 
 		// Copy over mesh instance data.
+		this->Context = ((gfx::node*)aNode)->Context; // Copy the context from the node.
 		this->MeshInstance.resize(((gfx::node*)aNode)->MeshInstance.size());
 		for (size_t i = 0; i < this->MeshInstance.size(); i++) {
-			this->MeshInstance[i] = gfx::mesh::instance(this->Context, ((gfx::node*)aNode)->MeshInstance[i], this->Root, this);
+			this->MeshInstance[i] = gfx::mesh::instance(((gfx::node*)aNode)->Context, ((gfx::node*)aNode)->MeshInstance[i], this->Root, this);
 		}
 	}
 
@@ -171,21 +174,54 @@ namespace geodesy::runtime {
 
 	}
 
-	void object::update(
-		double 									aDeltaTime, 
-		double 									aTime, 
-		const std::vector<float>& 				aAnimationWeight, 
-		const std::vector<phys::animation>& 	aPlaybackAnimation,
-		const std::vector<phys::force>& 		aAppliedForces
+	void object::host_update(
+		double 										aDeltaTime, 
+		double 										aTime, 
+		const std::vector<float>& 					aAnimationWeight, 
+		const std::vector<phys::animation>& 		aPlaybackAnimation,
+		const std::vector<phys::force>& 			aAppliedForces
 	) {
 
-		core::gfx::node::update(aDeltaTime, aTime, this->AnimationWeights, this->Model->Animation);
+		// // Perform host update on the base class.
+		// gfx::node::host_update(
+		// 	aDeltaTime, 
+		// 	aTime, 
+		// 	aAnimationWeight, 
+		// 	aPlaybackAnimation, 
+		// 	aAppliedForces
+		// );
+
+		this->CurrentTransform = phys::calculate_transform(
+			this->Position, 
+			this->Orientation,
+			this->Scale
+		);
+
+	}
+
+	void object::device_update(
+		double 										aDeltaTime, 
+		double 										aTime, 
+		const std::vector<float>& 					aAnimationWeight, 
+		const std::vector<core::phys::animation>& 	aPlaybackAnimation,
+		const std::vector<core::phys::force>& 		aAppliedForces
+	) {
+
+		// Update any mesh instances that exist at root.
+		gfx::node::device_update(
+			aDeltaTime, 
+			aTime, 
+			aAnimationWeight, 
+			aPlaybackAnimation, 
+			aAppliedForces
+		);
 
 		// Update renderers.
 		for (auto& R : this->Renderer) {
 			R.second->update(aDeltaTime, aTime);
 		}
 
+		// Update object uniform buffer (this is being phased out)
 		*(uniform_data*)this->UniformBuffer->Ptr = uniform_data(
 			this->Position, 
 			{ this->Theta, this->Phi }, // Direction is now a vec2 for Theta and Phi angles.

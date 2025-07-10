@@ -48,7 +48,7 @@ namespace geodesy::core::gfx {
 		// Copy over non recurisve node data.
 		this->Identifier = aNode->mName.C_Str();
 		// TODO: Add Pos, Orientation, Scale
-		this->Transformation = {
+		this->DefaultTransform = {
 			aNode->mTransformation.a1, aNode->mTransformation.a2, aNode->mTransformation.a3, aNode->mTransformation.a4,
 			aNode->mTransformation.b1, aNode->mTransformation.b2, aNode->mTransformation.b3, aNode->mTransformation.b4,
 			aNode->mTransformation.c1, aNode->mTransformation.c2, aNode->mTransformation.c3, aNode->mTransformation.c4,
@@ -121,7 +121,7 @@ namespace geodesy::core::gfx {
 		}
 	}
 
-	void node::update(
+	void node::host_update(
 		double 									aDeltaTime, 
 		double 									aTime, 
 		const std::vector<float>& 				aAnimationWeight, 
@@ -130,8 +130,17 @@ namespace geodesy::core::gfx {
 	) {
 
 		// Call the base class update function to update the node data.
-		phys::node::update(aDeltaTime, aTime, aAnimationWeight, aPlaybackAnimation);
+		phys::node::host_update(aDeltaTime, aTime, aAnimationWeight, aPlaybackAnimation);
 
+	}
+
+	void node::device_update(
+		double 									aDeltaTime, 
+		double 									aTime, 
+		const std::vector<float>& 				aAnimationWeight, 
+		const std::vector<phys::animation>& 	aPlaybackAnimation,
+		const std::vector<phys::force>& 		aAppliedForces
+	) {
 		// For each mesh instance, and for each bone, update the 
 		// bone transformations according to their respective
 		// animation object.
@@ -139,9 +148,9 @@ namespace geodesy::core::gfx {
 			// This is only used to tranform mesh instance vertices without bone animation.
 			// Update Bone Buffer Date GPU side.
 			mesh::instance::uniform_data* UniformData = (mesh::instance::uniform_data*)MI.UniformBuffer->Ptr;
-			UniformData->Transform = this->transform(aAnimationWeight, aPlaybackAnimation, aTime);
+			UniformData->Transform = this->GlobalTransform;
 			for (size_t i = 0; i < MI.Bone.size(); i++) {
-				UniformData->BoneTransform[i] = this->Root->find(MI.Bone[i].Name)->transform(aAnimationWeight, aPlaybackAnimation, aTime);
+				UniformData->BoneTransform[i] = this->Root->find(MI.Bone[i].Name)->GlobalTransform;
 			}
 		}
 	}
@@ -154,7 +163,7 @@ namespace geodesy::core::gfx {
 		// Find all graphics nodes in the hierarchy, and add mesh instances to the count.
 		size_t Count = 0;
 		for (phys::node* N : Nodes) {
-			if (N->Type == phys::node::GRAPHICS) {
+			if ((N->Type == phys::node::GRAPHICS) || (N->Type == phys::node::OBJECT)) {
 				gfx::node* GNode = static_cast<gfx::node*>(N);
 				Count += GNode->MeshInstance.size();
 			}
@@ -172,7 +181,7 @@ namespace geodesy::core::gfx {
 
 		// Find all graphics nodes in the hierarchy, and add mesh instances to the count.
 		for (phys::node* N : Nodes) {
-			if (N->Type == phys::node::GRAPHICS) {
+			if ((N->Type == phys::node::GRAPHICS) || (N->Type == phys::node::OBJECT)) {
 				gfx::node* GNode = static_cast<gfx::node*>(N);
 				for (gfx::mesh::instance& MI : GNode->MeshInstance) {
 					Instances.push_back(&MI);

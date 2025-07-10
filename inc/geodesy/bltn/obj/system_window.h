@@ -118,7 +118,7 @@ namespace geodesy::bltn::obj {
 		~system_window();
 
 		core::gpu::submission_batch render(runtime::stage* aStage) override;
-		void virtual update(
+		void virtual host_update(
 			double 										aDeltaTime = 0.0f, 
 			double 										aTime = 0.0f, 
 			const std::vector<float>& 					aAnimationWeight = { 1.0f }, 

@@ -53,6 +53,25 @@ namespace geodesy::core::phys {
 
 	};
 
+	// Calculates the full transformation matrix from position, rotation, and scale states.
+	template <typename T> inline
+	math::mat<T, 4, 4> calculate_transform(math::vec<T, 3> aPosition, math::quaternion<T> aOrientation, math::vec<T, 3> aScale) {
+		math::mat<T, 4, 4> Translation = {
+			1.0f, 		0.0f, 		0.0f, 			aPosition[0],
+			0.0f, 		1.0f, 		0.0f, 			aPosition[1],
+			0.0f, 		0.0f, 		1.0f, 			aPosition[2],
+			0.0f, 		0.0f, 		0.0f, 			1.0f
+		};
+		math::mat<T, 4, 4> Orientation = math::mat<T, 4, 4>(aOrientation);
+		math::mat<T, 4, 4> Scale = {
+			aScale[0], 	0.0f, 		0.0f, 			0.0f,
+			0.0f, 		aScale[1], 	0.0f, 			0.0f,
+			0.0f, 		0.0f, 		aScale[2], 		0.0f,
+			0.0f, 		0.0f, 		0.0f, 			1.0f
+		};
+		return Translation * Orientation * Scale;
+	}
+
 }
 
 #endif // !GEODESY_CORE_PHYS_ANIMATION_H
