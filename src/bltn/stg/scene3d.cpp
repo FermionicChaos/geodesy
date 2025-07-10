@@ -25,7 +25,7 @@ namespace geodesy::bltn::stg {
 		Sponza.ModelPath 					= "dep/gltf-models/2.0/Sponza/glTF/Sponza.gltf";
 		Sponza.Position 					= { 0.0f, 0.0f, 0.0f };
 		Sponza.Direction 					= { -90.0f, 90.0 };
-		Sponza.Scale 						= { 0.1f, 0.1f, 0.1f };
+		Sponza.Scale 						= { 0.03f, 0.03f, 0.03f };
 		ObjectList.push_back(Sponza);
 
 		runtime::object::creator PirateMap;
@@ -33,7 +33,7 @@ namespace geodesy::bltn::stg {
 		PirateMap.ModelPath 				= "assets/models/pirate_map/scene.gltf";
 		PirateMap.Position 					= { 0.0f, 0.0f, 0.0f };
 		PirateMap.Direction 				= { 0.0f, 0.0f };
-		PirateMap.Scale 					= { 0.01f, 0.01f, 0.01f };
+		PirateMap.Scale 					= { 0.003f, 0.003f, 0.003f };
 		ObjectList.push_back(PirateMap);
 
 		// Simple Boxes

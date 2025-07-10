@@ -159,15 +159,6 @@ namespace geodesy::runtime {
 		const std::vector<phys::force>& 			aAppliedForces
 	) {
 
-		// // Perform host update on the base class.
-		// gfx::node::host_update(
-		// 	aDeltaTime, 
-		// 	aTime, 
-		// 	aAnimationWeight, 
-		// 	aPlaybackAnimation, 
-		// 	aAppliedForces
-		// );
-
 		this->CurrentTransform = phys::calculate_transform(
 			this->Position, 
 			this->Orientation,
