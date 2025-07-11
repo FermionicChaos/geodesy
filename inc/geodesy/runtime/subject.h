@@ -54,6 +54,7 @@ namespace geodesy::runtime {
 			alignas(16) core::math::vec<float, 3> 		Position;
 			alignas(16) core::math::mat<float, 4, 4> 	Rotation;
 			alignas(16) core::math::mat<float, 4, 4> 	Projection;
+			alignas(16) core::math::mat<float, 4, 4> 	PRT;
 			uniform_data(
 				core::math::vec<float, 3> 		aPosition, 
 				core::math::vec<float, 2> 		aDirection,

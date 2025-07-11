@@ -13,9 +13,16 @@ namespace geodesy::runtime {
 		float 							aNear,
 		float 							aFar
 	) {
+		math::mat<float, 4, 4> Translation = {
+			1.0f, 		0.0f, 		0.0f, 		-aPosition[0],
+			0.0f, 		1.0f, 		0.0f, 		-aPosition[1],
+			0.0f, 		0.0f, 		1.0f, 		-aPosition[2],
+			0.0f, 		0.0f, 		0.0f, 		 1.0f
+		};
 		this->Position = aPosition;
 		this->Rotation = math::rotation(aDirection[0], aDirection[1]);
 		this->Projection = math::orthographic(aScale[0], aScale[1], aNear, aFar);
+		this->PRT = this->Projection * this->Rotation * Translation;
 	}
 
 	subject::uniform_data::uniform_data(
@@ -26,10 +33,17 @@ namespace geodesy::runtime {
 		float 							aNear,
 		float 							aFar
 	) {
+		math::mat<float, 4, 4> Translation = {
+			1.0f, 		0.0f, 		0.0f, 		-aPosition[0],
+			0.0f, 		1.0f, 		0.0f, 		-aPosition[1],
+			0.0f, 		0.0f, 		1.0f, 		-aPosition[2],
+			0.0f, 		0.0f, 		0.0f, 		 1.0f
+		};
 		this->Position = aPosition;
 		this->Rotation = math::rotation(aDirection[0], aDirection[1]);
 		float AspectRatio = static_cast<float>(aResolution[0]) / static_cast<float>(aResolution[1]);
 		this->Projection = math::perspective(math::radians(aFOV), AspectRatio, aNear, aFar);
+		this->PRT = this->Projection * this->Rotation * Translation;
 	}
 
 	subject::framechain::framechain(std::shared_ptr<core::gpu::context> aContext, double aFrameRate, uint32_t aFrameCount) {

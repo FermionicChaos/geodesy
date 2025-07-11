@@ -40,6 +40,7 @@ layout (set = 0, binding = 0) uniform SubjectUBO {
 	vec3 Position;
 	mat4 Rotation;
 	mat4 Projection;
+	mat4 PRT;
 } Subject;
 
 layout (set = 0, binding = 2) uniform MaterialUBO {

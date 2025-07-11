@@ -152,10 +152,16 @@ namespace geodesy::bltn::obj {
 		auto Mesh = aObject->Model->Mesh[MeshInstance->MeshIndex];
 		auto Material = aObject->Model->Material[MeshInstance->MaterialIndex];
 		auto Node = MeshInstance->Parent;
-		// Get Mesh Position with respect to parent node.
-		math::vec<float, 3> MeshPosition = Node->GlobalTransform.minor(3,3) * math::vec<float, 3>(0.0f, 0.0f, 0.0f);
-		// Some meshes are not centered at the origin.
-		float Distance = math::length(MeshPosition + Mesh->CenterOfMass - aCamera3D->Position);
+		math::mat<float, 3, 3> MeshTransform = Node->GlobalTransform.minor(3,3);
+		// Transform Mesh Center of Mass to world space.
+		math::vec<float, 3> MeshPosition = MeshTransform*Mesh->CenterOfMass;
+		// Transform Vertex Extrema to world space.
+		math::vec<float, 3> MeshBoundingRadius = MeshTransform*(Mesh->BoundingRadius + Mesh->CenterOfMass);
+		// Calculate the distance from the camera to the mesh instance.
+		float Distance = math::length(MeshPosition - aCamera3D->Position);
+		// Calculate the world space radius of the mesh instance.
+		float Radius = math::length(MeshBoundingRadius - MeshPosition);
+		// TODO: Check if bounding radius is inside the camera frustum.
 		// Calculate Rendering Priority.
 		switch(this->TransparencyMode) {
 		case material::transparency::OPAQUE:
@@ -163,7 +169,8 @@ namespace geodesy::bltn::obj {
 			// Rendering Priority Parameters are as follows:
 			// 1. How far mesh instance is away from the camera.
 			// 2. How large the mesh instance is in the camera's view.
-			this->RenderingPriority = -Distance;
+			// ! Make sure not to divide by zero.
+			this->RenderingPriority = Radius * Radius / Distance;
 			break;
 		case material::transparency::TRANSPARENT:
 			// Transparent objects, furthest are rendered first.
@@ -412,31 +419,30 @@ namespace geodesy::bltn::obj {
 			}
 		}
 
-		// // Sort all vectors efficiently: O(n log n) instead of O(n²)
-		// // Opaque: nearest first (ascending distance)
-		// std::sort(OpaqueVector.begin(), OpaqueVector.end(), 
-		// 	[](const auto& a, const auto& b) {
-		// 		return a->RenderingPriority > b->RenderingPriority;
-		// 	});
+		// Sort all vectors efficiently: O(n log n) instead of O(n²)
+		// Opaque: nearest first (ascending distance)
+		std::sort(OpaqueVector.begin(), OpaqueVector.end(), 
+			[](const auto& a, const auto& b) {
+				return a->RenderingPriority > b->RenderingPriority;
+			});
 
-		// // Transparent/Translucent: farthest first (descending distance)  
-		// std::sort(TransparentVector.begin(), TransparentVector.end(),
-		// 	[](const auto& a, const auto& b) {
-		// 		return a->RenderingPriority > b->RenderingPriority;
-		// 	});
+		// Transparent/Translucent: farthest first (descending distance)  
+		std::sort(TransparentVector.begin(), TransparentVector.end(),
+			[](const auto& a, const auto& b) {
+				return a->RenderingPriority > b->RenderingPriority;
+			});
 
-		// std::sort(TranslucentVector.begin(), TranslucentVector.end(),
-		// 	[](const auto& a, const auto& b) {
-		// 		return a->RenderingPriority > b->RenderingPriority;
-		// 	});
+		std::sort(TranslucentVector.begin(), TranslucentVector.end(),
+			[](const auto& a, const auto& b) {
+				return a->RenderingPriority > b->RenderingPriority;
+			});
 
 		// Add to Rendering Operations.
 		this->RenderingOperations += command_batch(convert(OpaqueVector));
 		this->RenderingOperations += command_batch(convert(TransparentVector));
 		this->RenderingOperations += command_batch(convert(TranslucentVector));
-
 		// Shadow & Lighting Operations on Opaque Geometry Buffer.
-
+		// this->RenderingOperations += aStage->draw(this);
 		// Ray Tracing Operations on Translucent Geometry Buffer.
 
 		// Post Processing Operations on Final Color Output.

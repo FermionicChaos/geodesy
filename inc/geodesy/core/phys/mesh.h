@@ -58,7 +58,7 @@ namespace geodesy::core::phys {
 		std::string 					Name;
 		float 							Mass;
 		math::vec<float, 3> 			CenterOfMass;
-		float 							BoundingRadius;
+		math::vec<float, 3> 			BoundingRadius;
 		std::vector<vertex> 			Vertex;
 		topology 						Topology;
 
@@ -69,7 +69,7 @@ namespace geodesy::core::phys {
 
 		// Calculates various properties of the mesh.
 		math::vec<float, 3> center_of_mass() const;
-		float bounding_radius() const;
+		math::vec<float, 3> bounding_radius() const;
 
 	};
 
