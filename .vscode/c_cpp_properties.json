@@ -31,7 +31,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/inc/",
-                "${workspaceFolder}/prj/Debug/_deps/",
+                "${workspaceFolder}/dep/",
                 "${workspaceFolder}/dep/glfw-src/include/",
                 "${workspaceFolder}/dep/glslang-src/",
                 "${workspaceFolder}/dep/openxr-src/include/",

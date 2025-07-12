@@ -20,6 +20,5 @@ void main() {
     // Set destination position to largest float.
     Ray.Hit = 0;
     Ray.HitInstanceID = -1; // No instance hit
-    Ray.HitLocation = vec3(gl_MaxFloat);
-    terminateRayEXT();
+    Ray.HitLocation = vec3(1e30);
 }

@@ -8,6 +8,7 @@
 
 struct light {
 	int Type;
+	float Intensity;
 	vec3 Color;
 	vec3 Position;
 	vec3 Direction;
@@ -43,10 +44,10 @@ layout (set = 1, binding = 0) uniform Camera3DUBO {
 // Light sources for illumination calculations
 // Deferred shading for light sources for both lighting and shadows.
 layout(set = 2, binding = 0) uniform LightData {
-	vec4 AmbientLight; 					// rgb = color, a = intensity
-	light Light[MAX_SCENE_LIGHTS]; 		// Array of light sources
-	int LightCount; 					// Number of light sources (up to MAX_SCENE_LIGHTS)
-} Lights;
+	vec4 Ambient; 							// rgb = color, a = intensity
+	light Source[MAX_SCENE_LIGHTS]; 		// Array of light sources
+	int Count; 								// Number of light sources (up to MAX_SCENE_LIGHTS)
+} Light;
 
 const float pi = 3.14159265359;
 
@@ -108,7 +109,7 @@ void main() {
 	float Metallic = imageLoad(PixelORM, RayIndex).b;
 
 	// Start FinalColor, and ViewDir. TODO: Ignore Emissive
-	vec3 FinalColor = Albedo.rgb*AmbientLight*AmbientOcclusion;
+	vec3 FinalColor = Albedo.rgb*Light.Ambient.rgb*AmbientOcclusion;
 
 	// View direction of the camera.
 	vec3 ViewDir = normalize(Camera3D.Position - WorldPos);
@@ -117,9 +118,9 @@ void main() {
 	Ray.Origin = WorldPos;
 
 	// Iterate through each light source adding contributions per light source based on intersection with object in TLAS.
-	for (int i = 0; i < LightCount; i++) {
+	for (int i = 0; i < Light.Count; i++) {
 		// Ray direction will be determined from the pixel position to the light source. (Same as light dir)
-		Ray.Direction = normalize(Lights[i].Position - Ray.Origin);
+		Ray.Direction = normalize(Light.Source[i].Position - Ray.Origin);
 		// Set the ray hit to 0.
 		Ray.Hit = 0;        
 
@@ -132,7 +133,7 @@ void main() {
 			Ray.Origin,
 			0.001,                                      // Small offset to avoid self-intersection
 			Ray.Direction,
-			length(Lights[i].Position - Ray.Origin),    // Only check up to light distance
+			length(Light.Source[i].Position - Ray.Origin),    // Only check up to light distance
 			0                                           // Location of the ray payload
 		);
 
@@ -140,13 +141,13 @@ void main() {
 		if (Ray.Hit == 1) continue;
 
 		// Calculate the light intensity based on the light source type.
-		float r = length(Lights[i].Position - WorldPos);
+		float r = length(Light.Source[i].Position - WorldPos);
 		// Calculates the diffuse term.
 		vec3 d = Albedo.rgb * max(dot(Normal, Ray.Direction), 0.0);
 		// Calculates the specular term.
 		vec3 s = rs(Ray.Direction, Normal, ViewDir, Roughness, Metallic)*vec3(1.0);
 		// Calculate the final color based on the light source intensity.
-		FinalColor += ((1.0 - Specular)*d + Specular*s)*Lights[i].Color*Lights[i].Intensity / (r*r);
+		FinalColor += ((1.0 - Specular)*d + Specular*s)*Light.Source[i].Color*Light.Source[i].Intensity / (r*r);
 	}
 
 	// Apply simple tone mapping

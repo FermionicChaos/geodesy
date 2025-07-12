@@ -20,5 +20,4 @@ void main() {
 	Ray.Hit = 1;
 	Ray.HitInstanceID = gl_InstanceCustomIndexEXT; // Instance ID of the geometry hit
 	Ray.HitLocation = gl_WorldRayOriginEXT + gl_WorldRayDirectionEXT*gl_HitTEXT;
-	terminateRayEXT();
 }
