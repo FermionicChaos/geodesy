@@ -86,6 +86,24 @@ namespace geodesy::core::gpu {
 		if (aShaderStage & EShLangComputeMask) {
 			VulkanShaderStage |= VK_SHADER_STAGE_COMPUTE_BIT;
 		}
+		if (aShaderStage & EShLangRayGenMask) {
+			VulkanShaderStage |= VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+		}
+		if (aShaderStage & EShLangAnyHitMask) {
+			VulkanShaderStage |= VK_SHADER_STAGE_ANY_HIT_BIT_KHR;
+		}
+		if (aShaderStage & EShLangClosestHitMask) {
+			VulkanShaderStage |= VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+		}
+		if (aShaderStage & EShLangMissMask) {
+			VulkanShaderStage |= VK_SHADER_STAGE_MISS_BIT_KHR;
+		}
+		if (aShaderStage & EShLangIntersectMask) {
+			VulkanShaderStage |= VK_SHADER_STAGE_INTERSECTION_BIT_KHR;
+		}
+		if (aShaderStage & EShLangCallableMask) {
+			VulkanShaderStage |= VK_SHADER_STAGE_CALLABLE_BIT_KHR;
+		}	
 		return VulkanShaderStage;
 	}
 

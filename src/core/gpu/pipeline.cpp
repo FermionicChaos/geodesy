@@ -125,6 +125,10 @@ namespace geodesy::core::gpu {
 					DSLB.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				}
 				break;
+			case glslang::TBasicType::EbtAccStruct:
+				// Acceleration Structure (top-level or bottom-level)
+				DSLB.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+				break;
 			default:
 				// TODO: Add other variables later.
 				// Skip other types we don't care for.
@@ -331,7 +335,7 @@ namespace geodesy::core::gpu {
 			// Generates Descriptor Set Layout Bindings.
 			this->generate_descriptor_set_layout_binding();
 
-			std::cout << "// -------------------- Pipeline Reflection Start -------------------- \\\\" << std::endl << std::endl;
+			std::cout << "// -------------------- Rasterization Pipeline Reflection Start -------------------- \\\\" << std::endl << std::endl;
 
 			// Print Inputs
 			std::cout << "----- Vertex Input Attributes -----" << std::endl;
@@ -354,7 +358,7 @@ namespace geodesy::core::gpu {
 			}
 			std::cout << std::endl;
 
-			std::cout << "\\\\ -------------------- Pipeline Reflection End -------------------- //" << std::endl;
+			std::cout << "\\\\ -------------------- Rasterization Pipeline Reflection End -------------------- //" << std::endl;
 		}
 		else {
 			// Linking failed.

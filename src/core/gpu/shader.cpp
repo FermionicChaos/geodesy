@@ -10,18 +10,18 @@ namespace geodesy::core::gpu {
 		shader::stage Stage;
 		std::vector<std::string> Name;
 	} ShaderExtensionDataBase[] = {
-		{ shader::stage::VERTEX						, { "vsh", "vert" } },
-		{ shader::stage::TESSELLATION_CONTROL		, { "tcsh" } },
-		{ shader::stage::TESSELLATION_EVALUATION	, { "tesh" } },
-		{ shader::stage::GEOMETRY					, { "gsh" } },
-		{ shader::stage::PIXEL						, { "psh", "fsh", "frag" } },
-		{ shader::stage::COMPUTE					, { "csh" } },
-		{ shader::stage::RAYGEN						, { "rgsh" } },
-		{ shader::stage::ANY_HIT					, { "ahsh" } },
-		{ shader::stage::CLOSEST_HIT				, { "chsh" } },
-		{ shader::stage::MISS						, { "msh" } },
-		{ shader::stage::INTERSECTION				, { "ish" } },
-		{ shader::stage::CALLABLE					, { "cash" } }
+		{ shader::stage::VERTEX						, { "vsh", "vert" } 		},
+		{ shader::stage::TESSELLATION_CONTROL		, { "tcsh" } 				},
+		{ shader::stage::TESSELLATION_EVALUATION	, { "tesh" } 				},
+		{ shader::stage::GEOMETRY					, { "gsh" } 				},
+		{ shader::stage::PIXEL						, { "psh", "fsh", "frag" } 	},
+		{ shader::stage::COMPUTE					, { "csh" } 				},
+		{ shader::stage::RAYGEN						, { "rgen", "rgsh" }	 	},
+		{ shader::stage::ANY_HIT					, { "rahit", "ahsh" }	 	},
+		{ shader::stage::CLOSEST_HIT				, { "rchit", "chsh" }	 	},
+		{ shader::stage::MISS						, { "rmiss", "mssh" }		},
+		{ shader::stage::INTERSECTION				, { "rint", "insh" }		},
+		{ shader::stage::CALLABLE					, { "rcall", "cash" }	 	}
 	};
 
 	// Convert string extension to shader stage.
@@ -101,9 +101,9 @@ namespace geodesy::core::gpu {
 		glslang::EShClient Client									= glslang::EShClient::EShClientVulkan;
 		int ClientInputSemanticsVersion								= 100;
 		const int DefaultVersion									= 100;
-		glslang::EShTargetClientVersion ClientVersion				= glslang::EShTargetClientVersion::EShTargetVulkan_1_0;
+		glslang::EShTargetClientVersion ClientVersion				= glslang::EShTargetClientVersion::EShTargetVulkan_1_2;
 		glslang::EShTargetLanguage TargetLanguage					= glslang::EShTargetLanguage::EShTargetSpv;
-		glslang::EShTargetLanguageVersion TargetLanguageVersion		= glslang::EShTargetLanguageVersion::EShTargetSpv_1_0;
+		glslang::EShTargetLanguageVersion TargetLanguageVersion		= glslang::EShTargetLanguageVersion::EShTargetSpv_1_4;
 
 		std::vector<const char*> SourceCode = { aSourceCode.c_str() };
 
