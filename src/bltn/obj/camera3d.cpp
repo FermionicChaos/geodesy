@@ -80,6 +80,7 @@ namespace geodesy::bltn::obj {
 	) {
 		VkResult Result = VK_SUCCESS;
 		// Get Mesh & Material Data from mesh instance.
+		auto RasterizationPipeline = aCamera3D->Pipeline[0];
 		auto MeshInstance = aObject->TotalMeshInstance[aMeshInstanceIndex];
 		auto Mesh = aObject->Model->Mesh[MeshInstance->MeshIndex];
 		auto Material = aObject->Model->Material[MeshInstance->MaterialIndex];
@@ -105,8 +106,8 @@ namespace geodesy::bltn::obj {
 		// Acquire Mesh Vertex Buffer, and Mesh Instance Vertex Weight Buffer.
 		std::vector<std::shared_ptr<buffer>> VertexBuffer = { Mesh->VertexBuffer, MeshInstance->VertexWeightBuffer };
 		// Load up GPU interface data to interface resources with pipeline.
-		Framebuffer = Context->create_framebuffer(aCamera3D->Pipeline[0], ImageOutputList, aCamera3D->Framechain->Resolution);
-		DescriptorArray = Context->create_descriptor_array(aCamera3D->Pipeline[0]);
+		Framebuffer = Context->create_framebuffer(RasterizationPipeline, ImageOutputList, aCamera3D->Framechain->Resolution);
+		DescriptorArray = Context->create_descriptor_array(RasterizationPipeline);
 		DrawCommand = aCamera3D->CommandPool->allocate();
 
 		// Bind Object Uniform Buffers
@@ -137,7 +138,7 @@ namespace geodesy::bltn::obj {
 			device::access::DEPTH_STENCIL_ATTACHMENT_WRITE, 	device::access::DEPTH_STENCIL_ATTACHMENT_READ | device::access::DEPTH_STENCIL_ATTACHMENT_WRITE
 		);
 		// Issue Draw Call.
-		aCamera3D->Pipeline[0]->draw(DrawCommand, Framebuffer, VertexBuffer, Mesh->IndexBuffer, DescriptorArray);
+		RasterizationPipeline->draw(DrawCommand, Framebuffer, VertexBuffer, Mesh->IndexBuffer, DescriptorArray);
 		Result = Context->end(DrawCommand);
 	}
 
@@ -185,7 +186,62 @@ namespace geodesy::bltn::obj {
 		}
 	}
 
-	camera3d::deferred_renderer::deferred_renderer(object* aObject, camera3d* aCamera3D) : runtime::object::renderer(aObject, aCamera3D) {
+	camera3d::ray_trace_call::ray_trace_call(
+		camera3d* 			aCamera3D,
+		size_t 				aFrameIndex,
+		runtime::stage* 	aStage
+	) {
+		VkResult Result = VK_SUCCESS;
+		// Generate scene ray tracing here.
+		auto RayTracingPipeline = aCamera3D->Pipeline[1];
+
+		DescriptorArray = Context->create_descriptor_array(RayTracingPipeline);
+		DrawCommand = aCamera3D->CommandPool->allocate();
+
+		// Bind Scene Geometry.
+		DescriptorArray->bind(0, 0, 0, aStage->TLAS);
+		// Bind Final Output Image.
+		DescriptorArray->bind(0, 1, 0, aCamera3D->Framechain->Image[aFrameIndex]["Color"]);
+		// Bind Geometry Buffer Images to Ray Tracing Pipeline.
+		DescriptorArray->bind(0, 2, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Color"]);
+		DescriptorArray->bind(0, 3, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Position"]);
+		DescriptorArray->bind(0, 4, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Normal"]);
+		DescriptorArray->bind(0, 5, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Emissive"]);
+		DescriptorArray->bind(0, 6, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.SS"]);
+		DescriptorArray->bind(0, 7, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.ORM"]);
+
+		// Bind Uniform Buffers.
+		DescriptorArray->bind(1, 0, 0, aCamera3D->SubjectUniformBuffer);
+		// TODO: Bind Stage Lighting Information.
+		// DescriptorArray->bind(1, 1, 0, aStage->Lighting->UniformBuffer);
+		// TODO: Material Scene Buffer, material access for mesh instances in ray tracer.
+		// DescriptorArray->bind(1, 2, 0, aStage->MaterialSceneBuffer);
+
+		// Actual Draw Call.
+		Result = Context->begin(DrawCommand);
+		// The goal of this barrier is to keep the gpu busy while still waiting on the depth results of the previous draw call.
+		pipeline::barrier(DrawCommand, 
+			/* Src ---> Dst */
+			pipeline::stage::LATE_FRAGMENT_TESTS, 				pipeline::stage::EARLY_FRAGMENT_TESTS,
+			device::access::DEPTH_STENCIL_ATTACHMENT_WRITE, 	device::access::DEPTH_STENCIL_ATTACHMENT_READ | device::access::DEPTH_STENCIL_ATTACHMENT_WRITE
+		);
+		// Issue Ray Tracing Call.
+		RayTracingPipeline->raytrace(DrawCommand, { aCamera3D->Framechain->Resolution[0], aCamera3D->Framechain->Resolution[1] , 1u });
+		Result = Context->end(DrawCommand);
+	}
+	
+	void camera3d::ray_trace_call::update(
+		subject* 			aSubject, 
+		size_t 				aFrameIndex,
+		runtime::stage* 	aStage
+	) {
+
+	}
+
+	camera3d::deferred_renderer::deferred_renderer(
+		camera3d* aCamera3D,
+		object* aObject
+	) : runtime::object::renderer(aCamera3D, aObject) {
 		// Size is the number of frames times the number of mesh instances.
 		this->DrawCallList = std::vector<std::vector<std::shared_ptr<draw_call>>>(aCamera3D->Framechain->Image.size(), std::vector<std::shared_ptr<draw_call>>(aObject->TotalMeshInstance.size()));
 		// Generates draw calls for each frame in the frame chain and mesh instance.
@@ -194,6 +250,24 @@ namespace geodesy::bltn::obj {
 				DrawCallList[i][j] = geodesy::make<deferred_draw_call>(aCamera3D, i, aObject, j);
 			}
 		}
+	}
+
+	camera3d::opaque_raytracer::opaque_raytracer(
+		camera3d* aCamera3D,
+		runtime::stage* aStage
+	) : runtime::object::renderer(aCamera3D, nullptr) {
+		// Only need draw calls per frame in the frame chain.
+		this->DrawCallList = std::vector<std::vector<std::shared_ptr<draw_call>>>(aCamera3D->Framechain->Image.size(), std::vector<std::shared_ptr<draw_call>>(1));
+		for (size_t i = 0; i < aCamera3D->Framechain->Image.size(); i++) {
+			// this->DrawCallList[i][0] = geodesy::make<opaque_raytracer>(aCamera3D, aStage);
+		}
+	}
+
+	void camera3d::opaque_raytracer::update(
+		double aDeltaTime,
+		double aTime
+	) {
+
 	}
 
 	camera3d::camera3d(std::shared_ptr<core::gpu::context> aContext, runtime::stage* aStage, creator* aCamera3DCreator) : runtime::subject(aContext, aStage, aCamera3DCreator) {
@@ -210,11 +284,11 @@ namespace geodesy::bltn::obj {
 			// Opaque Rasterization
 			"assets/shader/camera3d/opaque.frag",
 			// Translucent Rasterization
-			"assets/shader/camera3d/translucent.frag",
+			// "assets/shader/camera3d/translucent.frag",
 			// Opaque Lighting & Shadows
 			"assets/shader/camera3d/opaque.rgen",
-			"assets/shader/camera3d/opaque.rmiss",
-			"assets/shader/camera3d/opaque.rchit"
+			"assets/shader/camera3d/standard.rmiss",
+			"assets/shader/camera3d/standard.rchit"
 			// Translucent Renderings
 			
 			// Final Post Processing
@@ -227,8 +301,9 @@ namespace geodesy::bltn::obj {
 		this->Framechain = std::dynamic_pointer_cast<framechain>(std::make_shared<geometry_buffer>(aContext, aCamera3DCreator->Resolution, aCamera3DCreator->FrameRate, aCamera3DCreator->FrameCount));
 
 		// Create GPU Pipelines for camera3d
-		this->Pipeline = std::vector<std::shared_ptr<core::gpu::pipeline>>(1);
+		this->Pipeline = std::vector<std::shared_ptr<core::gpu::pipeline>>(2);
 		this->Pipeline[0] = this->create_opaque_rasterizing_pipeline(aCamera3DCreator);
+		this->Pipeline[1] = this->create_opaque_ray_tracing_pipeline(aCamera3DCreator);
 
 		// // Frame Index, Pipeline Index, Attachement Index
 		// std::vector<std::vector<std::vector<std::shared_ptr<image>>>> ImageOutputList(this->Framechain->Image.size());
@@ -346,8 +421,12 @@ namespace geodesy::bltn::obj {
 	}
 
 	std::shared_ptr<runtime::object::renderer> camera3d::default_renderer(object* aObject) {
-		return std::dynamic_pointer_cast<runtime::object::renderer>(std::make_shared<deferred_renderer>(aObject, this));
+		return std::dynamic_pointer_cast<runtime::object::renderer>(geodesy::make<deferred_renderer>(this, aObject));
 	}
+
+	// std::shared_ptr<runtime::object::renderer> opaque_raytracer(runtime::stage* aStage) {
+	// 	return std::dynamic_pointer_cast<runtime::object::renderer>(geodesy::make<camera3d::opaque_raytracer>(aStage));
+	// }
 
 	// ----- Geodesy Default 3D Real Time Rendering System ----- //
 	// this->RenderingOperations[0]: Clears all images in geometry buffer.
@@ -542,10 +621,21 @@ namespace geodesy::bltn::obj {
 	}
 
 	std::shared_ptr<core::gpu::pipeline> camera3d::create_opaque_ray_tracing_pipeline(creator* aCamera3DCreator) {
-
+		// Stack Space
+		auto RayGenerationShader = std::dynamic_pointer_cast<gpu::shader>(Asset[2]);
+		auto MissShader = std::dynamic_pointer_cast<gpu::shader>(Asset[3]);
+		auto HitShader = std::dynamic_pointer_cast<gpu::shader>(Asset[4]);
+		
 		std::vector<gpu::pipeline::raytracer::shader_group> ShaderGroup;
+		// Ray Generation Shader
+		ShaderGroup.push_back({ RayGenerationShader, nullptr, nullptr, nullptr, });
+		// Miss Shader
+		ShaderGroup.push_back({ MissShader, nullptr, nullptr, nullptr, });
+		// Closest Hit Shader
+		ShaderGroup.push_back({ nullptr, HitShader,  nullptr, nullptr, });
+		// Generate host ray tracer.
 		std::shared_ptr<gpu::pipeline::raytracer> RayTracer = geodesy::make<pipeline::raytracer>(ShaderGroup, 1u);
-
+		// Create GPU Ray Tracing Pipeline.
 		return Context->create_pipeline(RayTracer);
 	}
 

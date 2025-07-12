@@ -45,7 +45,7 @@ namespace geodesy::bltn::obj {
 		Result = Context->end(DrawCommand);
 	}
 
-	window::window_renderer::window_renderer(runtime::object* aObject, window* aWindow) : runtime::object::renderer(aObject, aWindow) {
+	window::window_renderer::window_renderer(runtime::object* aObject, window* aWindow) : runtime::object::renderer(aWindow, aObject) {
 		// Gather list of mesh instances throughout model hierarchy.
 		std::vector<mesh::instance*> MeshInstance = aObject->gather_instances();
 

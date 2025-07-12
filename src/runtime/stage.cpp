@@ -113,6 +113,10 @@ namespace geodesy::runtime {
 		return RenderInfo;
 	}
 
+	std::vector<std::shared_ptr<object::draw_call>> stage::trace(subject* aSubject) {
+		return std::vector<std::shared_ptr<object::draw_call>>();
+	}
+
 	std::vector<subject*> stage::purify_by_subject(const std::vector<std::shared_ptr<object>>& aObjectList) {
 		std::vector<subject*> SubjectList;
 		for (std::shared_ptr<object> Obj : aObjectList) {

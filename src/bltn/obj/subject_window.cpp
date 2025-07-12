@@ -52,7 +52,7 @@ namespace geodesy::bltn::obj {
 		runtime::object* 	aObject, 			// SubjectWindow
 		runtime::subject* 	aSubjectSource, 	// SubjectWindow source
 		runtime::subject* 	aSubjectTarget 		// Actual Render Target
-	) : runtime::object::renderer(aObject, aSubjectTarget) {
+	) : runtime::object::renderer(aSubjectTarget, aObject) {
 		// Gather Mesh instances of the object.
 		std::vector<gfx::mesh::instance*> MeshInstance = aObject->gather_instances();
 

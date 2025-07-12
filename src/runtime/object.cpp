@@ -33,9 +33,9 @@ namespace geodesy::runtime {
 
 	object::renderer::renderer() {}
 
-	object::renderer::renderer(object* aObject, subject* aSubject) {
-		this->Object = aObject;
+	object::renderer::renderer(subject* aSubject, object* aObject) {
 		this->Subject = aSubject;
+		this->Object = aObject;
 	}
 
 	object::renderer::~renderer() {

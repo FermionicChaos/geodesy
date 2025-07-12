@@ -44,11 +44,35 @@ namespace geodesy::bltn::obj {
 			) override;
 		};
 
+		struct ray_trace_call : object::draw_call {
+			ray_trace_call(
+				camera3d* 			aCamera3D,
+				size_t 				aFrameIndex,
+				runtime::stage* 	aStage
+			);
+			void update(
+				subject* 			aSubject, 
+				size_t 				aFrameIndex,
+				runtime::stage* 	aStage
+			);
+		};
+
 		struct deferred_renderer : object::renderer {
 			deferred_renderer(
-				object* aObject, 
-				camera3d* aCamera3D
+				camera3d* aCamera3D,
+				object* aObject
 			);
+		};
+
+		struct opaque_raytracer : object::renderer {
+			opaque_raytracer(
+				camera3d* aCamera3D,
+				runtime::stage* aStage
+			);
+			virtual void update(
+				double aDeltaTime = 0.0f, 
+				double aTime = 0.0f
+			) override;
 		};
 
 		struct creator : subject::creator {
@@ -79,6 +103,7 @@ namespace geodesy::bltn::obj {
 			const std::vector<core::phys::force>& 		aAppliedForces = {}
 		) override;
 		std::shared_ptr<renderer> default_renderer(runtime::object* aObject) override;
+		std::shared_ptr<renderer> opaque_raytracer(runtime::stage* aStage);
 		core::gpu::submission_batch render(runtime::stage* aStage) override;
 
 		// These will create the pipelines for the camera3d.

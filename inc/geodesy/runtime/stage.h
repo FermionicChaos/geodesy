@@ -60,6 +60,9 @@ namespace geodesy::runtime {
 		std::vector<std::shared_ptr<object>>				Object;
 		std::map<std::string, std::shared_ptr<object>> 		ObjectLookup;
 
+		std::shared_ptr<core::gpu::acceleration_structure> 	TLAS;
+		// std::map<subject*, 
+
 		stage(std::shared_ptr<core::gpu::context> aContext, std::string aName);
 		~stage();
 
@@ -78,6 +81,7 @@ namespace geodesy::runtime {
 
 		virtual core::gpu::submission_batch update(double aDeltaTime);
 		virtual core::gpu::submission_batch render();
+		std::vector<std::shared_ptr<object::draw_call>> trace(subject* aSubject);
 
 		static std::vector<subject*> purify_by_subject(const std::vector<std::shared_ptr<object>>& aObjectList);
 		static std::vector<workload> determine_thread_workload(size_t aElementCount, size_t aThreadCount);

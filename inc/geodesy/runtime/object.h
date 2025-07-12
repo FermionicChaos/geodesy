@@ -39,12 +39,12 @@ namespace geodesy::runtime {
 		struct renderer {
 
 			// Object & Subject must share the same device context.
-			object* 												Object;
 			subject* 												Subject;
+			object* 												Object;
 			std::vector<std::vector<std::shared_ptr<draw_call>>> 	DrawCallList;
 
 			renderer();
-			renderer(object* aObject, subject* aSubject);
+			renderer(subject* aSubject, object* aObject);
 			virtual ~renderer();
 
 			std::vector<std::shared_ptr<draw_call>> operator[](size_t aIndex) const;
