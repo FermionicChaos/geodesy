@@ -1,6 +1,8 @@
 #ifndef GEODESY_CORE_STAGE_H
 #define GEODESY_CORE_STAGE_H
 
+#define MAX_STAGE_LIGHTS 256
+
 #include <memory>
 
 #include "../config.h"
@@ -53,15 +55,21 @@ namespace geodesy::runtime {
 			size_t Count;
 		};
 
-		std::string											Name;
-		double												Time;
-		std::vector<core::phys::node*>						NodeCache; // This is a list of all nodes in the stage, used for updating.
-		std::shared_ptr<core::gpu::context> 				Context;
-		std::vector<std::shared_ptr<object>>				Object;
-		std::map<std::string, std::shared_ptr<object>> 		ObjectLookup;
+		struct light_uniform_data {
+			core::gfx::model::light 	Source[MAX_STAGE_LIGHTS];
+			alignas(4) int 				Count;
+		};
 
-		std::shared_ptr<core::gpu::acceleration_structure> 	TLAS;
-		// std::map<subject*, 
+		std::string													Name;
+		double														Time;
+		std::vector<core::phys::node*>								NodeCache; // This is a list of all nodes in the stage, used for updating.
+		std::shared_ptr<core::gpu::context> 						Context;
+		std::vector<std::shared_ptr<object>>						Object;
+		std::shared_ptr<core::gpu::acceleration_structure> 			TLAS;
+		std::shared_ptr<core::gpu::buffer> 							LightUniformBuffer;
+		std::shared_ptr<core::gpu::buffer> 							MaterialUniformBuffer;
+		std::map<subject*, std::shared_ptr<object::renderer>> 		Renderer;
+		std::map<std::string, std::shared_ptr<object>> 				ObjectLookup;
 
 		stage(std::shared_ptr<core::gpu::context> aContext, std::string aName);
 		~stage();
@@ -81,7 +89,7 @@ namespace geodesy::runtime {
 
 		virtual core::gpu::submission_batch update(double aDeltaTime);
 		virtual core::gpu::submission_batch render();
-		std::vector<std::shared_ptr<object::draw_call>> trace(subject* aSubject);
+		std::vector<std::shared_ptr<object::draw_call>> ray_trace(subject* aSubject);
 
 		static std::vector<subject*> purify_by_subject(const std::vector<std::shared_ptr<object>>& aObjectList);
 		static std::vector<workload> determine_thread_workload(size_t aElementCount, size_t aThreadCount);

@@ -19,6 +19,26 @@ namespace geodesy::core::gfx {
 	class model : public io::file {
 	public:
 
+		struct light {
+
+			enum type : int {
+				AMBIENT,
+				DIRECTIONAL,
+				POINT,
+				SPOT, 
+				AREA
+			};
+
+			alignas(4) int 						Type;
+			alignas(4) float 					Intensity;
+			alignas(16) math::vec<float, 3> 	Color;
+			alignas(16) math::vec<float, 3> 	Position;
+			alignas(16) math::vec<float, 3> 	Direction;
+			alignas(4) float 					SpotAngle;
+
+			light();
+		};
+
 		static bool initialize();
 		static void terminate();
 

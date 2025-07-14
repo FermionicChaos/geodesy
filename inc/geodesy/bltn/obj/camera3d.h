@@ -64,8 +64,8 @@ namespace geodesy::bltn::obj {
 			);
 		};
 
-		struct opaque_raytracer : object::renderer {
-			opaque_raytracer(
+		struct hybrid_raytracer : object::renderer {
+			hybrid_raytracer(
 				camera3d* aCamera3D,
 				runtime::stage* aStage
 			);
@@ -103,7 +103,7 @@ namespace geodesy::bltn::obj {
 			const std::vector<core::phys::force>& 		aAppliedForces = {}
 		) override;
 		std::shared_ptr<renderer> default_renderer(runtime::object* aObject) override;
-		std::shared_ptr<renderer> opaque_raytracer(runtime::stage* aStage);
+		std::shared_ptr<renderer> default_ray_tracer(runtime::stage* aStage) override;
 		core::gpu::submission_batch render(runtime::stage* aStage) override;
 
 		// These will create the pipelines for the camera3d.

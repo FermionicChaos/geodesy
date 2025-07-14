@@ -131,6 +131,11 @@ namespace geodesy::runtime {
 		return DefaultRenderer;
 	}
 
+	std::shared_ptr<runtime::object::renderer> subject::default_ray_tracer(stage* aStage) {
+		std::shared_ptr<renderer> DefaultRayTracer;
+		return DefaultRayTracer;
+	}
+
 	submission_batch subject::render(stage* aStage) {
 		// The next frame operation will both present previously drawn frame and acquire next
 		// frame. 

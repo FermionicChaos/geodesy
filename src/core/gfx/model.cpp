@@ -91,6 +91,12 @@ namespace geodesy::core::gfx {
 	// 	TreeDepth -= 1;
 	// }
 
+	model::light::light() {
+		this->Type = light::AMBIENT;
+		this->Intensity = 0.0f;
+		this->SpotAngle = 45.0f; // Default spot angle in degrees.
+	}
+
 	bool model::initialize() {
 		ModelImporter = new Assimp::Importer();
 		return (ModelImporter != nullptr);

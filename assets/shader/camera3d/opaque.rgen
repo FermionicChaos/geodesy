@@ -4,14 +4,15 @@
 // this shader launches a ray into the direction of each light source checking for intersections.
 // If an intersection is found, the pixel is in shadow, if not, the pixel is illuminated by the light source.
 
-#define MAX_SCENE_LIGHTS 256
+#define MAX_STAGE_LIGHTS 256
 
 struct light {
-	int Type;
-	float Intensity;
-	vec3 Color;
-	vec3 Position;
-	vec3 Direction;
+	int 	Type;
+	float 	Intensity;
+	vec3 	Color;
+	vec3 	Position;
+	vec3 	Direction;
+	float 	SpotAngle;
 };
 
 struct payload {
@@ -27,7 +28,7 @@ layout(location = 0) rayPayloadEXT payload Ray;
 
 // Load Geometry Buffer Data.
 layout(set = 0, binding = 0) uniform accelerationStructureEXT TLAS;
-layout(set = 0, binding = 1, rgba8) uniform image2D OutputColor;
+layout(set = 0, binding = 1, rgba32f) uniform image2D OutputColor;
 layout(set = 0, binding = 2, rgba32f) uniform image2D PixelColor;
 layout(set = 0, binding = 3, rgba32f) uniform image2D PixelPosition;
 layout(set = 0, binding = 4, rgba32f) uniform image2D PixelNormal;
@@ -43,10 +44,9 @@ layout (set = 1, binding = 0) uniform Camera3DUBO {
 
 // Light sources for illumination calculations
 // Deferred shading for light sources for both lighting and shadows.
-layout(set = 2, binding = 0) uniform LightData {
-	vec4 Ambient; 							// rgb = color, a = intensity
-	light Source[MAX_SCENE_LIGHTS]; 		// Array of light sources
-	int Count; 								// Number of light sources (up to MAX_SCENE_LIGHTS)
+layout(set = 2, binding = 0) uniform LightUBO {
+	light Source[MAX_STAGE_LIGHTS]; 		// Array of light sources
+	int Count; 								// Number of light sources (up to MAX_STAGE_LIGHTS)
 } Light;
 
 const float pi = 3.14159265359;
@@ -109,7 +109,7 @@ void main() {
 	float Metallic = imageLoad(PixelORM, RayIndex).b;
 
 	// Start FinalColor, and ViewDir. TODO: Ignore Emissive
-	vec3 FinalColor = Albedo.rgb*Light.Ambient.rgb*AmbientOcclusion;
+	vec3 FinalColor = Albedo.rgb*AmbientOcclusion;
 
 	// View direction of the camera.
 	vec3 ViewDir = normalize(Camera3D.Position - WorldPos);

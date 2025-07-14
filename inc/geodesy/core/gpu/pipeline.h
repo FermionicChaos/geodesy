@@ -285,6 +285,7 @@ namespace geodesy::core::gpu {
 
 		void raytrace(
 			VkCommandBuffer 											aCommandBuffer,
+			std::shared_ptr<descriptor::array> 							aDescriptorArray,
 			math::vec<uint, 3> 											aResolution
 		);
 		VkResult raytrace(

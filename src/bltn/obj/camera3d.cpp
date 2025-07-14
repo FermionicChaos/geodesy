@@ -25,12 +25,12 @@ namespace geodesy::bltn::obj {
 		image::create_info DepthCreateInfo;
 		DepthCreateInfo.Layout		= image::layout::SHADER_READ_ONLY_OPTIMAL;
 		DepthCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
-		DepthCreateInfo.Usage		= image::usage::SAMPLED | image::usage::DEPTH_STENCIL_ATTACHMENT  | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
+		DepthCreateInfo.Usage		= image::usage::SAMPLED | image::usage::DEPTH_STENCIL_ATTACHMENT | image::usage::STORAGE | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
 
 		image::create_info ColorCreateInfo;
 		ColorCreateInfo.Layout		= image::layout::SHADER_READ_ONLY_OPTIMAL;
 		ColorCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
-		ColorCreateInfo.Usage		= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
+		ColorCreateInfo.Usage		= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::STORAGE | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
 
 		image::format ColorFormat = image::format::R32G32B32A32_SFLOAT;
 		image::format DepthFormat = image::format::D32_SFLOAT;
@@ -195,20 +195,23 @@ namespace geodesy::bltn::obj {
 		// Generate scene ray tracing here.
 		auto RayTracingPipeline = aCamera3D->Pipeline[1];
 
+		Context = aCamera3D->Context;
 		DescriptorArray = Context->create_descriptor_array(RayTracingPipeline);
 		DrawCommand = aCamera3D->CommandPool->allocate();
 
+		// TODO: Construct TLAS for ray tracing.
+		// TODO: Transition these images to the correct layout in the ray tracing call.
 		// Bind Scene Geometry.
 		DescriptorArray->bind(0, 0, 0, aStage->TLAS);
 		// Bind Final Output Image.
-		DescriptorArray->bind(0, 1, 0, aCamera3D->Framechain->Image[aFrameIndex]["Color"]);
+		DescriptorArray->bind(0, 1, 0, aCamera3D->Framechain->Image[aFrameIndex]["Color"], image::layout::GENERAL);
 		// Bind Geometry Buffer Images to Ray Tracing Pipeline.
-		DescriptorArray->bind(0, 2, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Color"]);
-		DescriptorArray->bind(0, 3, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Position"]);
-		DescriptorArray->bind(0, 4, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Normal"]);
-		DescriptorArray->bind(0, 5, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Emissive"]);
-		DescriptorArray->bind(0, 6, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.SS"]);
-		DescriptorArray->bind(0, 7, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.ORM"]);
+		DescriptorArray->bind(0, 2, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Color"], image::layout::GENERAL);
+		DescriptorArray->bind(0, 3, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Position"], image::layout::GENERAL);
+		DescriptorArray->bind(0, 4, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Normal"], image::layout::GENERAL);
+		DescriptorArray->bind(0, 5, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Emissive"], image::layout::GENERAL);
+		DescriptorArray->bind(0, 6, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.SS"], image::layout::GENERAL);
+		DescriptorArray->bind(0, 7, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.ORM"], image::layout::GENERAL);
 
 		// Bind Uniform Buffers.
 		DescriptorArray->bind(1, 0, 0, aCamera3D->SubjectUniformBuffer);
@@ -225,8 +228,9 @@ namespace geodesy::bltn::obj {
 			pipeline::stage::LATE_FRAGMENT_TESTS, 				pipeline::stage::EARLY_FRAGMENT_TESTS,
 			device::access::DEPTH_STENCIL_ATTACHMENT_WRITE, 	device::access::DEPTH_STENCIL_ATTACHMENT_READ | device::access::DEPTH_STENCIL_ATTACHMENT_WRITE
 		);
+		// TODO: Transi
 		// Issue Ray Tracing Call.
-		RayTracingPipeline->raytrace(DrawCommand, { aCamera3D->Framechain->Resolution[0], aCamera3D->Framechain->Resolution[1] , 1u });
+		RayTracingPipeline->raytrace(DrawCommand, DescriptorArray, aCamera3D->Framechain->Resolution);
 		Result = Context->end(DrawCommand);
 	}
 	
@@ -252,18 +256,18 @@ namespace geodesy::bltn::obj {
 		}
 	}
 
-	camera3d::opaque_raytracer::opaque_raytracer(
+	camera3d::hybrid_raytracer::hybrid_raytracer(
 		camera3d* aCamera3D,
 		runtime::stage* aStage
 	) : runtime::object::renderer(aCamera3D, nullptr) {
 		// Only need draw calls per frame in the frame chain.
 		this->DrawCallList = std::vector<std::vector<std::shared_ptr<draw_call>>>(aCamera3D->Framechain->Image.size(), std::vector<std::shared_ptr<draw_call>>(1));
 		for (size_t i = 0; i < aCamera3D->Framechain->Image.size(); i++) {
-			// this->DrawCallList[i][0] = geodesy::make<opaque_raytracer>(aCamera3D, aStage);
+			this->DrawCallList[i][0] = geodesy::make<ray_trace_call>(aCamera3D, i, aStage);
 		}
 	}
 
-	void camera3d::opaque_raytracer::update(
+	void camera3d::hybrid_raytracer::update(
 		double aDeltaTime,
 		double aTime
 	) {
@@ -423,6 +427,9 @@ namespace geodesy::bltn::obj {
 	std::shared_ptr<runtime::object::renderer> camera3d::default_renderer(object* aObject) {
 		return std::dynamic_pointer_cast<runtime::object::renderer>(geodesy::make<deferred_renderer>(this, aObject));
 	}
+	std::shared_ptr<runtime::object::renderer> camera3d::default_ray_tracer(runtime::stage* aStage) {
+		return std::dynamic_pointer_cast<runtime::object::renderer>(geodesy::make<hybrid_raytracer>(this, aStage));
+	}
 
 	// std::shared_ptr<runtime::object::renderer> opaque_raytracer(runtime::stage* aStage) {
 	// 	return std::dynamic_pointer_cast<runtime::object::renderer>(geodesy::make<camera3d::opaque_raytracer>(aStage));
@@ -520,7 +527,8 @@ namespace geodesy::bltn::obj {
 		this->RenderingOperations += command_batch(convert(OpaqueVector));
 		this->RenderingOperations += command_batch(convert(TransparentVector));
 		this->RenderingOperations += command_batch(convert(TranslucentVector));
-		// Shadow & Lighting Operations on Opaque Geometry Buffer.
+		// Ray Tracing.
+		// this->RenderingOperations += command_batch(convert(aStage->ray_trace(this)));
 		// this->RenderingOperations += aStage->draw(this);
 		// Ray Tracing Operations on Translucent Geometry Buffer.
 

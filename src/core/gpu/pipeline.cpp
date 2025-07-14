@@ -713,8 +713,9 @@ namespace geodesy::core::gpu {
 	pipeline::pipeline(std::shared_ptr<context> aContext, std::shared_ptr<raytracer> aRaytracer) : pipeline() {
 		VkResult Result = VK_SUCCESS;
 
-		BindPoint	= VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
-		Context		= aContext;
+		this->BindPoint				= VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+		this->Context				= aContext;
+		this->CreateInfo			= aRaytracer;
 
 		// Generate GPU shader modules.
 		Result = this->shader_stage_create(aRaytracer);
@@ -1181,9 +1182,11 @@ namespace geodesy::core::gpu {
 
 	void pipeline::raytrace(
 		VkCommandBuffer 											aCommandBuffer,
+		std::shared_ptr<descriptor::array> 							aDescriptorArray,
 		math::vec<uint, 3> 											aResolution
 	) {
 		PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR = (PFN_vkCmdTraceRaysKHR)this->Context->FunctionPointer["vkCmdTraceRaysKHR"];
+		this->bind(aCommandBuffer, {}, nullptr, aDescriptorArray);
 		vkCmdTraceRaysKHR(
 			aCommandBuffer, 
 			&this->ShaderBindingTable.Raygen,
@@ -1222,46 +1225,22 @@ namespace geodesy::core::gpu {
 	}
 
 	std::map<VkDescriptorType, uint32_t> pipeline::descriptor_type_count() const {
-				// Calculate pool sizes based on pipeline descriptor set layout binding info.
+		// Calculate pool sizes based on pipeline descriptor set layout binding info.
 		std::map<VkDescriptorType, uint32_t> DescriptorTypeCount;
-		switch(this->BindPoint) {
-		case VK_PIPELINE_BIND_POINT_GRAPHICS:
-			{
-				std::shared_ptr<rasterizer> R = std::dynamic_pointer_cast<rasterizer>(this->CreateInfo);
-				for (size_t j = 0; j < R->DescriptorSetLayoutBinding.size(); j++) {
-					for (size_t k = 0; k < R->DescriptorSetLayoutBinding[j].size(); k++) {
-						VkDescriptorSetLayoutBinding DSLB = R->DescriptorSetLayoutBinding[j][k];
-						if (DescriptorTypeCount.count(DSLB.descriptorType) == 0) {
-							DescriptorTypeCount[DSLB.descriptorType] = 0;
-						}
-						DescriptorTypeCount[DSLB.descriptorType] += DSLB.descriptorCount;
-					}
+		for (size_t j = 0; j < this->CreateInfo->DescriptorSetLayoutBinding.size(); j++) {
+			for (size_t k = 0; k < this->CreateInfo->DescriptorSetLayoutBinding[j].size(); k++) {
+				VkDescriptorSetLayoutBinding DSLB = this->CreateInfo->DescriptorSetLayoutBinding[j][k];
+				if (DescriptorTypeCount.count(DSLB.descriptorType) == 0) {
+					DescriptorTypeCount[DSLB.descriptorType] = 0;
 				}
+				DescriptorTypeCount[DSLB.descriptorType] += DSLB.descriptorCount;
 			}
-			break;
-		case VK_PIPELINE_BIND_POINT_COMPUTE:
-			break;
-		case VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR:
-			break;
 		}
 		return DescriptorTypeCount;
 	}
 
 	std::vector<std::vector<VkDescriptorSetLayoutBinding>> pipeline::descriptor_set_layout_binding() const {
-		std::vector<std::vector<VkDescriptorSetLayoutBinding>> DescriptorSetLayoutBinding;
-		switch(this->BindPoint) {
-		case VK_PIPELINE_BIND_POINT_GRAPHICS:
-			{
-				std::shared_ptr<rasterizer> R = std::dynamic_pointer_cast<rasterizer>(this->CreateInfo);
-				DescriptorSetLayoutBinding = R->DescriptorSetLayoutBinding;
-			}
-			break;
-		case VK_PIPELINE_BIND_POINT_COMPUTE:
-			break;
-		case VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR:
-			break;
-		}
-		return DescriptorSetLayoutBinding;
+		return this->CreateInfo->DescriptorSetLayoutBinding;
 	}
 
 	VkResult pipeline::shader_stage_create(std::shared_ptr<create_info> aCreateInfo) {

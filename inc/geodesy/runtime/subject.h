@@ -95,6 +95,7 @@ namespace geodesy::runtime {
 
 		virtual bool is_subject() override;
 		virtual std::shared_ptr<renderer> default_renderer(object* aObject);
+		virtual std::shared_ptr<renderer> default_ray_tracer(stage* aStage);
 		virtual core::gpu::submission_batch render(stage* aStage);
 
 	};
