@@ -33,7 +33,7 @@ namespace geodesy::bltn::obj {
 		ColorCreateInfo.Usage		= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::STORAGE | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
 
 		image::format ColorFormat = image::format::R32G32B32A32_SFLOAT;
-		image::format DepthFormat = image::format::D32_SFLOAT;
+		image::format DepthFormat = image::format::D16_UNORM;
 
 		this->Resolution = aResolution;
 		for (std::size_t i = 0; i < this->Image.size(); i++) {
