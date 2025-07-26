@@ -115,10 +115,10 @@ namespace geodesy::runtime {
 					this->AnimationWeights[0] = 1.0f;
 				}
 
-				// // Load animation weight data.
-				// for (size_t i = 0; i < this->AnimationWeights.size(); i++) {
-				// 	this->AnimationWeights[i] = aCreator->AnimationWeights[i];
-				// }
+				// Load animation weight data.
+				for (size_t i = 0; i < std::min(this->AnimationWeights.size(), aCreator->AnimationWeights.size()); i++) {
+					this->AnimationWeights[i] = aCreator->AnimationWeights[i];
+				}
 			}
 		}
 
@@ -157,8 +157,6 @@ namespace geodesy::runtime {
 	void object::host_update(
 		double 										aDeltaTime, 
 		double 										aTime, 
-		const std::vector<float>& 					aAnimationWeight, 
-		const std::vector<phys::animation>& 		aPlaybackAnimation,
 		const std::vector<phys::force>& 			aAppliedForces
 	) {
 
@@ -173,8 +171,6 @@ namespace geodesy::runtime {
 	void object::device_update(
 		double 										aDeltaTime, 
 		double 										aTime, 
-		const std::vector<float>& 					aAnimationWeight, 
-		const std::vector<core::phys::animation>& 	aPlaybackAnimation,
 		const std::vector<core::phys::force>& 		aAppliedForces
 	) {
 
@@ -182,8 +178,6 @@ namespace geodesy::runtime {
 		gfx::node::device_update(
 			aDeltaTime, 
 			aTime, 
-			aAnimationWeight, 
-			aPlaybackAnimation, 
 			aAppliedForces
 		);
 

@@ -87,15 +87,11 @@ namespace geodesy::core::phys {
 		virtual void host_update(
 			double 								aDeltaTime = 0.0f, 
 			double 								aTime = 0.0f, 
-			const std::vector<float>& 			aAnimationWeight = { 1.0f }, 
-			const std::vector<animation>& 		aPlaybackAnimation = {},
 			const std::vector<force>& 			aAppliedForces = {}
 		);
 		virtual void device_update(
 			double 									aDeltaTime = 0.0f, 
 			double 									aTime = 0.0f, 
-			const std::vector<float>& 				aAnimationWeight = { 1.0f }, 
-			const std::vector<phys::animation>& 	aPlaybackAnimation = {},
 			const std::vector<phys::force>& 		aAppliedForces = {}
 		);
 		

@@ -389,12 +389,10 @@ namespace geodesy::bltn::obj {
 	void system_window::host_update(
 		double 									aDeltaTime, 
 		double 									aTime, 
-		const std::vector<float>& 				aAnimationWeight, 
-		const std::vector<phys::animation>& 	aPlaybackAnimation,
 		const std::vector<phys::force>& 		aAppliedForces
 	) {
 		// Call base class update.
-		object::host_update(aDeltaTime, aTime, aAnimationWeight, aPlaybackAnimation, aAppliedForces);
+		object::host_update(aDeltaTime, aTime, aAppliedForces);
 		// Update input state.
 		this->InputState.Mouse.update(aDeltaTime);
 	}

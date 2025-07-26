@@ -121,8 +121,6 @@ namespace geodesy::bltn::obj {
 		void virtual host_update(
 			double 										aDeltaTime = 0.0f, 
 			double 										aTime = 0.0f, 
-			const std::vector<float>& 					aAnimationWeight = { 1.0f }, 
-			const std::vector<core::phys::animation>& 	aPlaybackAnimation = {},
 			const std::vector<core::phys::force>& 		aAppliedForces = {}
 		) override;
 

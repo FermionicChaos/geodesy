@@ -100,15 +100,11 @@ namespace geodesy::runtime {
 		virtual void host_update(
 			double 										aDeltaTime = 0.0f, 
 			double 										aTime = 0.0f, 
-			const std::vector<float>& 					aAnimationWeight = { 1.0f }, 
-			const std::vector<core::phys::animation>& 	aPlaybackAnimation = {},
 			const std::vector<core::phys::force>& 		aAppliedForces = {}
 		) override;
 		virtual void device_update(
 			double 										aDeltaTime = 0.0f, 
 			double 										aTime = 0.0f, 
-			const std::vector<float>& 					aAnimationWeight = { 1.0f }, 
-			const std::vector<core::phys::animation>& 	aPlaybackAnimation = {},
 			const std::vector<core::phys::force>& 		aAppliedForces = {}
 		) override;
 		virtual std::vector<std::shared_ptr<draw_call>> draw(subject* aSubject);

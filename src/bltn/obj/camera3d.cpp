@@ -392,12 +392,10 @@ namespace geodesy::bltn::obj {
 	void camera3d::host_update(
 		double 											aDeltaTime, 
 		double 											aTime, 
-		const std::vector<float>& 						aAnimationWeight, 
-		const std::vector<core::phys::animation>& 		aPlaybackAnimation,
 		const std::vector<core::phys::force>& 			aAppliedForces
 	) {
 
-		object::host_update(aDeltaTime, aTime, aAnimationWeight, aPlaybackAnimation, aAppliedForces);
+		object::host_update(aDeltaTime, aTime, aAppliedForces);
 
 		// How the object will move according to its current momentum.
 		this->LinearMomentum += (this->InputForce) * aDeltaTime;
@@ -407,12 +405,10 @@ namespace geodesy::bltn::obj {
 	void camera3d::device_update(
 		double 											DeltaTime, 
 		double 											Time, 
-		const std::vector<float>& 						AnimationWeight, 
-		const std::vector<core::phys::animation>& 		PlaybackAnimation,
 		const std::vector<core::phys::force>& 			AppliedForces
 	) {
 
-		object::device_update(DeltaTime, Time, AnimationWeight, PlaybackAnimation, AppliedForces);
+		object::device_update(DeltaTime, Time, AppliedForces);
 
 		*(uniform_data*)this->SubjectUniformBuffer->Ptr = uniform_data(
 			this->Position, 
