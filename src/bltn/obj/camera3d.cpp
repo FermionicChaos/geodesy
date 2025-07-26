@@ -525,8 +525,8 @@ namespace geodesy::bltn::obj {
 
 		// Add to Rendering Operations.
 		this->RenderingOperations += command_batch(convert(OpaqueVector));
-		this->RenderingOperations += command_batch(convert(TransparentVector));
-		this->RenderingOperations += command_batch(convert(TranslucentVector));
+		// this->RenderingOperations += command_batch(convert(TransparentVector));
+		// this->RenderingOperations += command_batch(convert(TranslucentVector));
 		// Ray Tracing.
 		// this->RenderingOperations += command_batch(convert(aStage->ray_trace(this)));
 		// this->RenderingOperations += aStage->draw(this);

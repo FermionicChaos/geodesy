@@ -4,7 +4,100 @@
 // this shader launches a ray into the direction of each light source checking for intersections.
 // If an intersection is found, the pixel is in shadow, if not, the pixel is illuminated by the light source.
 
-#define MAX_STAGE_LIGHTS 256
+#define MAX_STAGE_TEXTURES 1024
+
+const float pi = 3.14159265359;
+
+struct payload {
+    vec3 Origin;
+    vec3 Direction;
+    int Hit;
+    int HitInstanceID;
+    vec3 HitLocation;
+    vec2 UV;
+    int MaterialIndex;
+};
+
+// Standard material info struct
+struct material {
+	int 	Transparency;
+	float 	AlbedoVertexWeight;
+	float 	AlbedoTextureWeight;
+	float 	AlbedoWeight;
+	int 	AlbedoTextureIndex;
+	vec3 	Albedo;
+	float 	OpacityTextureWeight;
+	float 	OpacityWeight;
+	int 	OpacityTextureIndex;
+	float 	Opacity;
+	float 	NormalVertexWeight;
+	float 	NormalTextureWeight;
+	int 	NormalTextureIndex;
+	int 	HeightTextureIndex;
+	float 	HeightScale;
+	int 	HeightStepCount;
+	float 	AmbientLightingTextureWeight;
+	float 	AmbientLightingWeight;
+	int 	AmbientLightingTextureIndex;
+	vec3 	AmbientLighting;
+	float 	EmissiveTextureWeight;
+	float 	EmissiveWeight;
+	int 	EmissiveTextureIndex;
+	vec3 	Emissive;
+	float 	SpecularTextureWeight;
+	float 	SpecularWeight;
+	int 	SpecularTextureIndex;
+	vec3 	Specular;
+	float 	ShininessTextureWeight;
+	float 	ShininessWeight;
+	int 	ShininessTextureIndex;
+	float 	Shininess;
+	float 	AmbientOcclusionTextureWeight;
+	float 	AmbientOcclusionWeight;
+	int 	AmbientOcclusionTextureIndex;
+	float 	AmbientOcclusion;
+	float 	MetallicTextureWeight;
+	float 	MetallicWeight;
+	int 	MetallicTextureIndex;
+	float 	Metallic;
+	float 	RoughnessTextureWeight;
+	float 	RoughnessWeight;
+	int 	RoughnessTextureIndex;
+	float 	Roughness;
+	float 	IORVertexWeight;
+	float 	IORTextureWeight;
+	float 	IORWeight;
+	int 	IORTextureIndex;
+	float 	IOR;
+	float 	SheenColorTextureWeight;
+	float 	SheenColorWeight;
+	int 	SheenColorTextureIndex;
+	vec3 	SheenColor;
+	float 	SheenIntensityTextureWeight;
+	float 	SheenIntensityWeight;
+	float 	SheenRoughnessTextureWeight;
+	float 	SheenRoughnessWeight;
+	int 	SheenMaskTextureIndex;
+	float 	SheenRoughness;
+	float 	SheenIntensity;
+	float 	ClearCoatStrengthTextureWeight;
+	float 	ClearCoatStrengthWeight;
+	float 	ClearCoatRoughnessTextureWeight;
+	float 	ClearCoatRoughnessWeight;
+	int 	ClearCoatStrengthRoughnessTextureIndex;
+	float 	ClearCoatStrength;
+	float 	ClearCoatRoughness;
+	float 	ClearCoatNormalTextureWeight;
+	float 	ClearCoatNormalWeight;
+	int 	ClearCoatNormalTextureIndex;
+	vec3 	ClearCoatNormal;
+	float 	ClearCoatTintTextureWeight;
+	float 	ClearCoatTintWeight;
+	int 	ClearCoatTintTextureIndex;
+	vec3 	ClearCoatTint;
+	float 	ClearCoatIOR;
+	float 	ClearCoatThickness;
+};
 
 struct light {
 	int 	Type;
@@ -15,41 +108,45 @@ struct light {
 	float 	SpotAngle;
 };
 
-struct payload {
-    vec3 Origin;
-    vec3 Direction;
-    int Hit; // 1 if hit, 0 if not
-    int HitInstanceID; // Instance ID of the geometry hit
-    vec3 HitLocation; // Where the ray hit in world space
-};
-
 // Ray Payload
 layout(location = 0) rayPayloadEXT payload Ray;
-
-// Load Geometry Buffer Data.
+// Scene Geometry
 layout(set = 0, binding = 0) uniform accelerationStructureEXT TLAS;
-layout(set = 0, binding = 1, rgba32f) uniform image2D OutputColor;
-layout(set = 0, binding = 2, rgba32f) uniform image2D PixelColor;
-layout(set = 0, binding = 3, rgba32f) uniform image2D PixelPosition;
-layout(set = 0, binding = 4, rgba32f) uniform image2D PixelNormal;
-layout(set = 0, binding = 5, rgba32f) uniform image2D PixelEmissive;
-layout(set = 0, binding = 6, rgba32f) uniform image2D PixelSS;
-layout(set = 0, binding = 7, rgba32f) uniform image2D PixelORM;
-
-layout (set = 1, binding = 0) uniform Camera3DUBO {
+// Scene Material Textures
+layout(set = 0, binding = 1) uniform sampler2D MaterialColor[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 2) uniform sampler2D MaterialOpacity[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 3) uniform sampler2D MaterialNormalMap[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 4) uniform sampler2D MaterialHeightMap[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 5) uniform sampler2D MaterialEmissive[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 6) uniform sampler2D MaterialSpecular[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 7) uniform sampler2D MaterialShininess[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 8) uniform sampler2D MaterialAmbientOcclusion[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 9) uniform sampler2D MaterialRoughness[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 10) uniform sampler2D MaterialMetallic[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 11) uniform sampler2D MaterialSheen[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 12) uniform sampler2D MaterialClearCoat[MAX_STAGE_TEXTURES];
+// Full materials for every mesh instace in the scene.
+layout(std140, set = 0, binding = 13) buffer MaterialSSBO {
+	material Material[];
+};
+// Deferred shading for light sources for both lighting and shadows.
+layout(std140, set = 0, binding = 14) buffer LightSSBO {
+	light Light[];
+};
+// Geometry Buffer Data
+layout(set = 1, binding = 1, rgba32f) uniform image2D OutputColor;
+layout(set = 1, binding = 2, rgba32f) uniform image2D PixelColor;
+layout(set = 1, binding = 3, rgba32f) uniform image2D PixelPosition;
+layout(set = 1, binding = 4, rgba32f) uniform image2D PixelNormal;
+layout(set = 1, binding = 5, rgba32f) uniform image2D PixelEmissive;
+layout(set = 1, binding = 6, rgba32f) uniform image2D PixelSS;
+layout(set = 1, binding = 7, rgba32f) uniform image2D PixelORM;
+// Camera Data
+layout (set = 2, binding = 0) uniform Camera3DUBO {
 	vec3 Position;
 	mat4 Rotation;
 	mat4 Projection;
 } Camera3D;
-
-// Light sources for illumination calculations
-// Deferred shading for light sources for both lighting and shadows.
-layout(set = 2, binding = 0) uniform LightUBO {
-	light Source[MAX_STAGE_LIGHTS]; 		// Array of light sources
-	int Count; 								// Number of light sources (up to MAX_STAGE_LIGHTS)
-} Light;
-
-const float pi = 3.14159265359;
 
 // ----- PBR Rendering Functions ----- //
 
@@ -118,9 +215,9 @@ void main() {
 	Ray.Origin = WorldPos;
 
 	// Iterate through each light source adding contributions per light source based on intersection with object in TLAS.
-	for (int i = 0; i < Light.Count; i++) {
+	for (int i = 0; i < Light.length(); i++) {
 		// Ray direction will be determined from the pixel position to the light source. (Same as light dir)
-		Ray.Direction = normalize(Light.Source[i].Position - Ray.Origin);
+		Ray.Direction = normalize(Light[i].Position - Ray.Origin);
 		// Set the ray hit to 0.
 		Ray.Hit = 0;        
 
@@ -133,7 +230,7 @@ void main() {
 			Ray.Origin,
 			0.001,                                      // Small offset to avoid self-intersection
 			Ray.Direction,
-			length(Light.Source[i].Position - Ray.Origin),    // Only check up to light distance
+			length(Light[i].Position - Ray.Origin),    // Only check up to light distance
 			0                                           // Location of the ray payload
 		);
 
@@ -141,13 +238,13 @@ void main() {
 		if (Ray.Hit == 1) continue;
 
 		// Calculate the light intensity based on the light source type.
-		float r = length(Light.Source[i].Position - WorldPos);
+		float r = length(Light[i].Position - WorldPos);
 		// Calculates the diffuse term.
 		vec3 d = Albedo.rgb * max(dot(Normal, Ray.Direction), 0.0);
 		// Calculates the specular term.
 		vec3 s = rs(Ray.Direction, Normal, ViewDir, Roughness, Metallic)*vec3(1.0);
 		// Calculate the final color based on the light source intensity.
-		FinalColor += ((1.0 - Specular)*d + Specular*s)*Light.Source[i].Color*Light.Source[i].Intensity / (r*r);
+		FinalColor += ((1.0 - Specular)*d + Specular*s)*Light[i].Color*Light[i].Intensity / (r*r);
 	}
 
 	// Apply simple tone mapping

@@ -34,7 +34,14 @@ namespace geodesy::core::gpu {
 
 			// Generate Bindings for Uniform Buffers.
 			DSLB.binding = BindingIndex;
-			DSLB.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			switch(Type->getQualifier().storage) {
+			case glslang::TStorageQualifier::EvqUniform:
+				DSLB.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				break;
+			case glslang::TStorageQualifier::EvqBuffer:
+				DSLB.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+				break;
+			}
 			DSLB.descriptorCount = DescriptorCount;
 			DSLB.stageFlags = glslang_shader_stage_to_vulkan(Variable.stages);
 			DSLB.pImmutableSamplers = NULL;
@@ -44,41 +51,6 @@ namespace geodesy::core::gpu {
 				this->DescriptorSetLayoutBinding.resize(SetIndex + 1);
 			}
 
-			this->DescriptorSetLayoutBinding[SetIndex].push_back(DSLB);
-			this->DescriptorSetVariable[SetBinding] = convert_to_variable(Type, Variable.name.c_str());
-		}
-		
-		// Gets buffer blocks (storage buffers).
-		for (size_t i = 0; i < this->Program->getNumBufferBlocks(); i++) {
-			VkDescriptorSetLayoutBinding DSLB{};
-			const glslang::TObjectReflection& Variable = this->Program->getBufferBlock(i);
-			const glslang::TType* Type = Variable.getType();
-			const glslang::TArraySizes* ArraySize = Type->getArraySizes();
-			size_t DescriptorCount = 0;
-			if (ArraySize != NULL) {
-				for (int j = 0; j < ArraySize->getNumDims(); j++) {
-					DescriptorCount += ArraySize->getDimSize(j);
-				}
-			} else {
-				DescriptorCount = 1;
-			}
-		
-			int SetIndex = Type->getQualifier().layoutSet;
-			int BindingIndex = Type->getQualifier().layoutBinding;
-			std::pair<int, int> SetBinding = std::make_pair(SetIndex, BindingIndex);
-		
-			// Generate Bindings for Storage Buffers.
-			DSLB.binding = BindingIndex;
-			DSLB.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			DSLB.descriptorCount = DescriptorCount;
-			DSLB.stageFlags = glslang_shader_stage_to_vulkan(Variable.stages);
-			DSLB.pImmutableSamplers = NULL;
-		
-			// Resize DescriptorSetLayoutBinding if SetIndex does not exist.
-			if (SetIndex >= this->DescriptorSetLayoutBinding.size()) {
-				this->DescriptorSetLayoutBinding.resize(SetIndex + 1);
-			}
-		
 			this->DescriptorSetLayoutBinding[SetIndex].push_back(DSLB);
 			this->DescriptorSetVariable[SetBinding] = convert_to_variable(Type, Variable.name.c_str());
 		}

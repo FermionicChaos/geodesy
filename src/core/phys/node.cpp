@@ -1,6 +1,7 @@
 #include <geodesy/core/phys/node.h>
 
 #include <geodesy/core/gfx/node.h>
+#include <geodesy/runtime/object.h>
 
 // Model Loading
 #include <assimp/Importer.hpp>

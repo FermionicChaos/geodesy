@@ -66,13 +66,7 @@ namespace geodesy::runtime {
 		#endif // ENABLE_MULTITHREADED_PROCESSING
 		for (std::ptrdiff_t i = 0; i < this->NodeCache.size(); i++) {
 			// Perform all host memory calculations, apply forces and animations
-			object *Object = static_cast<object*>(this->NodeCache[i]->Root);
-			if (Object->Model != nullptr) { 
-				NodeCache[i]->host_update(aDeltaTime, this->Time, Object->AnimationWeights, Object->Model->Animation);
-			}
-			else {
-				NodeCache[i]->host_update(aDeltaTime, this->Time);
-			}
+			NodeCache[i]->host_update(aDeltaTime, this->Time);
 		}
 
 		for (std::ptrdiff_t i = 0; i < this->NodeCache.size(); i++) {

@@ -110,12 +110,15 @@ namespace geodesy::runtime {
 
 				// If model has animations, then create animation data.
 				if (this->Model->Animation.size() > 0) {
-					// Include Bind Pose as the first Weight.
+					// Include Bind Pose as the first Weight, these are TPose Weights.
 					this->AnimationWeights = std::vector<float>(this->Model->Animation.size() + 1, 0.0f);
 					this->AnimationWeights[0] = 1.0f;
 				}
 
-				this->AnimationWeights = aCreator->AnimationWeights;
+				// // Load animation weight data.
+				// for (size_t i = 0; i < this->AnimationWeights.size(); i++) {
+				// 	this->AnimationWeights[i] = aCreator->AnimationWeights[i];
+				// }
 			}
 		}
 
