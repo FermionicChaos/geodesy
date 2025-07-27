@@ -136,8 +136,8 @@ layout (set = 1, binding = 6) uniform sampler2D MaterialShininess; 			// float S
 layout (set = 1, binding = 7) uniform sampler2D MaterialAmbientOcclusion; 	// float AOC
 layout (set = 1, binding = 8) uniform sampler2D MaterialRoughness; 			// float Roughness
 layout (set = 1, binding = 9) uniform sampler2D MaterialMetallic; 			// float Metallic	
-layout (set = 1, binding = 10) uniform sampler2D MaterialSheen; 			// Sheen Map
-layout (set = 1, binding = 11) uniform sampler2D MaterialClearCoat; 		// Clear Coat Map
+// layout (set = 1, binding = 10) uniform sampler2D MaterialSheen; 			// Sheen Map
+// layout (set = 1, binding = 11) uniform sampler2D MaterialClearCoat; 		// Clear Coat Map
 
 // -------------------- OUTPUT DATA -------------------- //
 

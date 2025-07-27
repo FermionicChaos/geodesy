@@ -126,8 +126,8 @@ namespace geodesy::bltn::obj {
 		DescriptorArray->bind(1, 7, 0, Material->Texture["AmbientOcclusion"]);
 		DescriptorArray->bind(1, 8, 0, Material->Texture["Roughness"]);
 		DescriptorArray->bind(1, 9, 0, Material->Texture["Metallic"]);
-		DescriptorArray->bind(1, 10, 0, Material->Texture["Sheen"]);
-		DescriptorArray->bind(1, 11, 0, Material->Texture["ClearCoat"]);
+		// DescriptorArray->bind(1, 10, 0, Material->Texture["Sheen"]);
+		// DescriptorArray->bind(1, 11, 0, Material->Texture["ClearCoat"]);
 
 		// Actual Draw Call.
 		Result = Context->begin(DrawCommand);
@@ -356,7 +356,7 @@ namespace geodesy::bltn::obj {
 
 	void camera3d::input(const core::hid::input& aInputState) {
 		float LinearSpeed = 7.5f;
-		float RotationSpeed = 0.75f;
+		float RotationSpeed = 1.5f;
 		float ForwardSpeed = 0.0f, RightSpeed = 0.0f;
 		float DeltaTheta = 0.0f, DeltaPhi = 0.0f;
 		
