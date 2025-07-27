@@ -46,8 +46,15 @@ namespace geodesy::bltn::obj {
 			this->Image[i]["OGB.Emissive"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
 			this->Image[i]["OGB.SS"] 		= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
 			this->Image[i]["OGB.ORM"] 		= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Depth"] 	= aContext->create_image(DepthCreateInfo, DepthFormat, aResolution[0], aResolution[1]);
 			// Outputs for post processing.
+			this->Image[i]["TGB.Color"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["TGB.Position"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["TGB.Normal"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["TGB.Emissive"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["TGB.SS"] 		= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["TGB.ORM"] 		= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			// Shared Depth Buffer for all images.
+			this->Image[i]["Depth"] 		= aContext->create_image(DepthCreateInfo, DepthFormat, aResolution[0], aResolution[1]);
 		}
 
 		// Setup frame clearing commands.
@@ -57,14 +64,24 @@ namespace geodesy::bltn::obj {
 			// Creates Clearing command for images in frame chain.
 			VkCommandBuffer	ClearCommand = aContext->allocate_command_buffer(device::operation::GRAPHICS_AND_COMPUTE);
 			aContext->begin(ClearCommand);
-			// this->Image[i]["Color"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			// Final Output Color Image.
+			this->Image[i]["Color"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			// Opaque Geometry Buffer, used for Opaque.
 			this->Image[i]["OGB.Color"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.Position"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.Normal"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.Emissive"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.SS"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.ORM"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
-			this->Image[i]["OGB.Depth"]->clear_depth(ClearCommand, { 0.0f, 0 });
+			// Translucency Geometry Buffer, used for Transparent & Translucent mesh instances.
+			this->Image[i]["TGB.Color"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["TGB.Position"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["TGB.Normal"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["TGB.Emissive"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["TGB.SS"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["TGB.ORM"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			// Shared Depth Buffer for all images.
+			this->Image[i]["Depth"]->clear_depth(ClearCommand, { 0.0f, 0 });
 			// this->Image[i]["FinalColor"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			aContext->end(ClearCommand);
 			this->PredrawFrameOperation[i] += ClearCommand;
@@ -94,15 +111,35 @@ namespace geodesy::bltn::obj {
 		// Load Context
 		this->Context = aObject->Context;
 		// Load up desired images which draw call will render to.
-		std::vector<std::shared_ptr<image>> ImageOutputList = {
-			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Color"],
-			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Position"],
-			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Normal"],
-			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Emissive"],
-			aCamera3D->Framechain->Image[aFrameIndex]["OGB.SS"],
-			aCamera3D->Framechain->Image[aFrameIndex]["OGB.ORM"],
-			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Depth"]
-		};
+		std::vector<std::shared_ptr<image>> ImageOutputList;
+		switch(this->TransparencyMode) {
+		case material::transparency::OPAQUE:
+			// Opaque Geometry Buffer.
+			ImageOutputList = {
+				aCamera3D->Framechain->Image[aFrameIndex]["OGB.Color"],
+				aCamera3D->Framechain->Image[aFrameIndex]["OGB.Position"],
+				aCamera3D->Framechain->Image[aFrameIndex]["OGB.Normal"],
+				aCamera3D->Framechain->Image[aFrameIndex]["OGB.Emissive"],
+				aCamera3D->Framechain->Image[aFrameIndex]["OGB.SS"],
+				aCamera3D->Framechain->Image[aFrameIndex]["OGB.ORM"],
+				aCamera3D->Framechain->Image[aFrameIndex]["Depth"]
+			};
+			break;
+		case material::transparency::TRANSPARENT: case material::transparency::TRANSLUCENT:
+			// Translucent/Transparent Geometry Buffer.
+			ImageOutputList = {
+				aCamera3D->Framechain->Image[aFrameIndex]["TGB.Color"],
+				aCamera3D->Framechain->Image[aFrameIndex]["TGB.Position"],
+				aCamera3D->Framechain->Image[aFrameIndex]["TGB.Normal"],
+				aCamera3D->Framechain->Image[aFrameIndex]["TGB.Emissive"],
+				aCamera3D->Framechain->Image[aFrameIndex]["TGB.SS"],
+				aCamera3D->Framechain->Image[aFrameIndex]["TGB.ORM"],
+				aCamera3D->Framechain->Image[aFrameIndex]["Depth"]
+			};
+			break;
+		default:
+			break;
+		}
 		// Acquire Mesh Vertex Buffer, and Mesh Instance Vertex Weight Buffer.
 		std::vector<std::shared_ptr<buffer>> VertexBuffer = { Mesh->VertexBuffer, MeshInstance->VertexWeightBuffer };
 		// Load up GPU interface data to interface resources with pipeline.
@@ -521,8 +558,8 @@ namespace geodesy::bltn::obj {
 
 		// Add to Rendering Operations.
 		this->RenderingOperations += command_batch(convert(OpaqueVector));
-		// this->RenderingOperations += command_batch(convert(TransparentVector));
-		// this->RenderingOperations += command_batch(convert(TranslucentVector));
+		this->RenderingOperations += command_batch(convert(TransparentVector));
+		this->RenderingOperations += command_batch(convert(TranslucentVector));
 		// Ray Tracing.
 		// this->RenderingOperations += command_batch(convert(aStage->ray_trace(this)));
 		// this->RenderingOperations += aStage->draw(this);
@@ -618,7 +655,7 @@ namespace geodesy::bltn::obj {
 		Rasterizer->attach(3, this->Framechain->draw_frame()["OGB.Emissive"]);
 		Rasterizer->attach(4, this->Framechain->draw_frame()["OGB.SS"]);
 		Rasterizer->attach(5, this->Framechain->draw_frame()["OGB.ORM"]);
-		Rasterizer->attach(6, this->Framechain->draw_frame()["OGB.Depth"]);
+		Rasterizer->attach(6, this->Framechain->draw_frame()["Depth"]);
 
 		// Create render pipeline for camera3d.
 		return Context->create_pipeline(Rasterizer);
