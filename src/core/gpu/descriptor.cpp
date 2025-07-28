@@ -129,6 +129,7 @@ namespace geodesy::core::gpu {
 		WDS.pImageInfo							= NULL;
 		WDS.pBufferInfo							= NULL;
 		WDS.pTexelBufferView					= NULL;
+		vkUpdateDescriptorSets(this->Context->Handle, 1, &WDS, 0, NULL);
 	}
 	
 	void descriptor::array::bind(int aSet, int aBinding, int aArrayElement, VkBufferView aBufferView) {

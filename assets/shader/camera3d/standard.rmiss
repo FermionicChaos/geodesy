@@ -8,9 +8,11 @@
 struct payload {
     vec3 Origin;
     vec3 Direction;
-    int Hit; // 1 if hit, 0 if not
-    int HitInstanceID; // Instance ID of the geometry hit
-    vec3 HitLocation; // Where the ray hit in world space
+    int Hit;
+    int HitInstanceID;
+    vec3 HitLocation;
+    vec2 UV;
+    int MaterialIndex;
 };
 
 layout(location = 0) rayPayloadEXT payload Ray;

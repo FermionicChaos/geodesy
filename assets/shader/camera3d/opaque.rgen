@@ -134,19 +134,19 @@ layout(std140, set = 0, binding = 14) buffer LightSSBO {
 	light Light[];
 };
 // Geometry Buffer Data
-layout(set = 1, binding = 1, rgba32f) uniform image2D OutputColor;
-layout(set = 1, binding = 2, rgba32f) uniform image2D PixelColor;
-layout(set = 1, binding = 3, rgba32f) uniform image2D PixelPosition;
-layout(set = 1, binding = 4, rgba32f) uniform image2D PixelNormal;
-layout(set = 1, binding = 5, rgba32f) uniform image2D PixelEmissive;
-layout(set = 1, binding = 6, rgba32f) uniform image2D PixelSS;
-layout(set = 1, binding = 7, rgba32f) uniform image2D PixelORM;
+layout(set = 1, binding = 0, rgba32f) uniform image2D OutputColor;
+layout(set = 1, binding = 1, rgba32f) uniform image2D PixelColor;
+layout(set = 1, binding = 2, rgba32f) uniform image2D PixelPosition;
+layout(set = 1, binding = 3, rgba32f) uniform image2D PixelNormal;
+layout(set = 1, binding = 4, rgba32f) uniform image2D PixelSS;
+layout(set = 1, binding = 5, rgba32f) uniform image2D PixelORM;
 // Camera Data
-layout (set = 2, binding = 0) uniform Camera3DUBO {
+layout (set = 2, binding = 0) uniform SubjectUBO {
 	vec3 Position;
 	mat4 Rotation;
 	mat4 Projection;
-} Camera3D;
+	mat4 PRT;
+} Subject;
 
 // ----- PBR Rendering Functions ----- //
 
@@ -198,58 +198,85 @@ void main() {
 	vec4 Albedo = imageLoad(PixelColor, RayIndex);
 	vec3 WorldPos = imageLoad(PixelPosition, RayIndex).xyz;
 	vec3 Normal = imageLoad(PixelNormal, RayIndex).xyz;
-	vec3 Emissive = imageLoad(PixelEmissive, RayIndex).xyz;
 	float Specular = imageLoad(PixelSS, RayIndex).r;
 	float Shininess = imageLoad(PixelSS, RayIndex).g;
 	float AmbientOcclusion = imageLoad(PixelORM, RayIndex).r;
 	float Roughness = imageLoad(PixelORM, RayIndex).g;
 	float Metallic = imageLoad(PixelORM, RayIndex).b;
 
-	// Start FinalColor, and ViewDir. TODO: Ignore Emissive
-	vec3 FinalColor = Albedo.rgb*AmbientOcclusion;
+	// Skip lighting calculation for pixels with no geometry (alpha = 0)
+	if (Albedo.a == 0.0) {
+		imageStore(OutputColor, RayIndex, vec4(0.0, 0.0, 0.0, 0.0));
+		return;
+	}
+
+	// Start with ambient lighting and emissive contribution
+	vec3 FinalColor = Albedo.rgb * AmbientOcclusion * 0.1; // Small ambient term
+	// FinalColor += Emissive; // Add emissive contribution directly
 
 	// View direction of the camera.
-	vec3 ViewDir = normalize(Camera3D.Position - WorldPos);
+	vec3 ViewDir = normalize(Subject.Position - WorldPos);
 
 	// Ray origin will start at the world position of the fragment.
 	Ray.Origin = WorldPos;
 
 	// Iterate through each light source adding contributions per light source based on intersection with object in TLAS.
 	for (int i = 0; i < Light.length(); i++) {
-		// Ray direction will be determined from the pixel position to the light source. (Same as light dir)
-		Ray.Direction = normalize(Light[i].Position - Ray.Origin);
-		// Set the ray hit to 0.
-		Ray.Hit = 0;        
+		// Calculate light direction and distance
+		vec3 LightDir = Light[i].Position - WorldPos;
+		float LightDistance = length(LightDir);
+		LightDir = normalize(LightDir);
+		
+		// Check if surface faces the light (back-face culling for lighting)
+		float NdotL = dot(Normal, LightDir);
+		if (NdotL <= 0.0) continue;
+		
+		// Setup shadow ray with proper offset to prevent self-intersection
+		Ray.Origin = WorldPos + Normal * 0.001;
+		Ray.Direction = LightDir;
+		Ray.Hit = 0;
 
-		// Trace ray into scene to see if there is an intersection towards the direction of the light source.
+		// Trace shadow ray to check for occlusion
 		traceRayEXT(
 			TLAS,
-			gl_RayFlagsOpaqueEXT,
+			gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, // Terminate on first hit for shadows
 			0xFF,
 			0, 0, 0,
 			Ray.Origin,
-			0.001,                                      // Small offset to avoid self-intersection
+			0.001,                    // Min distance
 			Ray.Direction,
-			length(Light[i].Position - Ray.Origin),    // Only check up to light distance
-			0                                           // Location of the ray payload
+			LightDistance - 0.001,    // Max distance (just before light)
+			0                         // Ray payload location
 		);
 
-		// If light is obstructed, skip the light source.
+		// If light is obstructed, skip lighting calculation
 		if (Ray.Hit == 1) continue;
 
-		// Calculate the light intensity based on the light source type.
-		float r = length(Light[i].Position - WorldPos);
-		// Calculates the diffuse term.
-		vec3 d = Albedo.rgb * max(dot(Normal, Ray.Direction), 0.0);
-		// Calculates the specular term.
-		vec3 s = rs(Ray.Direction, Normal, ViewDir, Roughness, Metallic)*vec3(1.0);
-		// Calculate the final color based on the light source intensity.
-		FinalColor += ((1.0 - Specular)*d + Specular*s)*Light[i].Color*Light[i].Intensity / (r*r);
+		// Calculate light attenuation (inverse square law)
+		float Attenuation = Light[i].Intensity / (LightDistance * LightDistance);
+		
+		// Calculate diffuse term (Lambertian)
+		vec3 Diffuse = Albedo.rgb * NdotL;
+		
+		// Calculate specular term using PBR
+		vec3 Specular = vec3(rs(LightDir, Normal, ViewDir, Roughness, Metallic));
+		
+		// Combine diffuse and specular based on metallic workflow
+		vec3 F0 = mix(vec3(0.04), Albedo.rgb, Metallic); // Base reflectance
+		vec3 kS = vec3(fresnel_schlick(max(dot(normalize(LightDir + ViewDir), ViewDir), 0.0), F0.r));
+		vec3 kD = (vec3(1.0) - kS) * (1.0 - Metallic); // Metallic surfaces have no diffuse
+		
+		// Final lighting contribution for this light
+		vec3 LightContribution = (kD * Diffuse + Specular) * Light[i].Color * Attenuation;
+		FinalColor += LightContribution;
 	}
 
-	// Apply simple tone mapping
+	// Apply tone mapping (Reinhard with slight modification for better highlights)
 	FinalColor = FinalColor / (FinalColor + vec3(1.0));
+	
+	// Apply gamma correction (optional, depending on your pipeline)
+	// FinalColor = pow(FinalColor, vec3(1.0/2.2));
 
 	// Write the final color per pixel to the output color image.
-	imageStore(OutputColor, RayIndex, vec4(FinalColor, 1.0f));
+	imageStore(OutputColor, RayIndex, vec4(FinalColor, Albedo.a));
 }

@@ -44,8 +44,21 @@ namespace geodesy::bltn::obj {
 			) override;
 		};
 
-		struct ray_trace_call : object::draw_call {
-			ray_trace_call(
+		struct opaque_ray_trace_call : object::draw_call {
+			opaque_ray_trace_call(
+				camera3d* 			aCamera3D,
+				size_t 				aFrameIndex,
+				runtime::stage* 	aStage
+			);
+			void update(
+				subject* 			aSubject, 
+				size_t 				aFrameIndex,
+				runtime::stage* 	aStage
+			);
+		};
+
+		struct translucent_ray_trace_call : object::draw_call {
+			translucent_ray_trace_call(
 				camera3d* 			aCamera3D,
 				size_t 				aFrameIndex,
 				runtime::stage* 	aStage

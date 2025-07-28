@@ -282,6 +282,10 @@ namespace geodesy::core::gfx {
 			else {
 				this->IndexBuffer = aContext->create_buffer(IBCI, aMesh->Topology.Data32.size() * sizeof(uint), aMesh->Topology.Data32.data());
 			}
+			// Create Acceleration Structure if context supports it.
+			if (aContext->extension_enabled("VK_KHR_acceleration_structure")) {
+				this->AccelerationStructure = geodesy::make<gpu::acceleration_structure>(aContext, this, aMesh.get());
+			}
 		}
 	}
 

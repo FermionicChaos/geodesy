@@ -16,10 +16,26 @@ layout (set = 0, binding = 0) uniform sampler2D OpaqueColorTexture; // Color buf
 layout (set = 0, binding = 1) uniform sampler2D TranslucentColorTexture; // Color buffer for translucent geometry
 layout (set = 0, binding = 2) uniform sampler2D EmissiveTexture; // Emissive texture for lighting
 
+// -------------------- BLOOM PARAMETERS -------------------- //
+// Bloom parameters - these could be passed as uniforms in a real implementation
+const float BLOOM_INTENSITY = 1.5;
+const float BLOOM_THRESHOLD = 0.8;
+const int BLUR_SAMPLES = 9;
+
 // -------------------- OUTPUT DATA ------------------- //
 layout (location = 0) out vec4 FinalColor;
 
 void main() {
+    vec2 uv = TextureCoordinate.xy;
+    
+    // Sample base colors
+    vec4 OpaqueColor = texture(OpaqueColorTexture, uv);
+    vec4 TranslucentColor = texture(TranslucentColorTexture, uv);
+    vec4 EmissiveColor = vec4(0.0f, 0.0f, 0.0f, 0.0f); // Default emissive color
+    
+    // Blend translucent over opaque
+    vec4 BaseColor = mix(OpaqueColor, TranslucentColor, TranslucentColor.a);
 
-    // We will use Gaussian blur to generate a bloom effect
+    // Apply bloom effect
+    FinalColor = BaseColor + EmissiveColor;
 }

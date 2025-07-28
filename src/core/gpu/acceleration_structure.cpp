@@ -91,8 +91,8 @@ namespace geodesy::core::gpu {
 		if (Result == VK_SUCCESS) {
 			// Update ASBGI with the acceleration structure handle.
 			ASBGI.dstAccelerationStructure = this->Handle;
-			// Update ASBGI with the scratch buffer device address.
-			ASBGI.scratchData.deviceAddress = this->Buffer->device_address();
+			// Update ASBGI with the scratch buffer device address (NOT the AS buffer address).
+			ASBGI.scratchData.deviceAddress = this->BuildScratchBuffer->device_address();
 
 			// Now fill out acceleration structure buffer.
 			VkAccelerationStructureBuildRangeInfoKHR ASBRI;
@@ -129,6 +129,7 @@ namespace geodesy::core::gpu {
 	}
 
 	acceleration_structure::acceleration_structure(std::shared_ptr<context> aContext, const runtime::stage* aStage) {
+		this->Context = aContext;
 		// TLAS will have to iterate through every objects model to gather its mesh instances.
 
 		// Vulkan mesh instance list over entire stage.
@@ -156,7 +157,7 @@ namespace geodesy::core::gpu {
 				// Visible to all rays.
 				ASI.mask										= 0xFF;
 				// Might need info from ray tracing pipeline.
-				ASI.instanceShaderBindingTableRecordOffset		; // TODO: Figure out relation with pipeline.
+				ASI.instanceShaderBindingTableRecordOffset		= 0; // TODO: Figure out relation with pipeline.
 				// Flags
 				ASI.flags										= VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
 				// Instance ID.
@@ -171,7 +172,7 @@ namespace geodesy::core::gpu {
 		{
 			gpu::buffer::create_info IBCI;
 			IBCI.Memory = device::memory::DEVICE_LOCAL;
-			IBCI.Usage = buffer::usage::ACCELERATION_STRUCTURE_STORAGE_KHR | buffer::usage::SHADER_DEVICE_ADDRESS | buffer::usage::STORAGE | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
+			IBCI.Usage = buffer::usage::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR | buffer::usage::ACCELERATION_STRUCTURE_STORAGE_KHR | buffer::usage::SHADER_DEVICE_ADDRESS | buffer::usage::STORAGE | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 			this->InstanceBuffer = aContext->create_buffer(IBCI, InstanceList.size() * sizeof(VkAccelerationStructureInstanceKHR), InstanceList.data());
 		}
 
