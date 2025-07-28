@@ -260,15 +260,38 @@ namespace geodesy::bltn::obj {
 
 		// Actual Draw Call.
 		Result = Context->begin(DrawCommand);
+		
+		// Transition images to GENERAL layout for ray tracing storage access
+		std::vector<std::shared_ptr<image>> ImagesToTransition = {
+			aCamera3D->Framechain->Image[aFrameIndex]["Color"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Color"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Position"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Normal"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.SS"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.ORM"]
+		};
+		
+		for (auto& img : ImagesToTransition) {
+			img->transition(DrawCommand, image::layout::SHADER_READ_ONLY_OPTIMAL, image::layout::GENERAL, 
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+		}
+		
 		// The goal of this barrier is to keep the gpu busy while still waiting on the depth results of the previous draw call.
 		pipeline::barrier(DrawCommand, 
 			/* Src ---> Dst */
 			pipeline::stage::LATE_FRAGMENT_TESTS, 				pipeline::stage::EARLY_FRAGMENT_TESTS,
 			device::access::DEPTH_STENCIL_ATTACHMENT_WRITE, 	device::access::DEPTH_STENCIL_ATTACHMENT_READ | device::access::DEPTH_STENCIL_ATTACHMENT_WRITE
 		);
-		// TODO: Transi
+		
 		// Issue Ray Tracing Call.
 		RayTracingPipeline->raytrace(DrawCommand, DescriptorArray, aCamera3D->Framechain->Resolution);
+		
+		// Transition images back to SHADER_READ_ONLY_OPTIMAL for subsequent operations
+		for (auto& img : ImagesToTransition) {
+			img->transition(DrawCommand, image::layout::GENERAL, image::layout::SHADER_READ_ONLY_OPTIMAL,
+				VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+		}
+		
 		Result = Context->end(DrawCommand);
 	}
 	
@@ -351,7 +374,7 @@ namespace geodesy::bltn::obj {
 		runtime::stage* aStage
 	) : runtime::object::renderer(aCamera3D, nullptr) {
 		// Only need draw calls per frame in the frame chain.
-		this->DrawCallList = std::vector<std::vector<std::shared_ptr<draw_call>>>(aCamera3D->Framechain->Image.size(), std::vector<std::shared_ptr<draw_call>>(2));
+		this->DrawCallList = std::vector<std::vector<std::shared_ptr<draw_call>>>(aCamera3D->Framechain->Image.size(), std::vector<std::shared_ptr<draw_call>>(1));
 		for (size_t i = 0; i < aCamera3D->Framechain->Image.size(); i++) {
 			// Generate lighting and shadow ray tracer for opaque geometry buffer.
 			this->DrawCallList[i][0] = geodesy::make<opaque_ray_trace_call>(aCamera3D, i, aStage);

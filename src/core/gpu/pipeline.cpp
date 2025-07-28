@@ -859,17 +859,18 @@ namespace geodesy::core::gpu {
 			
 			// Calculate Region Sizes based on alignment.
 			uint32_t HandleSizeAligned 		= align_up(HandleSize, HandleAlignment);
-			uint32_t RayGenSize 			= align_up(RayGenCount * HandleSizeAligned, BaseAlignment);
+			// For raygen: size must equal stride (only one entry), so don't align to BaseAlignment
+			uint32_t RayGenSize 			= RayGenCount > 0 ? HandleSizeAligned : 0;
 			uint32_t MissSize 				= align_up(MissCount * HandleSizeAligned, BaseAlignment);
 			uint32_t HitSize 				= align_up(HitCount * HandleSizeAligned, BaseAlignment);
 			uint32_t CallableSize 			= align_up(CallableCount * HandleSizeAligned, BaseAlignment);
-			uint32_t TotalSize = RayGenSize + MissSize + HitSize + CallableSize;
-
-			// Calculate offsets into SBTHM.
+			
+			// Calculate offsets with proper BaseAlignment for each region
 			uint32_t RayGenOffset = 0;
-			uint32_t MissOffset = RayGenSize;
-			uint32_t HitOffset = MissOffset + MissSize;
-			uint32_t CallableOffset = HitOffset + HitSize;
+			uint32_t MissOffset = align_up(RayGenOffset + RayGenSize, BaseAlignment);
+			uint32_t HitOffset = align_up(MissOffset + MissSize, BaseAlignment);
+			uint32_t CallableOffset = align_up(HitOffset + HitSize, BaseAlignment);
+			uint32_t TotalSize = CallableOffset + CallableSize;
 
 			// Get Index Map.
 			std::vector<uint32_t> RayGenIndices;
