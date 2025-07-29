@@ -22,6 +22,7 @@ namespace geodesy::core::gfx {
 		struct light {
 
 			enum type : int {
+				UNDEFINED,
 				AMBIENT,
 				DIRECTIONAL,
 				POINT,
@@ -30,13 +31,13 @@ namespace geodesy::core::gfx {
 			};
 
 			alignas(4) int 						Type;
-			alignas(4) float 					Intensity;
 			alignas(16) math::vec<float, 3> 	Color;
 			alignas(16) math::vec<float, 3> 	Position;
 			alignas(16) math::vec<float, 3> 	Direction;
 			alignas(4) float 					SpotAngle;
 
 			light();
+			light(math::vec<float, 3> aColor, math::vec<float, 3> aPosition);
 		};
 
 		static bool initialize();
@@ -55,7 +56,7 @@ namespace geodesy::core::gfx {
 		std::vector<std::shared_ptr<mesh>> 				Mesh;
 		std::vector<std::shared_ptr<material>> 			Material;
 		std::vector<std::shared_ptr<gpu::image>> 		Texture;
-		// std::vector<std::shared_ptr<light>> 			Light;				// Not Relevant To Model, open as stage.
+		std::vector<light> 								Light;				// Not Relevant To Model, open as stage.
 		// std::vector<std::shared_ptr<camera>> 		Camera;			// Not Relevant To Model, open as stage.
 		// std::shared_ptr<gpu::buffer> 					UniformBuffer;
 

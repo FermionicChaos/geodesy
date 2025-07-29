@@ -236,18 +236,19 @@ void main() {
 		Ray.Direction = LightDir;
 		Ray.Hit = 0;
 
-		// Trace shadow ray to check for occlusion
-		traceRayEXT(
-			TLAS,
-			gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, // Terminate on first hit for shadows
-			0xFF,
-			0, 0, 0,
-			Ray.Origin,
-			0.001,                    // Min distance
-			Ray.Direction,
-			LightDistance - 0.001,    // Max distance (just before light)
-			0                         // Ray payload location
-		);
+		// ! Disabled for Raytracing debugging
+		// // Trace shadow ray to check for occlusion
+		// traceRayEXT(
+		// 	TLAS,
+		// 	gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, // Terminate on first hit for shadows
+		// 	0xFF,
+		// 	0, 0, 0,
+		// 	Ray.Origin,
+		// 	0.001,                    // Min distance
+		// 	Ray.Direction,
+		// 	LightDistance - 0.001,    // Max distance (just before light)
+		// 	0                         // Ray payload location
+		// );
 
 		// If light is obstructed, skip lighting calculation
 		if (Ray.Hit == 1) continue;
@@ -278,5 +279,5 @@ void main() {
 	// FinalColor = pow(FinalColor, vec3(1.0/2.2));
 
 	// Write the final color per pixel to the output color image.
-	imageStore(OutputColor, RayIndex, vec4(FinalColor, Albedo.a));
+	imageStore(OutputColor, RayIndex, Albedo);
 }

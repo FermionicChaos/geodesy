@@ -197,8 +197,7 @@ namespace geodesy::bltn::stg {
 			this->create_object<runtime::object>(&ObjectList[i]);
 		}
 
-		// Build TLAS.
-		this->TLAS = geodesy::make<gpu::acceleration_structure>(this->Context, this);
+		this->build_scene_geometry();
 
 	}
 

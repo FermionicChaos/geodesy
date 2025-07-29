@@ -39,7 +39,7 @@ namespace geodesy::bltn::obj {
 
 		// Bind Material Textures.
 		// ! This is where the contents of another render target are forwarded.
-		DescriptorArray->bind(1, 0, 0, aSubjectSource->Framechain->Image[aSourceFrameIndex]["OGB.Color"]);
+		DescriptorArray->bind(1, 0, 0, aSubjectSource->Framechain->Image[aSourceFrameIndex]["Color"]);
 		DescriptorArray->bind(1, 1, 0, Material->Texture["Opacity"]);
 
 		Result = Context->begin(DrawCommand);

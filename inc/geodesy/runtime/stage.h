@@ -89,6 +89,8 @@ namespace geodesy::runtime {
 			return NewObject;
 		}
 
+		void build_scene_geometry();
+
 		virtual core::gpu::submission_batch update(double aDeltaTime);
 		virtual core::gpu::submission_batch render();
 		std::vector<std::shared_ptr<object::draw_call>> ray_trace(subject* aSubject);
