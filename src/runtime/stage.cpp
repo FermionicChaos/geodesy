@@ -61,19 +61,23 @@ namespace geodesy::runtime {
 		
 		// After collision has been completed, and response forces determined, update objects accordingly.
 			
-		#ifdef ENABLE_MULTITHREADED_PROCESSING
+#ifdef ENABLE_MULTITHREADED_PROCESSING
 		#pragma omp parallel for
-		#endif // ENABLE_MULTITHREADED_PROCESSING
+#endif // ENABLE_MULTITHREADED_PROCESSING
 		for (std::ptrdiff_t i = 0; i < this->NodeCache.size(); i++) {
 			// Perform all host memory calculations, apply forces and animations
 			NodeCache[i]->host_update(aDeltaTime, this->Time);
 		}
 
+#ifdef ENABLE_MULTITHREADED_PROCESSING
+		#pragma omp parallel for
+#endif // ENABLE_MULTITHREADED_PROCESSING
 		for (std::ptrdiff_t i = 0; i < this->NodeCache.size(); i++) {
 			// Recursively generate global transforms for all nodes.
 			this->NodeCache[i]->GlobalTransform = this->NodeCache[i]->transform();
 		}
 
+		// This is serialized because the GPU memory is not thread safe.
 		for (std::ptrdiff_t i = 0; i < this->NodeCache.size(); i++) {
 			// Load Global Transforms into GPU memory for rendering.
 			this->NodeCache[i]->device_update();
