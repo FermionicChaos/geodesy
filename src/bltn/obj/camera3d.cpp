@@ -123,9 +123,9 @@ namespace geodesy::bltn::obj {
 				aCamera3D->Framechain->Image[aFrameIndex]["OGB.Color"],
 				aCamera3D->Framechain->Image[aFrameIndex]["OGB.Position"],
 				aCamera3D->Framechain->Image[aFrameIndex]["OGB.Normal"],
-				aCamera3D->Framechain->Image[aFrameIndex]["Emissive"],
 				aCamera3D->Framechain->Image[aFrameIndex]["OGB.SS"],
 				aCamera3D->Framechain->Image[aFrameIndex]["OGB.ORM"],
+				aCamera3D->Framechain->Image[aFrameIndex]["Emissive"],
 				aCamera3D->Framechain->Image[aFrameIndex]["Depth"]
 			};
 			break;
@@ -135,9 +135,9 @@ namespace geodesy::bltn::obj {
 				aCamera3D->Framechain->Image[aFrameIndex]["TGB.Color"],
 				aCamera3D->Framechain->Image[aFrameIndex]["TGB.Position"],
 				aCamera3D->Framechain->Image[aFrameIndex]["TGB.Normal"],
-				aCamera3D->Framechain->Image[aFrameIndex]["Emissive"],
 				aCamera3D->Framechain->Image[aFrameIndex]["TGB.SS"],
 				aCamera3D->Framechain->Image[aFrameIndex]["TGB.ORM"],
+				aCamera3D->Framechain->Image[aFrameIndex]["Emissive"],
 				aCamera3D->Framechain->Image[aFrameIndex]["Depth"]
 			};
 			break;
@@ -663,28 +663,20 @@ namespace geodesy::bltn::obj {
 		// Color Blending operations.
 		std::vector<VkPipelineColorBlendAttachmentState> AlphaBlendOperation(Rasterizer->ColorAttachment.size());
 		for (auto& AB : AlphaBlendOperation) {
-			AB.blendEnable 			= VK_FALSE;
-			// AB.colorWriteMask 		= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-			// // Color Blending Operation
-			// AB.srcColorBlendFactor 	= VK_BLEND_FACTOR_SRC_ALPHA;
-			// AB.dstColorBlendFactor 	= VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-			// AB.colorBlendOp 		= VK_BLEND_OP_ADD;
-			// // Alpha Blending Operation
-			// AB.srcAlphaBlendFactor 	= VK_BLEND_FACTOR_ONE;
-			// AB.dstAlphaBlendFactor 	= VK_BLEND_FACTOR_ZERO;
-			// AB.alphaBlendOp 		= VK_BLEND_OP_ADD;
+			// 🎯 DISABLE blending for G-buffer attachments - direct overwrite
+			AB.blendEnable = VK_TRUE;
+			AB.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+			// Set to direct overwrite (not used since blendEnable = false, but good practice)
+			AB.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+			AB.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+			AB.colorBlendOp = VK_BLEND_OP_ADD;
+			AB.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+			AB.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+			AB.alphaBlendOp = VK_BLEND_OP_ADD;
 		}
-		// Enable color blending only for the first attachment, the color layer.
-		AlphaBlendOperation[0].blendEnable 			= VK_TRUE;
-		AlphaBlendOperation[0].colorWriteMask 		= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 		// Color Blending Operation
 		AlphaBlendOperation[0].srcColorBlendFactor 	= VK_BLEND_FACTOR_SRC_ALPHA;
 		AlphaBlendOperation[0].dstColorBlendFactor 	= VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		AlphaBlendOperation[0].colorBlendOp 		= VK_BLEND_OP_ADD;
-		// Alpha Blending Operation
-		AlphaBlendOperation[0].srcAlphaBlendFactor 	= VK_BLEND_FACTOR_ONE;
-		AlphaBlendOperation[0].dstAlphaBlendFactor 	= VK_BLEND_FACTOR_ZERO;
-		AlphaBlendOperation[0].alphaBlendOp 		= VK_BLEND_OP_ADD;
 
 		Rasterizer->ColorBlend.logicOpEnable 		= VK_FALSE;
 		Rasterizer->ColorBlend.logicOp 				= VK_LOGIC_OP_COPY;
@@ -705,9 +697,9 @@ namespace geodesy::bltn::obj {
 		Rasterizer->attach(0, this->Framechain->draw_frame()["OGB.Color"]);
 		Rasterizer->attach(1, this->Framechain->draw_frame()["OGB.Position"]);
 		Rasterizer->attach(2, this->Framechain->draw_frame()["OGB.Normal"]);
-		Rasterizer->attach(3, this->Framechain->draw_frame()["Emissive"]);
-		Rasterizer->attach(4, this->Framechain->draw_frame()["OGB.SS"]);
-		Rasterizer->attach(5, this->Framechain->draw_frame()["OGB.ORM"]);
+		Rasterizer->attach(3, this->Framechain->draw_frame()["OGB.SS"]);
+		Rasterizer->attach(4, this->Framechain->draw_frame()["OGB.ORM"]);
+		Rasterizer->attach(5, this->Framechain->draw_frame()["Emissive"]);
 		Rasterizer->attach(6, this->Framechain->draw_frame()["Depth"]);
 
 		// Create render pipeline for camera3d.

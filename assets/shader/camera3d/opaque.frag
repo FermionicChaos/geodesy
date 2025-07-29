@@ -148,9 +148,9 @@ layout (set = 1, binding = 9) uniform sampler2D MaterialMetallic; 			// float Me
 layout (location = 0) out vec4 PixelColor;
 layout (location = 1) out vec4 PixelPosition;
 layout (location = 2) out vec4 PixelNormal;
-layout (location = 3) out vec4 PixelEmissive;
-layout (location = 4) out vec4 PixelSS;
-layout (location = 5) out vec4 PixelARM;
+layout (location = 3) out vec4 PixelSS;
+layout (location = 4) out vec4 PixelARM;
+layout (location = 5) out vec4 PixelEmissive;
 
 vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
 

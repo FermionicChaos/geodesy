@@ -197,6 +197,11 @@ namespace geodesy::bltn::stg {
 			this->create_object<runtime::object>(&ObjectList[i]);
 		}
 
+		stage::light_uniform_data* LightBuffer = (stage::light_uniform_data*)this->LightUniformBuffer->Ptr;
+
+		LightBuffer->Source[0] = gfx::model::light({1.0f, 1.0f, 1.0f}, {0.0f, 0.0f, 0.0f});
+		LightBuffer->Count = 1;
+
 		this->build_scene_geometry();
 
 	}

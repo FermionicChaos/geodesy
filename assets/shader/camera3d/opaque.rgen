@@ -255,7 +255,7 @@ void main() {
 		// );
 
 		// If light is obstructed, skip lighting calculation
-		if (Ray.Hit == 1) continue;
+		// if (Ray.Hit == 1) continue;
 
 		// Calculate light attenuation (inverse square law)
 		float Attenuation = Light.Source[i].Intensity / (LightDistance * LightDistance);
@@ -276,12 +276,14 @@ void main() {
 		FinalColor += LightContribution;
 	}
 
-	// Apply tone mapping (Reinhard with slight modification for better highlights)
-	FinalColor = FinalColor / (FinalColor + vec3(1.0));
+	FinalColor = Albedo.rgb;
 	
-	// Apply gamma correction (optional, depending on your pipeline)
+	// // Apply tone mapping (Reinhard with slight modification for better highlights)
+	// FinalColor = FinalColor / (FinalColor + vec3(1.0));
+	
+	// // Apply gamma correction (optional, depending on your pipeline)
 	// FinalColor = pow(FinalColor, vec3(1.0/2.2));
 
 	// Write the final color per pixel to the output color image.
-	imageStore(OutputColor, RayIndex, Albedo);
+	imageStore(OutputColor, RayIndex, vec4(FinalColor, 1.0));
 }
