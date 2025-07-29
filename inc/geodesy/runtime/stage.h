@@ -1,8 +1,9 @@
 #ifndef GEODESY_CORE_STAGE_H
 #define GEODESY_CORE_STAGE_H
 
-#define MAX_STAGE_LIGHTS 256
-#define MAX_STAGE_MATERIALS 256
+#define MAX_STAGE_TEXTURES 1024
+#define MAX_STAGE_MATERIALS 32
+#define MAX_STAGE_LIGHTS 192
 
 #include <memory>
 
@@ -56,12 +57,21 @@ namespace geodesy::runtime {
 			size_t Count;
 		};
 
-		
+		struct material_uniform_data {
+			core::gfx::material::uniform_data 		Data[MAX_STAGE_MATERIALS];
+			alignas(4) int 							Count;
+			material_uniform_data() : Count(0) {}
+		};
+
+		struct light_uniform_data {
+			core::gfx::model::light 				Source[MAX_STAGE_LIGHTS];
+			alignas(4) int 							Count;
+			light_uniform_data() : Count(0) {}
+		};
+
 		// ! ----- Stage Host Memory ----- ! //
 		std::string													Name;
 		double														Time;
-		std::vector<core::gfx::material::uniform_data> 				Material;
-		std::vector<core::gfx::model::light> 						Light;
 		std::vector<core::phys::node*>								NodeCache; // This is a list of all nodes in the stage, used for updating.
 		std::map<std::string, std::shared_ptr<object>> 				ObjectLookup;
 
@@ -69,8 +79,8 @@ namespace geodesy::runtime {
 		std::shared_ptr<core::gpu::context> 						Context;
 		std::vector<std::shared_ptr<object>>						Object;
 		std::shared_ptr<core::gpu::acceleration_structure> 			TLAS;
-		std::shared_ptr<core::gpu::buffer> 							MaterialStorageBuffer;
-		std::shared_ptr<core::gpu::buffer> 							LightStorageBuffer;
+		std::shared_ptr<core::gpu::buffer> 							MaterialUniformBuffer;
+		std::shared_ptr<core::gpu::buffer> 							LightUniformBuffer;
 		std::map<subject*, std::shared_ptr<object::renderer>> 		Renderer;
 
 		stage(std::shared_ptr<core::gpu::context> aContext, std::string aName);

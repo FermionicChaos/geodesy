@@ -14,9 +14,24 @@ namespace geodesy::runtime {
 	using namespace core;
 
 	stage::stage(std::shared_ptr<gpu::context> aContext, std::string aName) {
+		gpu::buffer::create_info MaterialBufferCreateInfo;
+		MaterialBufferCreateInfo.Memory = gpu::device::memory::HOST_VISIBLE | gpu::device::memory::HOST_COHERENT;
+		MaterialBufferCreateInfo.Usage = gpu::buffer::usage::UNIFORM | gpu::buffer::usage::TRANSFER_SRC | gpu::buffer::usage::TRANSFER_DST;
+
+		gpu::buffer::create_info LightBufferCreateInfo;
+		LightBufferCreateInfo.Memory = gpu::device::memory::HOST_VISIBLE | gpu::device::memory::HOST_COHERENT;
+		LightBufferCreateInfo.Usage = gpu::buffer::usage::UNIFORM | gpu::buffer::usage::TRANSFER_SRC | gpu::buffer::usage::TRANSFER_DST;
+
 		this->Name		= aName;
 		this->Time		= 0.0;
 		this->Context	= aContext;
+
+		// Create Light Storage Buffer.
+		this->MaterialUniformBuffer = this->Context->create_buffer(MaterialBufferCreateInfo, sizeof(material_uniform_data));
+		this->MaterialUniformBuffer->map_memory(0, sizeof(material_uniform_data));
+		this->LightUniformBuffer = this->Context->create_buffer(LightBufferCreateInfo, sizeof(light_uniform_data));
+		this->LightUniformBuffer->map_memory(0, sizeof(light_uniform_data));
+
 	}
 
 	stage::~stage() {
@@ -24,54 +39,9 @@ namespace geodesy::runtime {
 	}
 
 	void stage::build_scene_geometry() {
-		gpu::buffer::create_info MaterialBufferCreateInfo;
-		MaterialBufferCreateInfo.Memory = gpu::device::memory::HOST_VISIBLE | gpu::device::memory::HOST_COHERENT;
-		MaterialBufferCreateInfo.Usage = gpu::buffer::usage::STORAGE | gpu::buffer::usage::TRANSFER_SRC | gpu::buffer::usage::TRANSFER_DST;
-
-		gpu::buffer::create_info LightBufferCreateInfo;
-		LightBufferCreateInfo.Memory = gpu::device::memory::HOST_VISIBLE | gpu::device::memory::HOST_COHERENT;
-		LightBufferCreateInfo.Usage = gpu::buffer::usage::STORAGE | gpu::buffer::usage::TRANSFER_SRC | gpu::buffer::usage::TRANSFER_DST;
 
 		// Build TLAS.
 		this->TLAS = geodesy::make<gpu::acceleration_structure>(this->Context, this);
-
-		// Build Material Storage Buffer.
-
-		// Create GPU Buffer.
-		// this->MaterialStorageBuffer = this->Context->create_buffer(
-		// 	MaterialBufferCreateInfo,
-		// 	this->Material.size() * sizeof(core::gfx::material::uniform_data),
-		// 	this->Material.data()
-		// );
-
-		// Build Light Storage Buffer.
-		size_t TotalLightCount = 0;
-		for (const auto& Obj : this->Object) {
-			if (Obj->Model) {
-				TotalLightCount += Obj->Model->Light.size();
-			}
-		}
-
-		size_t LightOffset = 0;
-		this->Light = std::vector<core::gfx::model::light>(TotalLightCount);
-		for (size_t i = 0; i < this->Object.size(); i++) {
-			if (this->Object[i]->Model) {
-				for (size_t j = 0; j < this->Object[i]->Model->Light.size(); j++) {
-					this->Light[LightOffset++] = this->Object[i]->Model->Light[j];
-				}
-			}
-		}
-
-		// TODO: Testing, remove later.
-		this->Light.push_back(core::gfx::model::light({0.0f, 1.0f, 1.0f}, {0.0f, 10.0f, 0.0f}));
-		this->Light.push_back(core::gfx::model::light({1.0f, 1.0f, 1.0f}, {10.0f, 10.0f, 0.0f}));
-
-		// Create Light Storage Buffer.
-		this->LightStorageBuffer = this->Context->create_buffer(
-			LightBufferCreateInfo,
-			this->Light.size() * sizeof(core::gfx::model::light),
-			this->Light.data()
-		);
 
 	}
 

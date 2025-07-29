@@ -5,6 +5,8 @@
 // If an intersection is found, the pixel is in shadow, if not, the pixel is illuminated by the light source.
 
 #define MAX_STAGE_TEXTURES 1024
+#define MAX_STAGE_MATERIALS 32
+#define MAX_STAGE_LIGHTS 32
 
 const float pi = 3.14159265359;
 
@@ -126,13 +128,15 @@ layout(set = 0, binding = 10) uniform sampler2D MaterialMetallic[MAX_STAGE_TEXTU
 layout(set = 0, binding = 11) uniform sampler2D MaterialSheen[MAX_STAGE_TEXTURES];
 layout(set = 0, binding = 12) uniform sampler2D MaterialClearCoat[MAX_STAGE_TEXTURES];
 // Full materials for every mesh instace in the scene.
-layout(std140, set = 0, binding = 13) buffer MaterialSSBO {
-	material Material[];
-};
+layout(set = 0, binding = 13) uniform MaterialUBO {
+	material Data[MAX_STAGE_MATERIALS];
+	int Count;
+} Material;
 // Deferred shading for light sources for both lighting and shadows.
-layout(std140, set = 0, binding = 14) buffer LightSSBO {
-	light Light[];
-};
+layout(set = 0, binding = 14) uniform LightUBO {
+	light Source[MAX_STAGE_LIGHTS];
+	int Count;
+} Light;
 // Geometry Buffer Data
 layout(set = 1, binding = 0, rgba32f) uniform image2D OutputColor;
 layout(set = 1, binding = 1, rgba32f) uniform image2D PixelColor;
@@ -221,9 +225,9 @@ void main() {
 	Ray.Origin = WorldPos;
 
 	// Iterate through each light source adding contributions per light source based on intersection with object in TLAS.
-	for (int i = 0; i < Light.length(); i++) {
+	for (int i = 0; i < Light.Count; i++) {
 		// Calculate light direction and distance
-		vec3 LightDir = Light[i].Position - WorldPos;
+		vec3 LightDir = Light.Source[i].Position - WorldPos;
 		float LightDistance = length(LightDir);
 		LightDir = normalize(LightDir);
 		
@@ -254,8 +258,8 @@ void main() {
 		if (Ray.Hit == 1) continue;
 
 		// Calculate light attenuation (inverse square law)
-		float Attenuation = Light[i].Intensity / (LightDistance * LightDistance);
-		
+		float Attenuation = Light.Source[i].Intensity / (LightDistance * LightDistance);
+
 		// Calculate diffuse term (Lambertian)
 		vec3 Diffuse = Albedo.rgb * NdotL;
 		
@@ -268,7 +272,7 @@ void main() {
 		vec3 kD = (vec3(1.0) - kS) * (1.0 - Metallic); // Metallic surfaces have no diffuse
 		
 		// Final lighting contribution for this light
-		vec3 LightContribution = (kD * Diffuse + Specular) * Light[i].Color * Attenuation;
+		vec3 LightContribution = (kD * Diffuse + Specular) * Light.Source[i].Color * Attenuation;
 		FinalColor += LightContribution;
 	}
 

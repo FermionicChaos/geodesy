@@ -245,8 +245,8 @@ namespace geodesy::bltn::obj {
 		// Bind Scene Geometry.
 		DescriptorArray->bind(0, 0, 0, aStage->TLAS);
 		// TODO: Load in globalized textures.
-		// DescriptorArray->bind(0, 13, 0, aStage->MaterialStorageBuffer);
-		DescriptorArray->bind(0, 14, 0, aStage->LightStorageBuffer);
+		DescriptorArray->bind(0, 13, 0, aStage->MaterialUniformBuffer);
+		DescriptorArray->bind(0, 14, 0, aStage->LightUniformBuffer);
 		// Bind Final Output Image.
 		DescriptorArray->bind(1, 0, 0, aCamera3D->Framechain->Image[aFrameIndex]["Color"], image::layout::GENERAL);
 		// Bind Geometry Buffer Images to Ray Tracing Pipeline.
