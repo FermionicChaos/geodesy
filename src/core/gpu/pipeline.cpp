@@ -831,21 +831,29 @@ namespace geodesy::core::gpu {
 
 			// Get Shader Region Counts
 			uint32_t RayGenCount = 0, MissCount = 0, HitCount = 0, CallableCount = 0;
-			for (size_t i = 0; i < aRaytracer->Shader.size(); i++) {
-				switch (aRaytracer->Shader[i]->Stage) {
-				case shader::stage::RAYGEN:
-					RayGenCount++;
+			for (size_t i = 0; i < RSGCI.size(); i++) {  // Use shader groups, not individual shaders
+				switch (RSGCI[i].type) {
+				case VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR:
+					// Need to determine if it's raygen, miss, or callable
+					if (aRaytracer->ShaderGroup[i].GeneralShader) {
+						switch (aRaytracer->ShaderGroup[i].GeneralShader->Stage) {
+						case shader::stage::RAYGEN:
+							RayGenCount++;
+							break;
+						case shader::stage::MISS:
+							MissCount++;
+							break;
+						case shader::stage::CALLABLE:
+							CallableCount++;
+							break;
+						default:
+							break;
+						}
+					}
 					break;
-				case shader::stage::MISS:
-					MissCount++;
-					break;
-				case shader::stage::CLOSEST_HIT:
-				case shader::stage::ANY_HIT:
-				case shader::stage::INTERSECTION:
+				case VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR:
+				case VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR:
 					HitCount++;
-					break;
-				case shader::stage::CALLABLE:
-					CallableCount++;
 					break;
 				default:
 					break;
@@ -877,21 +885,28 @@ namespace geodesy::core::gpu {
 			std::vector<uint32_t> MissIndices;
 			std::vector<uint32_t> HitIndices;
 			std::vector<uint32_t> CallableIndices;
-			for (size_t i = 0; i < aRaytracer->Shader.size(); i++) {
-				switch(aRaytracer->Shader[i]->Stage) {
-				case shader::stage::RAYGEN:
-					RayGenIndices.push_back(i);
+			for (size_t i = 0; i < RSGCI.size(); i++) {  // Iterate through shader groups
+				switch (RSGCI[i].type) {
+				case VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR:
+					if (aRaytracer->ShaderGroup[i].GeneralShader) {
+						switch (aRaytracer->ShaderGroup[i].GeneralShader->Stage) {
+						case shader::stage::RAYGEN:
+							RayGenIndices.push_back(i);  // i is the shader group index
+							break;
+						case shader::stage::MISS:
+							MissIndices.push_back(i);
+							break;
+						case shader::stage::CALLABLE:
+							CallableIndices.push_back(i);
+							break;
+						default:
+							break;
+						}
+					}
 					break;
-				case shader::stage::MISS:
-					MissIndices.push_back(i);
-					break;
-				case shader::stage::CLOSEST_HIT:
-				case shader::stage::ANY_HIT:
-				case shader::stage::INTERSECTION:
-					HitIndices.push_back(i);
-					break;
-				case shader::stage::CALLABLE:
-					CallableIndices.push_back(i);
+				case VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR:
+				case VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR:
+					HitIndices.push_back(i);  // i is the shader group index
 					break;
 				default:
 					break;
