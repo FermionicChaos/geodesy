@@ -31,13 +31,14 @@ namespace geodesy::core::gfx {
 			};
 
 			alignas(4) int 						Type;
+			alignas(4) float 					Intensity;
 			alignas(16) math::vec<float, 3> 	Color;
 			alignas(16) math::vec<float, 3> 	Position;
 			alignas(16) math::vec<float, 3> 	Direction;
 			alignas(4) float 					SpotAngle;
 
 			light();
-			light(math::vec<float, 3> aColor, math::vec<float, 3> aPosition);
+			light(float aIntensity, math::vec<float, 3> aColor, math::vec<float, 3> aPosition);
 		};
 
 		static bool initialize();

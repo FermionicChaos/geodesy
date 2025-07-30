@@ -64,10 +64,12 @@ namespace geodesy::core::gfx {
 
 	model::light::light() {
 		this->Type = light::AMBIENT;
+		this->Intensity = 1.0f; // Default intensity.
 		this->SpotAngle = 45.0f; // Default spot angle in degrees.
 	}
 
-	model::light::light(math::vec<float, 3> aColor, math::vec<float, 3> aPosition) : light() {
+	model::light::light(float aIntensity, math::vec<float, 3> aColor, math::vec<float, 3> aPosition) : light() {
+		this->Intensity = aIntensity;
 		this->Color = aColor;
 		this->Position = aPosition;
 	}

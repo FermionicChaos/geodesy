@@ -6,7 +6,7 @@
 
 #define MAX_STAGE_TEXTURES 1024
 #define MAX_STAGE_MATERIALS 32
-#define MAX_STAGE_LIGHTS 32
+#define MAX_STAGE_LIGHTS 192
 
 const float pi = 3.14159265359;
 
@@ -275,8 +275,6 @@ void main() {
 		vec3 LightContribution = (kD * Diffuse + Specular) * Light.Source[i].Color * Attenuation;
 		FinalColor += LightContribution;
 	}
-
-	FinalColor = Albedo.rgb;
 	
 	// // Apply tone mapping (Reinhard with slight modification for better highlights)
 	// FinalColor = FinalColor / (FinalColor + vec3(1.0));
@@ -284,10 +282,6 @@ void main() {
 	// // Apply gamma correction (optional, depending on your pipeline)
 	// FinalColor = pow(FinalColor, vec3(1.0/2.2));
 
-	// DEBUG: Create a gradient pattern to verify ray tracing is executing
-	vec2 uv = vec2(RayIndex) / vec2(Resolution);
-	vec3 DebugColor = vec3(uv.x, uv.y, 0.5); // Red-Green gradient with blue component
-	
 	// Write the final color per pixel to the output color image.
-	imageStore(OutputColor, RayIndex, vec4(DebugColor, 1.0));
+	imageStore(OutputColor, RayIndex, vec4(FinalColor, 1.0));
 }
