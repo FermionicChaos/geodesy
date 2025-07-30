@@ -69,6 +69,7 @@ namespace geodesy::core::gfx {
 	}
 
 	model::light::light(float aIntensity, math::vec<float, 3> aColor, math::vec<float, 3> aPosition) : light() {
+		this->Type = light::POINT; // Default type is point light.
 		this->Intensity = aIntensity;
 		this->Color = aColor;
 		this->Position = aPosition;
