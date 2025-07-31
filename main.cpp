@@ -20,6 +20,42 @@ using namespace obj;
 // Using entry point for app.
 int main(int aCmdArgCount, char* aCmdArgList[]) {
 
+	// Print System Information
+	std::cout << "System: \t";
+	#ifdef GEODESY_SYSTEM_WINDOWS
+		std::cout << "Windows" << std::endl;
+	#elif defined(GEODESY_SYSTEM_LINUX)
+		std::cout << "Linux" << std::endl;
+	#elif defined(GEODESY_SYSTEM_MACOS)
+		std::cout << "macOS" << std::endl;
+	#elif defined(GEODESY_SYSTEM_ANDROID)
+		std::cout << "Android" << std::endl;
+	#elif defined(GEODESY_SYSTEM_IOS)
+		std::cout << "iOS" << std::endl;
+	#else
+		std::cout << "Unknown" << std::endl;
+	#endif
+
+	// Platform Information
+	std::cout << "Platform: \t";
+	#ifdef GEODESY_DESKTOP
+		std::cout << "Desktop" << std::endl;
+	#elif defined(GEODESY_MOBILE)
+		std::cout << "Mobile" << std::endl;
+	#else
+		std::cout << "Unknown" << std::endl;
+	#endif
+
+	// Build Information
+	std::cout << "Build: \t\t";
+	#ifdef GEODESY_DEBUG
+		std::cout << "Debug" << std::endl;
+	#elif defined(GEODESY_RELEASE)
+		std::cout << "Release" << std::endl;
+	#else
+		std::cout << "Unknown" << std::endl;
+	#endif
+
 	// Initialize all third party libraries.
 	if (!geodesy::engine::initialize()) return -1;
 
