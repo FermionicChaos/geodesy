@@ -445,11 +445,21 @@ else()
     target_compile_definitions(${GEODESY_LIBRARY} PUBLIC GEODESY_MOBILE)
 endif()
 
-# TODO: This only needs to be set for single-configuration generators
-if(GEODESY_BUILD_DEBUG)
-    target_compile_definitions(${GEODESY_LIBRARY} PUBLIC GEODESY_DEBUG)
+# Set build type macros - handle both single and multi-configuration generators
+if(NOT CMAKE_CONFIGURATION_TYPES)
+    # Single-configuration generators (Make, Ninja, etc.)
+    if(GEODESY_BUILD_DEBUG)
+        target_compile_definitions(${GEODESY_LIBRARY} PUBLIC GEODESY_DEBUG)
+    else()
+        target_compile_definitions(${GEODESY_LIBRARY} PUBLIC GEODESY_RELEASE)
+    endif()
 else()
-    target_compile_definitions(${GEODESY_LIBRARY} PUBLIC GEODESY_RELEASE)
+    # Multi-configuration generators (Visual Studio, Xcode, etc.)
+    # Use generator expressions to define macros based on actual build configuration
+    target_compile_definitions(${GEODESY_LIBRARY} PUBLIC 
+        $<$<CONFIG:Debug>:GEODESY_DEBUG>
+        $<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:GEODESY_RELEASE>
+    )
 endif()
 
 # ======================= INCLUDE DIRECTORIES =======================
