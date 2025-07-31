@@ -32,12 +32,19 @@ int main(int aCmdArgCount, char* aCmdArgList[]) {
 		std::cout << "CommandLineArg[" << i << "] = " << CommandLineArguments[i] << std::endl;
 	}
 
-	// Load select layers desired for engine.
-	std::set<std::string> LayerList = {
-		"VK_LAYER_KHRONOS_validation"
-	};
+	// ===== Load Engine Layers ===== //
+	std::set<std::string> LayerList = {};
+	// Insert engine layers into the layer list.
+	LayerList.insert(engine::EngineLayersModule.begin(), engine::EngineLayersModule.end());
+	// Insert System window layers into the layer list.
+	LayerList.insert(system_window::EngineLayersModule.begin(), system_window::EngineLayersModule.end());
 
-	std::set<std::string> ExtensionList = system_window::engine_extensions();
+	// ===== Load Engine Extensions ===== //
+	std::set<std::string> ExtensionList = {};
+	// Insert engine extensions into the extension list.
+	ExtensionList.insert(engine::EngineExtensionsModule.begin(), engine::EngineExtensionsModule.end());
+	// Insert System window extensions into the extension list.
+	ExtensionList.insert(system_window::EngineExtensionsModule.begin(), system_window::EngineExtensionsModule.end());
 
 	try {
 		geodesy::engine Engine(CommandLineArguments, LayerList, ExtensionList);

@@ -428,7 +428,7 @@ namespace geodesy::core::gpu {
 	}
 
 	std::shared_ptr<buffer> context::create_buffer(uint aMemoryType, uint aBufferUsage, size_t aElementCount, size_t aBufferSize, void* aBufferData) {
-		std::shared_ptr<buffer> NewDeviceResource = std::shared_ptr<buffer>(new buffer(this->shared_from_this(), aMemoryType, aBufferUsage, aElementCount, aBufferSize, aBufferData));
+		std::shared_ptr<buffer> NewDeviceResource = geodesy::make<buffer>(this->shared_from_this(), aMemoryType, aBufferUsage, aElementCount, aBufferSize, aBufferData);
 		return NewDeviceResource;
 	}
 
@@ -437,27 +437,27 @@ namespace geodesy::core::gpu {
 	}
 
 	std::shared_ptr<image> context::create_image(image::create_info aCreateInfo, image::format aFormat, uint aX, uint aY, uint aZ, uint aT, void* aTextureData) {
-		std::shared_ptr<image> NewDeviceResource = std::shared_ptr<image>(new image(this->shared_from_this(), aCreateInfo, aFormat, aX, aY, aZ, aT, aTextureData));
+		std::shared_ptr<image> NewDeviceResource = geodesy::make<image>(this->shared_from_this(), aCreateInfo, aFormat, aX, aY, aZ, aT, aTextureData);
 		return NewDeviceResource;
 	}
 
 	std::shared_ptr<descriptor::array> context::create_descriptor_array(std::shared_ptr<pipeline> aPipeline, VkSamplerCreateInfo aSamplerCreateInfo) {
-		std::shared_ptr<descriptor::array> NewDeviceResource = std::shared_ptr<descriptor::array>(new descriptor::array(this->shared_from_this(), aPipeline, aSamplerCreateInfo));
+		std::shared_ptr<descriptor::array> NewDeviceResource = geodesy::make<descriptor::array>(this->shared_from_this(), aPipeline, aSamplerCreateInfo);
 		return NewDeviceResource;
 	}
 
 	std::shared_ptr<framebuffer> context::create_framebuffer(std::shared_ptr<pipeline> aPipeline, std::vector<std::shared_ptr<image>> aImageAttachements, math::vec<uint, 3> aResolution) {
-		std::shared_ptr<framebuffer> NewDeviceResource = std::shared_ptr<framebuffer>(new framebuffer(this->shared_from_this(), aPipeline, aImageAttachements, aResolution));
+		std::shared_ptr<framebuffer> NewDeviceResource = geodesy::make<framebuffer>(this->shared_from_this(), aPipeline, aImageAttachements, aResolution);
 		return NewDeviceResource;
 	}
 
 	std::shared_ptr<framebuffer> context::create_framebuffer(std::shared_ptr<pipeline> aPipeline, std::map<std::string, std::shared_ptr<image>> aImage, std::vector<std::string> aAttachmentSelection, math::vec<uint, 3> aResolution) {
-		std::shared_ptr<framebuffer> NewDeviceResource = std::shared_ptr<framebuffer>(new framebuffer(this->shared_from_this(), aPipeline, aImage, aAttachmentSelection, aResolution));
+		std::shared_ptr<framebuffer> NewDeviceResource = geodesy::make<framebuffer>(this->shared_from_this(), aPipeline, aImage, aAttachmentSelection, aResolution);
 		return NewDeviceResource;
 	}
 
 	std::shared_ptr<pipeline> context::create_pipeline(std::shared_ptr<pipeline::rasterizer> aRasterizer, VkRenderPass aRenderPass, uint32_t aSubpassIndex) {
-		std::shared_ptr<pipeline> NewDeviceResource = std::shared_ptr<pipeline>(new pipeline(this->shared_from_this(), aRasterizer, aRenderPass, aSubpassIndex));
+		std::shared_ptr<pipeline> NewDeviceResource = geodesy::make<pipeline>(this->shared_from_this(), aRasterizer, aRenderPass, aSubpassIndex);
 		return NewDeviceResource;
 	}
 
@@ -467,7 +467,7 @@ namespace geodesy::core::gpu {
 	}
 
 	std::shared_ptr<gfx::model> context::create_model(std::shared_ptr<gfx::model> aModel, gpu::image::create_info aCreateInfo) {
-		std::shared_ptr<gfx::model> NewDeviceResource = std::shared_ptr<gfx::model>(new gfx::model(this->shared_from_this(), aModel, aCreateInfo));
+		std::shared_ptr<gfx::model> NewDeviceResource = geodesy::make<gfx::model>(this->shared_from_this(), aModel, aCreateInfo);
 		return NewDeviceResource;
 	}
 

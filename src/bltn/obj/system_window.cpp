@@ -29,6 +29,19 @@ namespace geodesy::bltn::obj {
 	// std::atomic<GLFWwindow*> system_window::ReturnWindow					= NULL;
 	// std::atomic<GLFWwindow*> system_window::DestroyWindow					= NULL;
 
+	std::set<std::string> system_window::EngineExtensionsModule = {
+
+	};
+	std::set<std::string> system_window::EngineLayersModule = {
+
+	};
+	std::set<std::string> system_window::ContextExtensionsModule = {
+
+	};
+	std::set<std::string> system_window::ContextLayersModule = {
+		
+	};
+
 	system_window::swapchain::property::property() {
 		this->FrameCount		= 3;
 		this->FrameRate			= 60.0f;
@@ -236,6 +249,16 @@ namespace geodesy::bltn::obj {
 	}
 
 	bool system_window::initialize() {
+		if (glfwInit() == GLFW_TRUE) {
+			std::set<std::string> EngineExtension = system_window::engine_extensions();
+			std::set<std::string> ContextExtension = system_window::context_extensions();
+			EngineExtensionsModule.insert(EngineExtension.begin(), EngineExtension.end());
+			ContextExtensionsModule.insert(ContextExtension.begin(), ContextExtension.end());
+			return true;
+		}
+		else {
+			return false;
+		}
 		return (glfwInit() == GLFW_TRUE);
 	}
 

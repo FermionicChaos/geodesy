@@ -95,6 +95,10 @@ namespace geodesy::bltn::obj {
 			creator();
 		};
 
+		static std::set<std::string> 			EngineExtensionsModule;
+		static std::set<std::string> 			EngineLayersModule;
+		static std::set<std::string> 			ContextExtensionsModule;
+		static std::set<std::string> 			ContextLayersModule;
 		static bool initialize();
 		static void terminate();
 		static std::set<std::string> engine_extensions();

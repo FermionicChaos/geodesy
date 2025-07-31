@@ -19,6 +19,19 @@ namespace geodesy {
 
 	static bool Initialized = false;
 
+	std::set<std::string> engine::EngineExtensionsModule = { 
+		"VK_EXT_debug_utils"
+	};
+	std::set<std::string> engine::EngineLayersModule = { 
+		"VK_LAYER_KHRONOS_validation"
+	};
+	std::set<std::string> engine::ContextExtensionsModule = {
+
+	};
+	std::set<std::string> engine::ContextLayersModule = {
+		
+	};
+
 	bool engine::initialize() {
 		// This is to prevent loading twice. Initializes all third party libraries for the lifetime of the program.
 		if (Initialized) {

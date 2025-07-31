@@ -19,6 +19,7 @@ namespace geodesy::bltn {
 	unit_test::unit_test(engine* aEngine) : runtime::app(aEngine, "geodesy-unit-test", { 1, 0, 0 }) {
 		TimeStep = 1.0 / 2000.0;
 		Window = nullptr;
+
 		// I want my device context to support these operation types.
 		std::vector<uint> OperationList = {
 			device::operation::TRANSFER,
@@ -26,12 +27,19 @@ namespace geodesy::bltn {
 			device::operation::GRAPHICS_AND_COMPUTE,
 			device::operation::PRESENT
 		};
+		
+		// ===== Load Context Layers ===== //
 		std::set<std::string> LayerList = {};
 		// I want my device context to be able to render to system windows.
-		std::set<std::string> ExtensionList = system_window::context_extensions();
-		// Add ray tracing extensions to the device context.
+
+		// ===== Load Context Extensions ===== //
+		std::set<std::string> ExtensionList = {};
+		// Add system window extensions for desktop rendering. (DESKTOP DEPENDENT)
+		ExtensionList.insert(system_window::ContextExtensionsModule.begin(), system_window::ContextExtensionsModule.end());
+		// Add ray tracing extensions to the device context. (HARDWARE DEPENDENT)
 		// TODO: Check if ray tracing is supported by the device. Disabled for now.
 		ExtensionList.insert(context::RayTracingExtensions.begin(), context::RayTracingExtensions.end());
+
 		// Engine create device context for gpu operations.
 		DeviceContext = Engine->create_device_context(Engine->PrimaryDevice, OperationList, LayerList, ExtensionList);
 	}

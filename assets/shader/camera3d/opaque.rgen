@@ -200,6 +200,15 @@ float rs(vec3 aL, vec3 aN, vec3 aV, float aRoughness, float aMetallic) {
 }
 
 void main() {
+	// CRITICAL: Initialize ray payload before ANY traceRayEXT calls
+	Ray.Origin = vec3(0.0);
+	Ray.Direction = vec3(0.0);
+	Ray.Hit = 0;
+	Ray.HitInstanceID = 0;  // Initialize to 0, miss shader will set to -1
+	Ray.HitLocation = vec3(0.0);
+	Ray.UV = vec2(0.0);
+	Ray.MaterialIndex = 0;
+
 	// Get Index per ray.
 	vec3 FinalColor = vec3(0.0, 0.0, 0.0);
 	ivec2 RayIndex = ivec2(gl_LaunchIDEXT.xy);
@@ -305,14 +314,14 @@ void main() {
 					// Trace shadow ray to check for occlusion
 					traceRayEXT(
 						TLAS,
-						gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, // Terminate on first hit for shadows
+						gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT,
 						0xFF,
 						0, 0, 0,
 						Ray.Origin,
-						0.001,                    // Min distance
+						0.0,
 						Ray.Direction,
-						LightDistance - 0.001,    // Max distance (just before light)
-						0                         // Ray payload location
+						LightDistance,
+						0
 					);
 
 					// If light is obstructed, skip lighting calculation
