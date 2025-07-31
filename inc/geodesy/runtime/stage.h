@@ -99,6 +99,7 @@ namespace geodesy::runtime {
 			return NewObject;
 		}
 
+		void build_node_cache();
 		void build_scene_geometry();
 
 		virtual core::gpu::submission_batch update(double aDeltaTime);

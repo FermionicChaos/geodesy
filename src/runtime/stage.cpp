@@ -38,19 +38,7 @@ namespace geodesy::runtime {
 
 	}
 
-	void stage::build_scene_geometry() {
-
-		// Build TLAS.
-		this->TLAS = geodesy::make<gpu::acceleration_structure>(this->Context, this);
-
-	}
-
-	// Does Nothing by default.
-	gpu::submission_batch stage::update(double aDeltaTime) {
-		gpu::submission_batch StageUpdateInfo;
-
-		this->Time += aDeltaTime;
-
+	void stage::build_node_cache() {
 		// Acquire all notes in the stage.
 		size_t NodeCountTotal = 0;
 		for (auto& Obj : this->Object) {
@@ -67,6 +55,31 @@ namespace geodesy::runtime {
 				}
 			}
 		}
+	}
+
+	void stage::build_scene_geometry() {
+
+		// Build stage node cache.
+		this->build_node_cache();
+
+		for (std::ptrdiff_t i = 0; i < this->NodeCache.size(); i++) {
+			// Recursively generate global transforms for all nodes.
+			this->NodeCache[i]->GlobalTransform = this->NodeCache[i]->transform();
+		}
+
+		// Build TLAS.
+		this->TLAS = geodesy::make<gpu::acceleration_structure>(this->Context, this);
+
+	}
+
+	// Does Nothing by default.
+	gpu::submission_batch stage::update(double aDeltaTime) {
+		gpu::submission_batch StageUpdateInfo;
+
+		this->Time += aDeltaTime;
+
+		// Build Node Cache.
+		this->build_node_cache();
 
 		// This list contains the pairs that have been detected to be in collision on broad phase metrics.
 		// std::vector<std::pair<object*, object*>> BroadPhaseCollisionPair;

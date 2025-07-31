@@ -235,10 +235,53 @@ void main() {
 				FinalColor += Albedo.rgb * AmbientOcclusion * Light.Source[i].Color * Light.Source[i].Intensity;
 				continue; // Skip to next light source
 			case DIRECTIONAL: {
+					// This lighting is a point light of some variation, it has a source position.
+					vec3 LightDir = Light.Source[i].Position - WorldPosition;
+					float LightDistance = length(LightDir);
+					LightDir = normalize(LightDir);
+
+					// Check if surface faces the light (back-face culling for lighting)
+					float NdotL = dot(WorldNormal, LightDir);
+					if (NdotL <= 0.0) continue;
+					
 					// Directional light is treated as a ray with infinite distance. Ray tracing should check for intersection with geometry.
 					// If no intersection, the pixel is illuminated by the light source.
+					Ray.Origin = WorldPosition + WorldNormal * 0.001;
 					Ray.Direction = normalize(Light.Source[i].Direction);
 					Ray.Hit = 0;
+
+					// Trace shadow ray to check for occlusion
+					traceRayEXT(
+						TLAS,
+						gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, // Terminate on first hit for shadows
+						0xFF,
+						0, 0, 0,
+						Ray.Origin,
+						0.001,                    // Min distance
+						Ray.Direction,
+						1000000.0,    // Max distance (just before light)
+						0                         // Ray payload location
+					);
+
+					if (Ray.Hit == 1) continue; // If hit, skip lighting calculation
+
+					// Calculate light attenuation (inverse square law)
+					float Attenuation = Light.Source[i].Intensity;
+
+					// Calculate diffuse term (Lambertian)
+					vec3 Diffuse = Albedo.rgb * NdotL;
+
+					// Calculate specular term using PBR
+					vec3 Specular = vec3(rs(LightDir, WorldNormal, ViewDir, Roughness, Metallic));
+
+					// Combine diffuse and specular based on metallic workflow
+					vec3 F0 = mix(vec3(0.04), Albedo.rgb, Metallic); // Base reflectance
+					vec3 kS = vec3(fresnel_schlick(max(dot(normalize(LightDir + ViewDir), ViewDir), 0.0), F0.r));
+					vec3 kD = (vec3(1.0) - kS) * (1.0 - Metallic); // Metallic surfaces have no diffuse
+
+					// Final lighting contribution for this light
+					vec3 LightContribution = (kD * Diffuse + Specular) * Light.Source[i].Color * Attenuation;
+					FinalColor += LightContribution;
 				}
 				break;
 			case POINT: 
@@ -259,18 +302,18 @@ void main() {
 					Ray.Hit = 0;
 
 					// ! Disabled for Raytracing debugging
-					// // Trace shadow ray to check for occlusion
-					// traceRayEXT(
-					// 	TLAS,
-					// 	gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, // Terminate on first hit for shadows
-					// 	0xFF,
-					// 	0, 0, 0,
-					// 	Ray.Origin,
-					// 	0.001,                    // Min distance
-					// 	Ray.Direction,
-					// 	LightDistance - 0.001,    // Max distance (just before light)
-					// 	0                         // Ray payload location
-					// );
+					// Trace shadow ray to check for occlusion
+					traceRayEXT(
+						TLAS,
+						gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT, // Terminate on first hit for shadows
+						0xFF,
+						0, 0, 0,
+						Ray.Origin,
+						0.001,                    // Min distance
+						Ray.Direction,
+						LightDistance - 0.001,    // Max distance (just before light)
+						0                         // Ray payload location
+					);
 
 					// If light is obstructed, skip lighting calculation
 					if (Ray.Hit == 1) continue;

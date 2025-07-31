@@ -17,7 +17,7 @@ namespace geodesy::core::gpu {
 
 	acceleration_structure::acceleration_structure(std::shared_ptr<context> aContext, const gfx::mesh* aDeviceMesh, const gfx::mesh* aHostMesh) : acceleration_structure() {
 		this->Context = aContext;
-		uint32_t PrimitiveCount = (aHostMesh->Vertex.size() <= (1 << 16) ? aHostMesh->Topology.Data16.size() : aHostMesh->Topology.Data32.size()) / 3;
+		uint32_t PrimitiveCount = aHostMesh->Topology.Data16.size() > 0 ? aHostMesh->Topology.Data16.size() / 3 : aHostMesh->Topology.Data32.size() / 3;
 		// Build Bottom Level AS (Mesh Geometry Data).
 		// Needed for device addresses.
 		// PFN_vkGetBufferDeviceAddress vkGetBufferDeviceAddress = (PFN_vkGetBufferDeviceAddress)Context->FunctionPointer["vkGetBufferDeviceAddress"];
@@ -33,7 +33,7 @@ namespace geodesy::core::gpu {
 		ASG.geometry.triangles.vertexData.deviceAddress 		= aDeviceMesh->VertexBuffer->device_address();
 		ASG.geometry.triangles.vertexStride						= sizeof(gfx::mesh::vertex);
 		ASG.geometry.triangles.maxVertex						= aHostMesh->Vertex.size();
-		ASG.geometry.triangles.indexType						= aHostMesh->Vertex.size() <= (1 << 16) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+		ASG.geometry.triangles.indexType						= aHostMesh->Topology.Data16.size() > 0 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
 		ASG.geometry.triangles.indexData.deviceAddress 			= aDeviceMesh->IndexBuffer->device_address();
 		ASG.geometry.triangles.transformData.deviceAddress		= 0;
 		ASG.flags												= VK_GEOMETRY_OPAQUE_BIT_KHR;
@@ -138,10 +138,9 @@ namespace geodesy::core::gpu {
 		// Iterate through all objects in the stage.
 		for (const auto& Object : aStage->Object) {
 			// Get list of mesh instances per object model.
-			std::vector<gfx::mesh::instance*> MeshInstanceList = Object->gather_instances();
-			for (gfx::mesh::instance* MeshInstance : MeshInstanceList) {
+			for (auto& MeshInstance : Object->TotalMeshInstance) {
 				VkAccelerationStructureInstanceKHR ASI{};
-				gfx::mesh* Mesh = Object->Model->Mesh[MeshInstance->MeshIndex].get();
+				auto Mesh = Object->Model->Mesh[MeshInstance->MeshIndex].get();
 
 				// Matrix Transform, get global transform to world space. (Include Object Transform.)
 				math::mat<float, 4, 4> WorldTransform = MeshInstance->Parent->GlobalTransform;

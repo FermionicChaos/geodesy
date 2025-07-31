@@ -28,13 +28,13 @@ namespace geodesy::bltn::stg {
 		Sponza.Scale 						= { 0.03f, 0.03f, 0.03f };
 		ObjectList.push_back(Sponza);
 
-		runtime::object::creator PirateMap;
-		PirateMap.Name 						= "PirateMap";
-		PirateMap.ModelPath 				= "assets/models/pirate_map/scene.gltf";
-		PirateMap.Position 					= { 0.0f, 0.0f, 0.0f };
-		PirateMap.Direction 				= { 0.0f, 0.0f };
-		PirateMap.Scale 					= { 0.003f, 0.003f, 0.003f };
-		ObjectList.push_back(PirateMap);
+		// runtime::object::creator PirateMap;
+		// PirateMap.Name 						= "PirateMap";
+		// PirateMap.ModelPath 				= "assets/models/pirate_map/scene.gltf";
+		// PirateMap.Position 					= { 0.0f, 0.0f, 0.0f };
+		// PirateMap.Direction 				= { 0.0f, 0.0f };
+		// PirateMap.Scale 					= { 0.003f, 0.003f, 0.003f };
+		// ObjectList.push_back(PirateMap);
 
 		// Simple Boxes
 

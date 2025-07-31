@@ -54,6 +54,7 @@ namespace geodesy::core::gfx {
 			aNode->mTransformation.c1, aNode->mTransformation.c2, aNode->mTransformation.c3, aNode->mTransformation.c4,
 			aNode->mTransformation.d1, aNode->mTransformation.d2, aNode->mTransformation.d3, aNode->mTransformation.d4
 		};
+		this->CurrentTransform = this->DefaultTransform; // Set current transform to default.
 		// Copy over mesh instance data from assimp node hierarchy.
 		this->MeshInstance.resize(aNode->mNumMeshes);
 		for (int i = 0; i < aNode->mNumMeshes; i++) {
@@ -113,7 +114,6 @@ namespace geodesy::core::gfx {
 	void node::copy_data(const phys::node* aNode) {
 		// Copy over the base class node data.
 		phys::node::copy_data(aNode);
-
 		// Copy over mesh instance data.
 		this->MeshInstance.resize(((gfx::node*)aNode)->MeshInstance.size());
 		for (size_t i = 0; i < this->MeshInstance.size(); i++) {

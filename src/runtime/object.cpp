@@ -79,6 +79,7 @@ namespace geodesy::runtime {
 		this->Orientation 		= math::orientation(this->Theta, this->Phi);
 		this->Scale 			= aCreator->Scale;
 		this->DefaultTransform  = phys::calculate_transform(this->Position, this->Orientation, this->Scale);
+		this->CurrentTransform 	= this->DefaultTransform; // Set current transform to default.
 
 		this->Context 			= aContext;
 
@@ -132,17 +133,25 @@ namespace geodesy::runtime {
 	object::~object() {}
 
 	void object::copy_data(const core::phys::node* aNode) {
-		// This is ideally for root nodes, ignore base transform data.
+		// This function simply copies all data not related to the hierarchy.
+		// This is used to copy data from one node to another.
 		this->Identifier = aNode->Identifier;
-
-		// Copy over physics mesh.
+		// this->Type = aNode->Type;
+		// this->Mass = aNode->Mass;
+		// this->InertiaTensor = aNode->InertiaTensor;
+		// this->Position = aNode->Position;
+		// this->Orientation = aNode->Orientation;
+		// this->Scale = aNode->Scale;
+		// this->LinearMomentum = aNode->LinearMomentum;
+		// this->AngularMomentum = aNode->AngularMomentum;
+		// this->DefaultTransform = aNode->DefaultTransform;
+		// this->CurrentTransform = aNode->CurrentTransform; // Copy the current transform.
+		// this->GlobalTransform = aNode->GlobalTransform; // Copy the global transform.
 		this->CollisionMesh = aNode->CollisionMesh; // Copy the collision mesh if it exists.
-
 		// Copy over mesh instance data.
-		this->Context = ((gfx::node*)aNode)->Context; // Copy the context from the node.
 		this->MeshInstance.resize(((gfx::node*)aNode)->MeshInstance.size());
 		for (size_t i = 0; i < this->MeshInstance.size(); i++) {
-			this->MeshInstance[i] = gfx::mesh::instance(((gfx::node*)aNode)->Context, ((gfx::node*)aNode)->MeshInstance[i], this->Root, this);
+			this->MeshInstance[i] = gfx::mesh::instance(this->Context, ((gfx::node*)aNode)->MeshInstance[i], this->Root, this);
 		}
 	}
 
