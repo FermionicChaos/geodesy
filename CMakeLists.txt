@@ -91,37 +91,37 @@ set(GEODESY_SYSTEM_ANDROID FALSE)
 set(GEODESY_SYSTEM_NAME "Unknown")
 
 # Initialize platform variables
-set(GEODESY_DESKTOP FALSE)
-set(GEODESY_MOBILE FALSE)
+set(GEODESY_PLATFORM_DESKTOP FALSE)
+set(GEODESY_PLATFORM_MOBILE FALSE)
 set(GEODESY_PLATFORM_NAME "Unknown")
 
 # Detect target platform
 if(WIN32)
     set(GEODESY_SYSTEM_WINDOWS TRUE)
-    set(GEODESY_DESKTOP TRUE)
+    set(GEODESY_PLATFORM_DESKTOP TRUE)
     set(GEODESY_SYSTEM_NAME "Windows")
     set(GEODESY_PLATFORM_NAME "Desktop")
 elseif(UNIX AND NOT APPLE)
     if(ANDROID)
         set(GEODESY_SYSTEM_ANDROID TRUE)
-        set(GEODESY_MOBILE TRUE)
+        set(GEODESY_PLATFORM_MOBILE TRUE)
         set(GEODESY_SYSTEM_NAME "Android")
         set(GEODESY_PLATFORM_NAME "Mobile")
     else()
         set(GEODESY_SYSTEM_LINUX TRUE)
-        set(GEODESY_DESKTOP TRUE)
+        set(GEODESY_PLATFORM_DESKTOP TRUE)
         set(GEODESY_SYSTEM_NAME "Linux")
         set(GEODESY_PLATFORM_NAME "Desktop")
     endif()
 elseif(APPLE)
     if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
         set(GEODESY_SYSTEM_IOS TRUE)
-        set(GEODESY_MOBILE TRUE)
+        set(GEODESY_PLATFORM_MOBILE TRUE)
         set(GEODESY_SYSTEM_NAME "iOS")
         set(GEODESY_PLATFORM_NAME "Mobile")
     else()
         set(GEODESY_SYSTEM_MACOS TRUE)
-        set(GEODESY_DESKTOP TRUE)
+        set(GEODESY_PLATFORM_DESKTOP TRUE)
         set(GEODESY_SYSTEM_NAME "macOS")
         set(GEODESY_PLATFORM_NAME "Desktop")
     endif()
@@ -129,117 +129,7 @@ endif()
 
 # ======================= COMPILER FLAGS =======================
 
-# Set compiler-specific flags
-if(GEODESY_COMPILER_MSVC)
-    # MSVC-specific flags
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /permissive-")
-    
-    if(GEODESY_DEBUG)
-        # Debug build: Maximum debug info, no optimization, runtime checks
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /W4")           # High warning level
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Od")           # Disable optimization
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /Zi")           # Full debug info
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /RTC1")         # Runtime checks
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MDd")          # Debug runtime library
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /DDEBUG")       # Debug macro
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /D_DEBUG")      # Debug macro
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /bigobj")       # Large object files
-    else()
-        # Release build: Maximum speed optimization, minimal debug info
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /W1")       # Minimal warnings
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")       # Maximum speed optimization
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Oi")       # Enable intrinsics
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Ot")       # Favor speed over size
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /Oy")       # Omit frame pointers
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GL")       # Whole program optimization
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /DNDEBUG")  # Release macro
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MD")       # Release runtime library
-        # Link-time optimizations
-        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
-        set(CMAKE_STATIC_LINKER_FLAGS_RELEASE "${CMAKE_STATIC_LINKER_FLAGS_RELEASE} /LTCG")
-    endif()
-    
-elseif(GEODESY_COMPILER_GCC OR GEODESY_COMPILER_CLANG)
-    # GCC/Clang flags
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fpermissive")
-    
-    if(GEODESY_DEBUG)
-        # Debug build: Maximum debug info, no optimization, runtime checks
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall")         # Enable warnings
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wextra")       # Extra warnings
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wpedantic")    # Pedantic warnings
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")           # No optimization
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g3")           # Maximum debug info
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -ggdb")         # GDB-specific debug info
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-omit-frame-pointer") # Keep frame pointers
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-optimize-sibling-calls") # Better stack traces
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")       # Debug macro
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_DEBUG")      # Debug macro
-        
-        # Additional GCC-specific debug flags
-        if(GEODESY_COMPILER_GCC)
-            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fvar-tracking-assignments") # Better variable tracking
-        endif()
-        
-        # Sanitizers for debug builds (optional, can be enabled with -DENABLE_SANITIZERS=ON)
-        if(ENABLE_SANITIZERS)
-            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
-            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined")
-            set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -fsanitize=address")
-            set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -fsanitize=undefined")
-            message(STATUS "Sanitizers enabled for debug build")
-        endif()
-        
-        # Profiling support
-        if(ENABLE_PROFILING)
-            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -pg")
-            set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -pg")
-            message(STATUS "Profiling enabled for debug build")
-        endif()
-        
-        # Code coverage
-        if(ENABLE_COVERAGE)
-            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --coverage")
-            set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} --coverage")
-            message(STATUS "Code coverage enabled for debug build")
-        endif()
-        
-    else()
-        # Release build: Maximum speed optimization
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")           # Maximum optimization
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DNDEBUG")      # Release macro
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -ffast-math")   # Fast math operations
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -funroll-loops") # Loop unrolling
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fomit-frame-pointer") # Omit frame pointers
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native") # Target native architecture
-        
-        # Link-time optimization
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -flto")
-        set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -flto")
-        
-        # Additional optimizations for specific compilers
-        if(GEODESY_COMPILER_GCC)
-            set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fuse-linker-plugin") # Better LTO
-        endif()
-        
-        if(GEODESY_COMPILER_CLANG)
-            set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fvectorize")     # Auto-vectorization
-            set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fslp-vectorize") # SLP vectorization
-        endif()
-    endif()
-    
-    # Platform-specific flags
-    if(GEODESY_SYSTEM_ANDROID)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
-    elseif(GEODESY_SYSTEM_IOS)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fembed-bitcode")
-        # iOS release builds should be more conservative with optimizations
-        if(GEODESY_RELEASE)
-            # Remove -march=native for iOS (not applicable)
-            string(REPLACE "-march=native" "" CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
-        endif()
-    endif()
-endif()
+# TODO: Will go here.
 
 # ======================= PRINT FULL SUMMARY =======================
 message(STATUS "========================= Geodesy Build Summary =========================")
@@ -292,7 +182,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(stb)
 
-if (GEODESY_DESKTOP)
+if (GEODESY_PLATFORM_DESKTOP)
     # ----- GLFW ----- #
     FetchContent_Declare(
         glfw
@@ -349,7 +239,7 @@ set(GLSLANG_TESTS OFF)
 set(ENABLE_OPT OFF)
 FetchContent_MakeAvailable(glslang)
 
-if (GEODESY_DESKTOP)
+if (GEODESY_PLATFORM_DESKTOP)
     # ----- ImGui ----- #
     FetchContent_Declare(
         imgui
@@ -439,26 +329,26 @@ elseif(GEODESY_SYSTEM_ANDROID)
 endif()
 
 # Set primary platform macros (only define when true)
-if(GEODESY_DESKTOP)
-    target_compile_definitions(${GEODESY_LIBRARY} PUBLIC GEODESY_DESKTOP)
+if(GEODESY_PLATFORM_DESKTOP)
+    target_compile_definitions(${GEODESY_LIBRARY} PUBLIC GEODESY_PLATFORM_DESKTOP)
 else()
-    target_compile_definitions(${GEODESY_LIBRARY} PUBLIC GEODESY_MOBILE)
+    target_compile_definitions(${GEODESY_LIBRARY} PUBLIC GEODESY_PLATFORM_MOBILE)
 endif()
 
 # Set build type macros - handle both single and multi-configuration generators
 if(NOT CMAKE_CONFIGURATION_TYPES)
     # Single-configuration generators (Make, Ninja, etc.)
     if(GEODESY_BUILD_DEBUG)
-        target_compile_definitions(${GEODESY_LIBRARY} PUBLIC GEODESY_DEBUG)
+        target_compile_definitions(${GEODESY_LIBRARY} PUBLIC GEODESY_BUILD_DEBUG)
     else()
-        target_compile_definitions(${GEODESY_LIBRARY} PUBLIC GEODESY_RELEASE)
+        target_compile_definitions(${GEODESY_LIBRARY} PUBLIC GEODESY_BUILD_RELEASE)
     endif()
 else()
     # Multi-configuration generators (Visual Studio, Xcode, etc.)
     # Use generator expressions to define macros based on actual build configuration
     target_compile_definitions(${GEODESY_LIBRARY} PUBLIC 
-        $<$<CONFIG:Debug>:GEODESY_DEBUG>
-        $<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:GEODESY_RELEASE>
+        $<$<CONFIG:Debug>:GEODESY_BUILD_DEBUG>
+        $<$<CONFIG:Release,RelWithDebInfo,MinSizeRel>:GEODESY_BUILD_RELEASE>
     )
 endif()
 
@@ -468,7 +358,7 @@ endif()
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${Vulkan_INCLUDE_DIRS}/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/inc/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${DEP_SOURCE_DIR}/)
-if(GEODESY_DESKTOP)
+if(GEODESY_PLATFORM_DESKTOP)
     target_include_directories(${GEODESY_LIBRARY} PUBLIC ${glfw_SOURCE_DIR}/include/)
     target_include_directories(${GEODESY_LIBRARY} PUBLIC ${glfw_BINARY_DIR}/src/)
 endif()
@@ -478,7 +368,7 @@ target_include_directories(${GEODESY_LIBRARY} PUBLIC ${assimp_SOURCE_DIR}/includ
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${assimp_BINARY_DIR}/include/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${freetype_SOURCE_DIR}/include/)
 target_include_directories(${GEODESY_LIBRARY} PUBLIC ${freetype_BINARY_DIR}/include/)
-if(GEODESY_DESKTOP)
+if(GEODESY_PLATFORM_DESKTOP)
     target_include_directories(${GEODESY_LIBRARY} PUBLIC ${imgui_SOURCE_DIR}/)
 endif()
 
@@ -493,7 +383,7 @@ if(Vulkan_FOUND)
 endif()
 
 # Link Third Party Libraries
-if(GEODESY_DESKTOP)
+if(GEODESY_PLATFORM_DESKTOP)
     target_link_libraries(${GEODESY_LIBRARY} PUBLIC glfw)
 endif()
 target_link_libraries(${GEODESY_LIBRARY} PUBLIC openxr_loader)

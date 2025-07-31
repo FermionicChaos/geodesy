@@ -38,9 +38,9 @@ int main(int aCmdArgCount, char* aCmdArgList[]) {
 
 	// Platform Information
 	std::cout << "Platform: \t";
-	#ifdef GEODESY_DESKTOP
+	#ifdef GEODESY_PLATFORM_DESKTOP
 		std::cout << "Desktop" << std::endl;
-	#elif defined(GEODESY_MOBILE)
+	#elif defined(GEODESY_PLATFORM_MOBILE)
 		std::cout << "Mobile" << std::endl;
 	#else
 		std::cout << "Unknown" << std::endl;
@@ -48,9 +48,9 @@ int main(int aCmdArgCount, char* aCmdArgList[]) {
 
 	// Build Information
 	std::cout << "Build: \t\t";
-	#ifdef GEODESY_DEBUG
+	#ifdef GEODESY_BUILD_DEBUG
 		std::cout << "Debug" << std::endl;
-	#elif defined(GEODESY_RELEASE)
+	#elif defined(GEODESY_BUILD_RELEASE)
 		std::cout << "Release" << std::endl;
 	#else
 		std::cout << "Unknown" << std::endl;
