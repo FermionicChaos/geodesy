@@ -10,43 +10,43 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 #  GEODESY – COMPILER & BUILD-TYPE DETECTION
 # =======================================================================
 
-# Initialize compiler variables
-set(GEODESY_COMPILER_CLANG FALSE)
-set(GEODESY_COMPILER_GCC FALSE)
-set(GEODESY_COMPILER_MSVC FALSE)
-set(GEODESY_COMPILER_INTEL FALSE)
-set(GEODESY_COMPILER_NAME "Unknown")
+# # Initialize compiler variables
+# set(GEODESY_COMPILER_CLANG FALSE)
+# set(GEODESY_COMPILER_GCC FALSE)
+# set(GEODESY_COMPILER_MSVC FALSE)
+# set(GEODESY_COMPILER_INTEL FALSE)
+# set(GEODESY_COMPILER_NAME "Unknown")
 
-# ---------- compiler family -------------------------------------------
-# CMAKE_CXX_COMPILER_ID is always defined and the most reliable test.
-# Additional checks (CMAKE_CXX_SIMULATE_ID) catch clang-cl.
-if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    set(GEODESY_COMPILER_MSVC TRUE)
-    set(GEODESY_COMPILER_NAME "MSVC")
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    set(GEODESY_COMPILER_GCC  TRUE)
-    set(GEODESY_COMPILER_NAME "GCC")
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(Apple)?Clang$")
-    set(GEODESY_COMPILER_CLANG TRUE)
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-        set(GEODESY_COMPILER_NAME "Apple Clang")
-    elseif(MSVC AND CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")   # clang-cl
-        set(GEODESY_COMPILER_NAME "Clang-CL")
-    else()
-        set(GEODESY_COMPILER_NAME "Clang")
-    endif()
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(Intel|IntelLLVM)$")
-    # oneAPI ICX/ICC front-ends are LLVM based
-    set(GEODESY_COMPILER_INTEL TRUE)
-    set(GEODESY_COMPILER_NAME "Intel LLVM")
-elseif (CMAKE_GENERATOR MATCHES "Visual Studio")
-    # Infer compiler from CMAKE_GENERATOR
-    set(GEODESY_COMPILER_MSVC TRUE)
-    set(GEODESY_COMPILER_NAME "MSVC")
-else()
-    message(WARNING "Geodesy: unknown compiler family: ${CMAKE_CXX_COMPILER_ID}")
-    set(GEODESY_COMPILER_NAME "Unknown")
-endif()
+# # ---------- compiler family -------------------------------------------
+# # CMAKE_CXX_COMPILER_ID is always defined and the most reliable test.
+# # Additional checks (CMAKE_CXX_SIMULATE_ID) catch clang-cl.
+# if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+#     set(GEODESY_COMPILER_MSVC TRUE)
+#     set(GEODESY_COMPILER_NAME "MSVC")
+# elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+#     set(GEODESY_COMPILER_GCC  TRUE)
+#     set(GEODESY_COMPILER_NAME "GCC")
+# elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(Apple)?Clang$")
+#     set(GEODESY_COMPILER_CLANG TRUE)
+#     if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+#         set(GEODESY_COMPILER_NAME "Apple Clang")
+#     elseif(MSVC AND CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")   # clang-cl
+#         set(GEODESY_COMPILER_NAME "Clang-CL")
+#     else()
+#         set(GEODESY_COMPILER_NAME "Clang")
+#     endif()
+# elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(Intel|IntelLLVM)$")
+#     # oneAPI ICX/ICC front-ends are LLVM based
+#     set(GEODESY_COMPILER_INTEL TRUE)
+#     set(GEODESY_COMPILER_NAME "Intel LLVM")
+# elseif (CMAKE_GENERATOR MATCHES "Visual Studio")
+#     # Infer compiler from CMAKE_GENERATOR
+#     set(GEODESY_COMPILER_MSVC TRUE)
+#     set(GEODESY_COMPILER_NAME "MSVC")
+# else()
+#     message(WARNING "Geodesy: unknown compiler family: ${CMAKE_CXX_COMPILER_ID}")
+#     set(GEODESY_COMPILER_NAME "Unknown")
+# endif()
 
 # ======================================================================
 #  BUILD-TYPE FLAGS
@@ -128,7 +128,7 @@ endif()
 # ======================= PRINT FULL SUMMARY =======================
 message(STATUS "========================= Geodesy Build Summary =========================")
 message(STATUS "Generator: \t${CMAKE_GENERATOR}")
-message(STATUS "Compiler: \t${GEODESY_COMPILER_NAME} ${CMAKE_CXX_COMPILER_VERSION}")
+# message(STATUS "Compiler: \t${GEODESY_COMPILER_NAME} ${CMAKE_CXX_COMPILER_VERSION}")
 message(STATUS "System: \t${GEODESY_SYSTEM_NAME}")
 message(STATUS "Platform: \t${GEODESY_PLATFORM_NAME}")
 message(STATUS "Build Mode: \t${GEODESY_BUILD_MODE}")
@@ -408,22 +408,3 @@ elseif(GEODESY_SYSTEM_ANDROID)
     # Android specific libraries
     target_link_libraries(${GEODESY_LIBRARY} PUBLIC ${log-lib} ${android-lib})
 endif()
-
-# ----------------------- Geodesy Unit Test ----------------------- #
-# When creating your own project off of the Geodesy Library, use this
-# as a example/template for your own CMakeLists.txt file to know what to link against.
-
-set(GEODESY_UNIT_TEST "geodesy-unit-test")
-
-project(${GEODESY_UNIT_TEST})
-
-# Link against Vulkan and OpenMP
-add_executable(${GEODESY_UNIT_TEST} main.cpp res/icon.rc)
-
-set_target_properties(${GEODESY_UNIT_TEST} PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/bin/${CMAKE_SYSTEM_NAME}/${CMAKE_BUILD_TYPE}/)
-
-# Include directories
-target_include_directories(${GEODESY_UNIT_TEST} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/inc/)
-
-# Link Against Geodesy Library
-target_link_libraries(${GEODESY_UNIT_TEST} PRIVATE ${GEODESY_LIBRARY})
