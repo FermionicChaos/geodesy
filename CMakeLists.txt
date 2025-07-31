@@ -6,22 +6,16 @@ cmake_policy(SET CMP0077 NEW)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# ======================= BUILD OPTIONS =======================
-
-option(ENABLE_SANITIZERS "Enable AddressSanitizer and UndefinedBehaviorSanitizer in debug builds" OFF)
-option(ENABLE_PROFILING "Enable profiling support" OFF)
-option(ENABLE_COVERAGE "Enable code coverage analysis" OFF)
-
 # =======================================================================
 #  GEODESY – COMPILER & BUILD-TYPE DETECTION
 # =======================================================================
 
 # Initialize compiler variables
-set(GEODESY_COMPILER_CLANG  FALSE)
-set(GEODESY_COMPILER_GCC    FALSE)
-set(GEODESY_COMPILER_MSVC   FALSE)
-set(GEODESY_COMPILER_INTEL  FALSE)
-set(GEODESY_COMPILER_NAME   "Unknown")
+set(GEODESY_COMPILER_CLANG FALSE)
+set(GEODESY_COMPILER_GCC FALSE)
+set(GEODESY_COMPILER_MSVC FALSE)
+set(GEODESY_COMPILER_INTEL FALSE)
+set(GEODESY_COMPILER_NAME "Unknown")
 
 # ---------- compiler family -------------------------------------------
 # CMAKE_CXX_COMPILER_ID is always defined and the most reliable test.
@@ -60,9 +54,9 @@ endif()
 #  • Multi-config generators    → provide generator expressions.
 # ======================================================================
 
-set(GEODESY_BUILD_DEBUG   FALSE)
+set(GEODESY_BUILD_DEBUG FALSE)
 set(GEODESY_BUILD_RELEASE FALSE)
-set(GEODESY_BUILD_MODE    "Unknown")
+set(GEODESY_BUILD_MODE "Unknown")
 
 if(NOT CMAKE_CONFIGURATION_TYPES)           # ---- Make / Ninja, etc.
     if(CMAKE_BUILD_TYPE MATCHES "^[Dd]ebug$")
