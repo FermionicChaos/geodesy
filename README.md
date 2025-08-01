@@ -118,6 +118,14 @@ is highly experimental. Efforts have made the engine easy to use on multiple pla
 
 ## TODO List:
 
+- Generalized Asset loading system through network, virtual file system, and local file system. 
+
+- Factory creation system for run time loading scenes
+
+- Object/Entity scripting systems for logical operations on the same stage.
+
+- Terminal Interface for shutting down the engine. 
+
 - Gui Toolkit
 
 - Exit Conditions (Such as all windows being closed.)
@@ -146,6 +154,8 @@ of a particular surface while an image is a generalized concept of a type
 of memory.
 
 ## Bug List:
+
+- Figure out why ray tracer is not intersecting scene geometry.
 
 - Figure out gpu uniform buffer update latency
 
