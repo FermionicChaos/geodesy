@@ -6,10 +6,9 @@
 ![Alt Text](https://github.com/FermionicChaos/geodesy/blob/master/res/github/logo.png)
 
 The geodesy engine is a high performance game/physics engine written in C++. It utilizes the Vulkan Graphics
-& Compute API to interact with GPU hardware. Years ago when I was studying physics and taking a general relativity
-class, we were tasked a final project and my class mate and I decided to do a curved spacetime renderer as our
-final project. We named the project "Geodesic Renderer", which was a renderer for curved space-time. I had weebified
-the name to geodesy, and hence the name for this project was born.
+& Compute API to interact with GPU hardware. Years ago when I was studying physics in college, we were tasked 
+a final project and my class mate and I decided to do a curved spacetime renderer as our final project. We named 
+the project "Geodesic Renderer", which was a renderer for curved space-time.
 
 ---
 
@@ -120,13 +119,13 @@ is highly experimental. Efforts have made the engine easy to use on multiple pla
 
 - Generalized Asset loading system through network, virtual file system, and local file system. 
 
-- Factory creation system for run time loading scenes
+- Factory creation system for run time loading stages/objects
 
 - Object/Entity scripting systems for logical operations on the same stage.
 
 - Terminal Interface for shutting down the engine. 
 
-- Gui Toolkit
+- Imgui Desktop Toolkit
 
 - Exit Conditions (Such as all windows being closed.)
 
@@ -141,6 +140,10 @@ is highly experimental. Efforts have made the engine easy to use on multiple pla
 - Generalize runtime app/stage/object, remove scene3d/canvas
 
 - Load VR vulkan extensions (finish cameravr)
+
+- Use MoltenVK for Vulkan MacOS/iOS Support
+
+- Formalize Cross Platform Input Handling
 
 ## Bug List:
 
