@@ -134,24 +134,13 @@ is highly experimental. Efforts have made the engine easy to use on multiple pla
 
 - Introduce portaudio to the geodesy engine.
 
-- Add layering system for window objects, for huds, system stats and so
-on. (Will be done with canvas class, and window as target.)
-
-- File System stuff.
-
-- Add built in extension types for file.h to recognize file types
-and forward to proper objects.
-
 - Add lua support for runtime scripting.
 
-- Add engine asset manager to prevent double loading.
+- Remove all GPU execution code from host update loop.
 
-- Add Dynamic Library compilation options.
+- Generalize runtime app/stage/object, remove scene3d/canvas
 
-- Change Texture class to image class? The reasoning behind this change
-along with how vulkan does it, is that a texture describes the texture
-of a particular surface while an image is a generalized concept of a type
-of memory.
+- Load VR vulkan extensions (finish cameravr)
 
 ## Bug List:
 
@@ -160,4 +149,6 @@ of memory.
 - Figure out gpu uniform buffer update latency
 
 - Figure out window zero size vulkan validation error on windows
+
+- Figure out window resizing validation error on windows.
 
