@@ -132,9 +132,9 @@ namespace geodesy::runtime {
 		return DefaultRenderer;
 	}
 
-	std::shared_ptr<runtime::object::renderer> subject::default_ray_tracer(stage* aStage) {
-		std::shared_ptr<renderer> DefaultRayTracer;
-		return DefaultRayTracer;
+	std::shared_ptr<runtime::object::renderer> subject::default_post_processor(stage* aStage) {
+		std::shared_ptr<renderer> DefaultPostProcessor;
+		return DefaultPostProcessor;
 	}
 
 	submission_batch subject::render(stage* aStage) {

@@ -427,7 +427,8 @@ namespace geodesy::bltn::obj {
 	std::shared_ptr<runtime::object::renderer> camera3d::default_renderer(object* aObject) {
 		return std::dynamic_pointer_cast<runtime::object::renderer>(geodesy::make<stage_rasterizer>(this, aObject));
 	}
-	std::shared_ptr<runtime::object::renderer> camera3d::default_ray_tracer(runtime::stage* aStage) {
+	
+	std::shared_ptr<runtime::object::renderer> camera3d::default_post_processor(runtime::stage* aStage) {
 		return std::dynamic_pointer_cast<runtime::object::renderer>(geodesy::make<stage_postprocessor>(this, aStage));
 	}
 
@@ -528,7 +529,7 @@ namespace geodesy::bltn::obj {
 		this->RenderingOperations += command_batch(convert(TransparentVector));
 		this->RenderingOperations += command_batch(convert(TranslucentVector));
 		// Ray Tracing.
-		this->RenderingOperations += command_batch(convert(aStage->ray_trace(this)));
+		this->RenderingOperations += command_batch(convert(aStage->post_processing(this)));
 		// this->RenderingOperations += aStage->draw(this);
 		// Ray Tracing Operations on Translucent Geometry Buffer.
 
@@ -581,22 +582,13 @@ namespace geodesy::bltn::obj {
 			AB.blendEnable = VK_TRUE;
 			AB.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 			// Set to direct overwrite (not used since blendEnable = false, but good practice)
-			AB.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
-			AB.dstColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+			AB.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+			AB.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 			AB.colorBlendOp = VK_BLEND_OP_ADD;
 			AB.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
 			AB.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
 			AB.alphaBlendOp = VK_BLEND_OP_ADD;
 		}
-		// Color Blending Operation
-		AlphaBlendOperation[0].srcColorBlendFactor 	= VK_BLEND_FACTOR_SRC_ALPHA;
-		AlphaBlendOperation[0].dstColorBlendFactor 	= VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		// // World Position Blending
-		// AlphaBlendOperation[1].srcColorBlendFactor 	= VK_BLEND_FACTOR_SRC_ALPHA;
-		// AlphaBlendOperation[1].dstColorBlendFactor 	= VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-		// // Normals Blending
-		// AlphaBlendOperation[2].srcColorBlendFactor 	= VK_BLEND_FACTOR_SRC_ALPHA;
-		// AlphaBlendOperation[2].dstColorBlendFactor 	= VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 
 		Rasterizer->ColorBlend.logicOpEnable 		= VK_FALSE;
 		Rasterizer->ColorBlend.logicOp 				= VK_LOGIC_OP_COPY;

@@ -105,7 +105,7 @@ namespace geodesy::bltn::obj {
 			const std::vector<core::phys::force>& 		aAppliedForces = {}
 		) override;
 		std::shared_ptr<renderer> default_renderer(runtime::object* aObject) override;
-		std::shared_ptr<renderer> default_ray_tracer(runtime::stage* aStage) override;
+		std::shared_ptr<renderer> default_post_processor(runtime::stage* aStage) override;
 		core::gpu::submission_batch render(runtime::stage* aStage) override;
 
 		// These will create the pipelines for the camera3d.

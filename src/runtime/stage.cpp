@@ -224,11 +224,11 @@ namespace geodesy::runtime {
 		return RenderInfo;
 	}
 
-	std::vector<std::shared_ptr<object::draw_call>> stage::ray_trace(subject* aSubject) {
+	std::vector<std::shared_ptr<object::draw_call>> stage::post_processing(subject* aSubject) {
 		
 		if (this->Renderer.count(aSubject) == 0) {
 			// Get Draw Call
-			this->Renderer[aSubject] = aSubject->default_ray_tracer(this);
+			this->Renderer[aSubject] = aSubject->default_post_processor(this);
 		}
 
 		// Return draw calls for the subject.
