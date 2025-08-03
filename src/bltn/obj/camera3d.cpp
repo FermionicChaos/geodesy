@@ -44,18 +44,10 @@ namespace geodesy::bltn::obj {
 			this->Image[i]["OGB.Normal"] 			= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
 			this->Image[i]["OGB.SS"] 				= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
 			this->Image[i]["OGB.ORM"] 				= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			// Outputs for post processing.
-			this->Image[i]["TGB.Color"] 			= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["TGB.Position"] 			= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["TGB.Normal"] 			= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["TGB.SS"] 				= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["TGB.ORM"] 				= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.TranslucencyMask"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Emissive"] 			= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
 			// Shared Depth Buffer for all images.
 			this->Image[i]["Depth"] 				= aContext->create_image(DepthCreateInfo, DepthFormat, aResolution[0], aResolution[1]);
-			// Ray tracer outputs.
-			this->Image[i]["OpaqueColor"] 			= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["TranslucentColor"] 		= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["Emissive"] 				= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
 			// Final Output after post processing.
 			this->Image[i]["Color"] 				= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
 		}
@@ -73,18 +65,10 @@ namespace geodesy::bltn::obj {
 			this->Image[i]["OGB.Normal"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.SS"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.ORM"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
-			// Translucency Geometry Buffer, used for Transparent & Translucent mesh instances.
-			this->Image[i]["TGB.Color"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
-			this->Image[i]["TGB.Position"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
-			this->Image[i]["TGB.Normal"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
-			this->Image[i]["TGB.SS"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
-			this->Image[i]["TGB.ORM"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["OGB.TranslucencyMask"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["OGB.Emissive"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			// Shared Depth Buffer for all images.
 			this->Image[i]["Depth"]->clear_depth(ClearCommand, { 0.0f, 0 });
-			// Ray tracer outputs.
-			this->Image[i]["OpaqueColor"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });	
-			this->Image[i]["TranslucentColor"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
-			this->Image[i]["Emissive"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			// Final Output Color Image.
 			this->Image[i]["Color"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			aContext->end(ClearCommand);
@@ -93,7 +77,7 @@ namespace geodesy::bltn::obj {
 
 	}
 
-	camera3d::deferred_draw_call::deferred_draw_call(
+	camera3d::rasterizer_draw_call::rasterizer_draw_call(
 		camera3d* 	aCamera3D,
 		size_t 		aFrameIndex,
 		object* 	aObject, 
@@ -115,35 +99,16 @@ namespace geodesy::bltn::obj {
 		// Load Context
 		this->Context = aObject->Context;
 		// Load up desired images which draw call will render to.
-		std::vector<std::shared_ptr<image>> ImageOutputList;
-		switch(this->TransparencyMode) {
-		case material::transparency::OPAQUE:
-			// Opaque Geometry Buffer.
-			ImageOutputList = {
-				aCamera3D->Framechain->Image[aFrameIndex]["OGB.Color"],
-				aCamera3D->Framechain->Image[aFrameIndex]["OGB.Position"],
-				aCamera3D->Framechain->Image[aFrameIndex]["OGB.Normal"],
-				aCamera3D->Framechain->Image[aFrameIndex]["OGB.SS"],
-				aCamera3D->Framechain->Image[aFrameIndex]["OGB.ORM"],
-				aCamera3D->Framechain->Image[aFrameIndex]["Emissive"],
-				aCamera3D->Framechain->Image[aFrameIndex]["Depth"]
-			};
-			break;
-		case material::transparency::TRANSPARENT: case material::transparency::TRANSLUCENT:
-			// Translucent/Transparent Geometry Buffer.
-			ImageOutputList = {
-				aCamera3D->Framechain->Image[aFrameIndex]["TGB.Color"],
-				aCamera3D->Framechain->Image[aFrameIndex]["TGB.Position"],
-				aCamera3D->Framechain->Image[aFrameIndex]["TGB.Normal"],
-				aCamera3D->Framechain->Image[aFrameIndex]["TGB.SS"],
-				aCamera3D->Framechain->Image[aFrameIndex]["TGB.ORM"],
-				aCamera3D->Framechain->Image[aFrameIndex]["Emissive"],
-				aCamera3D->Framechain->Image[aFrameIndex]["Depth"]
-			};
-			break;
-		default:
-			break;
-		}
+		std::vector<std::shared_ptr<image>> ImageOutputList = {
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Color"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Position"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Normal"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.SS"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.ORM"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Emissive"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.TranslucencyMask"],
+			aCamera3D->Framechain->Image[aFrameIndex]["Depth"]
+		};
 		// Acquire Mesh Vertex Buffer, and Mesh Instance Vertex Weight Buffer.
 		std::vector<std::shared_ptr<buffer>> VertexBuffer = { Mesh->VertexBuffer, MeshInstance->VertexWeightBuffer };
 		// Load up GPU interface data to interface resources with pipeline.
@@ -183,7 +148,7 @@ namespace geodesy::bltn::obj {
 		Result = Context->end(DrawCommand);
 	}
 
-	void camera3d::deferred_draw_call::update(
+	void camera3d::rasterizer_draw_call::update(
 		subject* 	aSubject, 
 		size_t 		aFrameIndex,
 		object* 	aObject, 
@@ -227,7 +192,7 @@ namespace geodesy::bltn::obj {
 		}
 	}
 
-	camera3d::opaque_ray_trace_call::opaque_ray_trace_call(
+	camera3d::ray_trace_draw_call::ray_trace_draw_call(
 		camera3d* 			aCamera3D,
 		size_t 				aFrameIndex,
 		runtime::stage* 	aStage
@@ -240,8 +205,6 @@ namespace geodesy::bltn::obj {
 		DescriptorArray = Context->create_descriptor_array(RayTracingPipeline);
 		DrawCommand = aCamera3D->CommandPool->allocate();
 
-		// TODO: Construct TLAS for ray tracing.
-		// TODO: Transition these images to the correct layout in the ray tracing call.
 		// Bind Scene Geometry.
 		DescriptorArray->bind(0, 0, 0, aStage->TLAS);
 		// TODO: Load in globalized textures.
@@ -250,11 +213,13 @@ namespace geodesy::bltn::obj {
 		// Bind Final Output Image.
 		DescriptorArray->bind(1, 0, 0, aCamera3D->Framechain->Image[aFrameIndex]["Color"], image::layout::GENERAL);
 		// Bind Geometry Buffer Images to Ray Tracing Pipeline.
-		DescriptorArray->bind(1, 1, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Color"], image::layout::GENERAL);
-		DescriptorArray->bind(1, 2, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Position"], image::layout::GENERAL);
-		DescriptorArray->bind(1, 3, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Normal"], image::layout::GENERAL);
-		DescriptorArray->bind(1, 4, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.SS"], image::layout::GENERAL);
-		DescriptorArray->bind(1, 5, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.ORM"], image::layout::GENERAL);
+		DescriptorArray->bind(1, 1, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Color"]);
+		DescriptorArray->bind(1, 2, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Position"]);
+		DescriptorArray->bind(1, 3, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Normal"]);
+		DescriptorArray->bind(1, 4, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.SS"]);
+		DescriptorArray->bind(1, 5, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.ORM"]);
+		DescriptorArray->bind(1, 6, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Emissive"]);
+		// TODO: Include Translucency Mask for Ray Tracing.
 		// Bind Camera Uniform Buffer.
 		DescriptorArray->bind(2, 0, 0, aCamera3D->SubjectUniformBuffer);
 
@@ -263,12 +228,7 @@ namespace geodesy::bltn::obj {
 		
 		// Transition images to GENERAL layout for ray tracing storage access
 		std::vector<std::shared_ptr<image>> ImagesToTransition = {
-			aCamera3D->Framechain->Image[aFrameIndex]["Color"],
-			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Color"],
-			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Position"],
-			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Normal"],
-			aCamera3D->Framechain->Image[aFrameIndex]["OGB.SS"],
-			aCamera3D->Framechain->Image[aFrameIndex]["OGB.ORM"]
+			aCamera3D->Framechain->Image[aFrameIndex]["Color"]
 		};
 		
 		for (auto& img : ImagesToTransition) {
@@ -294,68 +254,14 @@ namespace geodesy::bltn::obj {
 		
 		Result = Context->end(DrawCommand);
 	}
-	
-	void camera3d::opaque_ray_trace_call::update(
+
+	void camera3d::ray_trace_draw_call::update(
 		subject* 			aSubject, 
 		size_t 				aFrameIndex,
 		runtime::stage* 	aStage
 	) {}
 
-	camera3d::translucent_ray_trace_call::translucent_ray_trace_call(
-		camera3d* 			aCamera3D,
-		size_t 				aFrameIndex,
-		runtime::stage* 	aStage
-	) {
-		VkResult Result = VK_SUCCESS;
-		// Generate scene ray tracing here.
-		auto TranslucentRayTracingPipeline = aCamera3D->Pipeline[1];
-
-		Context = aCamera3D->Context;
-		DescriptorArray = Context->create_descriptor_array(TranslucentRayTracingPipeline);
-		DrawCommand = aCamera3D->CommandPool->allocate();
-
-		// TODO: Construct TLAS for ray tracing.
-		// TODO: Transition these images to the correct layout in the ray tracing call.
-		// Bind Scene Geometry.
-		DescriptorArray->bind(0, 0, 0, aStage->TLAS);
-		// Bind Final Output Image.
-		DescriptorArray->bind(0, 1, 0, aCamera3D->Framechain->Image[aFrameIndex]["Color"], image::layout::GENERAL);
-		// Bind Geometry Buffer Images to Ray Tracing Pipeline.
-		DescriptorArray->bind(0, 2, 0, aCamera3D->Framechain->Image[aFrameIndex]["TGB.Color"], image::layout::GENERAL);
-		DescriptorArray->bind(0, 3, 0, aCamera3D->Framechain->Image[aFrameIndex]["TGB.Position"], image::layout::GENERAL);
-		DescriptorArray->bind(0, 4, 0, aCamera3D->Framechain->Image[aFrameIndex]["TGB.Normal"], image::layout::GENERAL);
-		DescriptorArray->bind(0, 5, 0, aCamera3D->Framechain->Image[aFrameIndex]["TGB.Emissive"], image::layout::GENERAL);
-		DescriptorArray->bind(0, 6, 0, aCamera3D->Framechain->Image[aFrameIndex]["TGB.SS"], image::layout::GENERAL);
-		DescriptorArray->bind(0, 7, 0, aCamera3D->Framechain->Image[aFrameIndex]["TGB.ORM"], image::layout::GENERAL);
-
-		// Bind Uniform Buffers.
-		DescriptorArray->bind(1, 0, 0, aCamera3D->SubjectUniformBuffer);
-		// TODO: Bind Stage Lighting Information.
-		// DescriptorArray->bind(1, 1, 0, aStage->Lighting->UniformBuffer);
-		// TODO: Material Scene Buffer, material access for mesh instances in ray tracer.
-		// DescriptorArray->bind(1, 2, 0, aStage->MaterialSceneBuffer);
-
-		// Actual Draw Call.
-		Result = Context->begin(DrawCommand);
-		// The goal of this barrier is to keep the gpu busy while still waiting on the depth results of the previous draw call.
-		pipeline::barrier(DrawCommand, 
-			/* Src ---> Dst */
-			pipeline::stage::LATE_FRAGMENT_TESTS, 				pipeline::stage::EARLY_FRAGMENT_TESTS,
-			device::access::DEPTH_STENCIL_ATTACHMENT_WRITE, 	device::access::DEPTH_STENCIL_ATTACHMENT_READ | device::access::DEPTH_STENCIL_ATTACHMENT_WRITE
-		);
-		// TODO: Transi
-		// Issue Ray Tracing Call.
-		TranslucentRayTracingPipeline->raytrace(DrawCommand, DescriptorArray, aCamera3D->Framechain->Resolution);
-		Result = Context->end(DrawCommand);
-	}
-
-	void camera3d::translucent_ray_trace_call::update(
-		subject* 			aSubject, 
-		size_t 				aFrameIndex,
-		runtime::stage* 	aStage
-	) {}
-
-	camera3d::deferred_renderer::deferred_renderer(
+	camera3d::stage_rasterizer::stage_rasterizer(
 		camera3d* aCamera3D,
 		object* aObject
 	) : runtime::object::renderer(aCamera3D, aObject) {
@@ -364,25 +270,26 @@ namespace geodesy::bltn::obj {
 		// Generates draw calls for each frame in the frame chain and mesh instance.
 		for (size_t i = 0; i < aCamera3D->Framechain->Image.size(); i++) {
 			for (size_t j = 0; j < aObject->TotalMeshInstance.size(); j++) {
-				DrawCallList[i][j] = geodesy::make<deferred_draw_call>(aCamera3D, i, aObject, j);
+				DrawCallList[i][j] = geodesy::make<rasterizer_draw_call>(aCamera3D, i, aObject, j);
 			}
 		}
 	}
 
-	camera3d::hybrid_raytracer::hybrid_raytracer(
+	camera3d::stage_postprocessor::stage_postprocessor(
 		camera3d* aCamera3D,
 		runtime::stage* aStage
 	) : runtime::object::renderer(aCamera3D, nullptr) {
 		// Only need draw calls per frame in the frame chain.
 		this->DrawCallList = std::vector<std::vector<std::shared_ptr<draw_call>>>(aCamera3D->Framechain->Image.size(), std::vector<std::shared_ptr<draw_call>>(1));
 		for (size_t i = 0; i < aCamera3D->Framechain->Image.size(); i++) {
-			// Generate lighting and shadow ray tracer for opaque geometry buffer.
-			this->DrawCallList[i][0] = geodesy::make<opaque_ray_trace_call>(aCamera3D, i, aStage);
+			// TODO: If the hardware supports ray tracing, use ray tracing for post processing.
+			this->DrawCallList[i][0] = geodesy::make<ray_trace_draw_call>(aCamera3D, i, aStage);
+			// Use standard deferred lighting for post processing if ray tracing is not supported.
 			// this->DrawCallList[i][1] = geodesy::make<translucent_ray_trace_call>(aCamera3D, i, aStage);
 		}
 	}
 
-	void camera3d::hybrid_raytracer::update(
+	void camera3d::stage_postprocessor::update(
 		double aDeltaTime,
 		double aTime
 	) {
@@ -518,10 +425,10 @@ namespace geodesy::bltn::obj {
 	}
 
 	std::shared_ptr<runtime::object::renderer> camera3d::default_renderer(object* aObject) {
-		return std::dynamic_pointer_cast<runtime::object::renderer>(geodesy::make<deferred_renderer>(this, aObject));
+		return std::dynamic_pointer_cast<runtime::object::renderer>(geodesy::make<stage_rasterizer>(this, aObject));
 	}
 	std::shared_ptr<runtime::object::renderer> camera3d::default_ray_tracer(runtime::stage* aStage) {
-		return std::dynamic_pointer_cast<runtime::object::renderer>(geodesy::make<hybrid_raytracer>(this, aStage));
+		return std::dynamic_pointer_cast<runtime::object::renderer>(geodesy::make<stage_postprocessor>(this, aStage));
 	}
 
 	// std::shared_ptr<runtime::object::renderer> opaque_raytracer(runtime::stage* aStage) {
@@ -684,6 +591,12 @@ namespace geodesy::bltn::obj {
 		// Color Blending Operation
 		AlphaBlendOperation[0].srcColorBlendFactor 	= VK_BLEND_FACTOR_SRC_ALPHA;
 		AlphaBlendOperation[0].dstColorBlendFactor 	= VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		// // World Position Blending
+		// AlphaBlendOperation[1].srcColorBlendFactor 	= VK_BLEND_FACTOR_SRC_ALPHA;
+		// AlphaBlendOperation[1].dstColorBlendFactor 	= VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+		// // Normals Blending
+		// AlphaBlendOperation[2].srcColorBlendFactor 	= VK_BLEND_FACTOR_SRC_ALPHA;
+		// AlphaBlendOperation[2].dstColorBlendFactor 	= VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
 
 		Rasterizer->ColorBlend.logicOpEnable 		= VK_FALSE;
 		Rasterizer->ColorBlend.logicOp 				= VK_LOGIC_OP_COPY;
@@ -706,8 +619,9 @@ namespace geodesy::bltn::obj {
 		Rasterizer->attach(2, this->Framechain->draw_frame()["OGB.Normal"]);
 		Rasterizer->attach(3, this->Framechain->draw_frame()["OGB.SS"]);
 		Rasterizer->attach(4, this->Framechain->draw_frame()["OGB.ORM"]);
-		Rasterizer->attach(5, this->Framechain->draw_frame()["Emissive"]);
-		Rasterizer->attach(6, this->Framechain->draw_frame()["Depth"]);
+		Rasterizer->attach(5, this->Framechain->draw_frame()["OGB.Emissive"]);
+		Rasterizer->attach(6, this->Framechain->draw_frame()["OGB.TranslucencyMask"]);
+		Rasterizer->attach(7, this->Framechain->draw_frame()["Depth"]);
 
 		// Create render pipeline for camera3d.
 		return Context->create_pipeline(Rasterizer);

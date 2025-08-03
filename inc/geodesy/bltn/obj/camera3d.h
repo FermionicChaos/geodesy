@@ -29,8 +29,8 @@ namespace geodesy::bltn::obj {
 			geometry_buffer(std::shared_ptr<core::gpu::context> aContext, core::math::vec<uint, 3> aResolution, double aFrameRate, size_t aFrameCount);
 		};
 
-		struct deferred_draw_call : object::draw_call {
-			deferred_draw_call(
+		struct rasterizer_draw_call : object::draw_call {
+			rasterizer_draw_call(
 				camera3d* 	aCamera3D,
 				size_t 		aFrameIndex,
 				object* 	aObject, 
@@ -44,8 +44,8 @@ namespace geodesy::bltn::obj {
 			) override;
 		};
 
-		struct opaque_ray_trace_call : object::draw_call {
-			opaque_ray_trace_call(
+		struct ray_trace_draw_call : object::draw_call {
+			ray_trace_draw_call(
 				camera3d* 			aCamera3D,
 				size_t 				aFrameIndex,
 				runtime::stage* 	aStage
@@ -57,28 +57,17 @@ namespace geodesy::bltn::obj {
 			);
 		};
 
-		struct translucent_ray_trace_call : object::draw_call {
-			translucent_ray_trace_call(
-				camera3d* 			aCamera3D,
-				size_t 				aFrameIndex,
-				runtime::stage* 	aStage
-			);
-			void update(
-				subject* 			aSubject, 
-				size_t 				aFrameIndex,
-				runtime::stage* 	aStage
-			);
-		};
-
-		struct deferred_renderer : object::renderer {
-			deferred_renderer(
+		// This is the default rasterizer for camera3d.
+		struct stage_rasterizer : object::renderer {
+			stage_rasterizer(
 				camera3d* aCamera3D,
 				object* aObject
 			);
 		};
 
-		struct hybrid_raytracer : object::renderer {
-			hybrid_raytracer(
+		// This is the hybrid ray 
+		struct stage_postprocessor : object::renderer {
+			stage_postprocessor(
 				camera3d* aCamera3D,
 				runtime::stage* aStage
 			);

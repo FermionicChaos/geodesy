@@ -39,7 +39,7 @@ namespace geodesy::runtime {
 	}
 
 	// TODO: This could be implemented if object update times were measured.
-	// * This function distrbutes the work evenly to each thread.
+	// * This function distributes the work evenly to each thread.
 	std::vector<stage::workload> stage::determine_thread_workload(size_t aElementCount, size_t aThreadCount) {
 		std::vector<workload> Workload(aThreadCount);
 		size_t RemainderCount = aElementCount % aThreadCount;
