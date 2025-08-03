@@ -103,6 +103,7 @@ namespace geodesy::runtime {
 	}
 
 	subject::creator::creator() {
+		this->RTTIID = subject::rttiid;
 		this->Resolution = { 1920, 1080, 1 };
 		this->FrameCount = 1;
 		this->FrameRate = 60.0f;

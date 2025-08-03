@@ -60,6 +60,7 @@ namespace geodesy::bltn::obj {
 	}
 
 	window::creator::creator() {
+		this->RTTIID = window::rttiid;
 		ModelPath 		= "assets/models/quad.obj";
 		PixelFormat		= image::format::B8G8R8A8_UNORM;
 		Resizable		= true;

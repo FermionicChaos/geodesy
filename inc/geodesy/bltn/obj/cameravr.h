@@ -7,6 +7,7 @@
 namespace geodesy::bltn::obj {
 
 	class cameravr : public runtime::subject {
+	public:
 
 		struct creator : public runtime::subject::creator {
 			/*
@@ -14,7 +15,11 @@ namespace geodesy::bltn::obj {
 			Image Format
 			Color Space
 			*/
+			creator();
 		};
+
+		// Runtime Type Information (RTTI) ID for the cameravr class.
+		constexpr static uint32_t rttiid = geodesy::runtime::generate_rttiid<cameravr>();
 
 		class geometry_buffer : public framechain {
 

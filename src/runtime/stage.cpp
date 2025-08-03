@@ -1,5 +1,12 @@
 #include <geodesy/runtime/stage.h>
 
+// Built-in object includes
+#include <geodesy/bltn/obj/camera3d.h>
+#include <geodesy/bltn/obj/cameravr.h>
+#include <geodesy/bltn/obj/window.h>
+#include <geodesy/bltn/obj/subject_window.h>
+#include <geodesy/bltn/obj/system_window.h>
+
 // Why tf is single threaded better?
 // #define ENABLE_MULTITHREADED_PROCESSING
 
@@ -12,8 +19,53 @@
 namespace geodesy::runtime {
 
 	using namespace core;
+	using namespace bltn::obj;
 
-	stage::stage(std::shared_ptr<gpu::context> aContext, std::string aName) {
+	std::vector<subject*> stage::purify_by_subject(const std::vector<std::shared_ptr<object>>& aObjectList) {
+		std::vector<subject*> SubjectList;
+		for (std::shared_ptr<object> Obj : aObjectList) {
+			if (Obj->is_subject()) {
+				SubjectList.push_back(static_cast<subject*>(Obj.get()));
+			}
+		}
+		return SubjectList;
+	}
+
+	// TODO: This could be implemented if object update times were measured.
+	// * This function distrbutes the work evenly to each thread.
+	std::vector<stage::workload> stage::determine_thread_workload(size_t aElementCount, size_t aThreadCount) {
+		std::vector<workload> Workload(aThreadCount);
+		size_t RemainderCount = aElementCount % aThreadCount;
+		size_t ElementsPerThread = (aElementCount - RemainderCount) / aThreadCount;
+		size_t Offset = 0;
+		for (size_t i = 0; i < Workload.size(); i++) {
+			Workload[i].Start = Offset;
+			Workload[i].Count = ElementsPerThread;
+			if (i < RemainderCount) {
+				Workload[i].Count += 1;
+			}
+			Offset += Workload[i].Count;
+		}
+		return Workload;
+	}
+
+	stage::stage(std::shared_ptr<core::gpu::context> aContext, std::string aName, std::vector<object::creator*> aCreationList) {
+		this->Name		= aName;
+		this->Time		= 0.0;
+		this->Context	= aContext;
+
+		// Create Stage Objects.
+		this->Object = this->build_objects(aCreationList);
+
+		// Linearize and cache all nodes in the stage.
+		this->build_node_cache();
+
+		// Setup global transforms for all nodes in the stage.
+		for (std::ptrdiff_t i = 0; i < this->NodeCache.size(); i++) {
+			// Recursively generate global transforms for all nodes.
+			this->NodeCache[i]->GlobalTransform = this->NodeCache[i]->transform();
+		}
+
 		gpu::buffer::create_info MaterialBufferCreateInfo;
 		MaterialBufferCreateInfo.Memory = gpu::device::memory::HOST_VISIBLE | gpu::device::memory::HOST_COHERENT;
 		MaterialBufferCreateInfo.Usage = gpu::buffer::usage::UNIFORM | gpu::buffer::usage::TRANSFER_SRC | gpu::buffer::usage::TRANSFER_DST;
@@ -22,20 +74,43 @@ namespace geodesy::runtime {
 		LightBufferCreateInfo.Memory = gpu::device::memory::HOST_VISIBLE | gpu::device::memory::HOST_COHERENT;
 		LightBufferCreateInfo.Usage = gpu::buffer::usage::UNIFORM | gpu::buffer::usage::TRANSFER_SRC | gpu::buffer::usage::TRANSFER_DST;
 
-		this->Name		= aName;
-		this->Time		= 0.0;
-		this->Context	= aContext;
-
 		// Create Light Storage Buffer.
 		this->MaterialUniformBuffer = this->Context->create_buffer(MaterialBufferCreateInfo, sizeof(material_uniform_data));
 		this->MaterialUniformBuffer->map_memory(0, sizeof(material_uniform_data));
 		this->LightUniformBuffer = this->Context->create_buffer(LightBufferCreateInfo, sizeof(light_uniform_data));
 		this->LightUniformBuffer->map_memory(0, sizeof(light_uniform_data));
 
+		// Build Global Scene Geometry & Resource References for Ray Tracing.
+		this->build_scene_geometry();
+
 	}
 
 	stage::~stage() {
 
+	}
+
+	std::vector<std::shared_ptr<object>> stage::build_objects(std::vector<object::creator*> aCreationList) {
+		std::vector<std::shared_ptr<object>> ObjectList;
+		for (auto& Creator : aCreationList) {
+			std::shared_ptr<object> NewObject = this->build_object(Creator);
+			if (NewObject != nullptr) {
+				ObjectList.push_back(NewObject);
+			}
+		}
+		return ObjectList;
+	}
+
+	std::shared_ptr<object> stage::build_object(object::creator* aCreator) {
+		switch(aCreator->RTTIID) {
+		case object::rttiid: 			return stage::create<object>(aCreator);
+		// case subject::rttiid: 			return stage::create<subject>(aCreator); // Not Creatable
+		case camera3d::rttiid: 			return stage::create<camera3d>(aCreator);
+		case cameravr::rttiid: 			return stage::create<cameravr>(aCreator);
+		// case window::rttiid: 			return stage::create<window>(aCreator); // Not Creatable
+		case subject_window::rttiid: 	return stage::create<subject_window>(aCreator);
+		case system_window::rttiid: 	return stage::create<system_window>(aCreator);
+		default: 						return nullptr;
+		}
 	}
 
 	void stage::build_node_cache() {
@@ -155,34 +230,6 @@ namespace geodesy::runtime {
 
 		// Return draw calls for the subject.
 		return (*this->Renderer[aSubject])[aSubject->Framechain->DrawIndex];
-	}
-
-	std::vector<subject*> stage::purify_by_subject(const std::vector<std::shared_ptr<object>>& aObjectList) {
-		std::vector<subject*> SubjectList;
-		for (std::shared_ptr<object> Obj : aObjectList) {
-			if (Obj->is_subject()) {
-				SubjectList.push_back(static_cast<subject*>(Obj.get()));
-			}
-		}
-		return SubjectList;
-	}
-
-	// TODO: This could be implemented if object update times were measured.
-	// * This function distrbutes the work evenly to each thread.
-	std::vector<stage::workload> stage::determine_thread_workload(size_t aElementCount, size_t aThreadCount) {
-		std::vector<workload> Workload(aThreadCount);
-		size_t RemainderCount = aElementCount % aThreadCount;
-		size_t ElementsPerThread = (aElementCount - RemainderCount) / aThreadCount;
-		size_t Offset = 0;
-		for (size_t i = 0; i < Workload.size(); i++) {
-			Workload[i].Start = Offset;
-			Workload[i].Count = ElementsPerThread;
-			if (i < RemainderCount) {
-				Workload[i].Count += 1;
-			}
-			Offset += Workload[i].Count;
-		}
-		return Workload;
 	}
 
 }

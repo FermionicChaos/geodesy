@@ -95,6 +95,9 @@ namespace geodesy::bltn::obj {
 			creator();
 		};
 
+		// Runtime Type Information (RTTI) ID for the system_window class.
+		constexpr static uint32_t rttiid = geodesy::runtime::generate_rttiid<system_window>();
+
 		static std::set<std::string> 			EngineExtensionsModule;
 		static std::set<std::string> 			EngineLayersModule;
 		static std::set<std::string> 			ContextExtensionsModule;

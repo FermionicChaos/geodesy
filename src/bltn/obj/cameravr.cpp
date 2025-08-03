@@ -9,6 +9,10 @@
 
 namespace geodesy::bltn::obj {
 
+	cameravr::creator::creator() {
+		this->RTTIID = cameravr::rttiid;
+	}
+
 	cameravr::cameravr(std::shared_ptr<core::gpu::context> aContext, runtime::stage* aStage, creator* aCreator) : runtime::subject(aContext, aStage, aCreator) {
 		XrResult Result = XR_SUCCESS;
 		XrInstance Instance = XR_NULL_HANDLE;

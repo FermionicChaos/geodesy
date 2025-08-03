@@ -20,15 +20,23 @@
 #define GEODESY_ENGINE_VERSION_MINOR 1
 #define GEODESY_ENGINE_VERSION_PATCH 5
 
+// #if ((defined(_WIN32) || defined(_WIN64)) && !defined(NDEBUG))
+// #pragma comment(linker, "/SUBSYSTEM:WINDOWS")
+// #define main wWinMain
+// #endif
+
+// #pragma comment( linker, "/subsystem:"windows" /entry:"mainCRTStartup"" ) 
+
 // Forward Declarations of Core Objects.
 namespace geodesy {
 
-	// Quality of life function.
+	// Generates easily debuggable shared pointers.
 	template <typename T, typename... Args>
 	std::shared_ptr<T> make(Args&&... args) {
     	return std::shared_ptr<T>(new T(std::forward<Args>(args)...));
 	}
 
+	// Namespace forward declarations.
 	namespace core {
 		namespace io {};
 		namespace math {};

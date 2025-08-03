@@ -389,6 +389,13 @@ namespace geodesy::bltn::obj {
 
 	}
 
+	camera3d::creator::creator() {
+		this->RTTIID = camera3d::rttiid;
+		this->FOV = 45.0f;
+		this->Near = 0.1f;
+		this->Far = 1000.0f;
+	}
+
 	camera3d::camera3d(std::shared_ptr<core::gpu::context> aContext, runtime::stage* aStage, creator* aCamera3DCreator) : runtime::subject(aContext, aStage, aCamera3DCreator) {
 		VkResult Result = VK_SUCCESS;
 		engine* Engine = aContext->Device->Engine;

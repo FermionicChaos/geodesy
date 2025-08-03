@@ -8,6 +8,7 @@ namespace geodesy::runtime {
 
 	object::creator::creator() {
 		this->Name 					= "";
+		this->RTTIID 				= object::rttiid;
 		this->ModelPath 			= "";
 		this->Position 				= { 0.0f, 0.0f, 0.0f };
 		this->Direction 			= { 0.0f, 0.0f };
@@ -73,6 +74,7 @@ namespace geodesy::runtime {
 		this->Theta 			= math::radians(aCreator->Direction[0] + 90.0f);
 		this->Phi 				= math::radians(aCreator->Direction[1] + 90.0f);
 		this->Name 				= aCreator->Name;
+		this->RTTIID 			= aCreator->RTTIID;
 		this->Stage 			= aStage;
 		this->Engine 			= aContext->Device->Engine;
 		this->Position 			= aCreator->Position;

@@ -42,6 +42,9 @@ namespace geodesy::bltn::obj {
 			creator();
 		};
 
+		// Runtime Type Information (RTTI) ID for the window class.
+		constexpr static uint32_t rttiid = geodesy::runtime::generate_rttiid<window>();
+
 		std::shared_ptr<core::gpu::buffer> WindowUniformBuffer;
 
 		window(std::shared_ptr<core::gpu::context> aContext, runtime::stage* aStage, creator* aWindowCreator);

@@ -48,6 +48,9 @@ namespace geodesy::bltn::obj {
 			creator();
 		};
 
+		// Runtime Type Information (RTTI) ID for the subject_window class.
+		constexpr static uint32_t rttiid = geodesy::runtime::generate_rttiid<subject_window>();
+
 		core::math::vec<float, 2> 			Size;
 		std::shared_ptr<runtime::subject> 		SubjectSource; 		// ! Change to std::weak_ptr
 

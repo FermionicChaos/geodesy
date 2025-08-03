@@ -92,7 +92,11 @@ namespace geodesy::bltn::obj {
 			float FOV;
 			float Near;
 			float Far;
+			creator();
 		};
+
+		// Runtime Type Information (RTTI) ID for the camera3d class.
+		constexpr static uint32_t rttiid = geodesy::runtime::generate_rttiid<camera3d>();
 
 		float FOV, Near, Far;
 

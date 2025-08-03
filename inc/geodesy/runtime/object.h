@@ -14,6 +14,41 @@
 #include "../core/sfx.h"
 
 namespace geodesy::runtime {
+
+	// Compile-time string length calculation
+	constexpr size_t compile_time_strlen(const char* str) {
+		size_t len = 0;
+		while (str[len] != '\0') {
+			++len;
+		}
+		return len;
+	}
+
+	// FNV-1a hash function for compile-time type ID generation
+	constexpr uint32_t fnv1a_hash(const char* str, size_t len) {
+		uint32_t hash = 2166136261u;  // FNV offset basis
+		for (size_t i = 0; i < len; ++i) {
+			hash ^= static_cast<uint32_t>(str[i]);
+			hash *= 16777619u;  // FNV prime
+		}
+		return hash;
+	}
+
+	// Generate unique RTTI ID from type name at compile time
+	template<typename T>
+	constexpr uint32_t generate_rttiid() {
+		// Use compiler-specific type name extraction
+		#if defined(__GNUC__) || defined(__clang__)
+			constexpr const char* func_name = __PRETTY_FUNCTION__;
+		#elif defined(_MSC_VER)
+			constexpr const char* func_name = __FUNCSIG__;
+		#else
+			constexpr const char* func_name = __func__;
+		#endif
+		
+		constexpr size_t len = compile_time_strlen(func_name);
+		return fnv1a_hash(func_name, len);
+	}
 	
 	class object : public core::gfx::node {
 	public:
@@ -58,6 +93,7 @@ namespace geodesy::runtime {
 
 		struct creator {
 			std::string 					Name;
+			uint32_t						RTTIID;
 			std::string 					ModelPath;
 			core::math::vec<float, 3> 		Position;
 			core::math::vec<float, 2> 		Direction;
@@ -69,6 +105,9 @@ namespace geodesy::runtime {
 			creator();
 		};
 
+		// Runtime Type Information (RTTI) ID for the object.
+		constexpr static uint32_t rttiid = generate_rttiid<object>();
+
 		// ! ----- Host Data ----- ! //
 		// ^ This data exists in Host memory.
 
@@ -79,6 +118,7 @@ namespace geodesy::runtime {
 
 		// * Object Input and Physics
 		std::string																	Name;				// Name of the object.
+		uint32_t																	RTTIID;
 		float 																		Theta, Phi;			// Radians			[rad]
 		std::vector<float> 															AnimationWeights;
 		std::vector<std::shared_ptr<core::io::file>> 								Asset;

@@ -11,7 +11,7 @@ namespace geodesy::bltn::stg {
 	class scene3d : public runtime::stage {
 	public:
 
-		scene3d(std::shared_ptr<core::gpu::context> aContext, std::string aName);
+		scene3d(std::shared_ptr<core::gpu::context> aContext, std::string aName, std::vector<runtime::object::creator*> aCreationList = {});
 
 	};	
 

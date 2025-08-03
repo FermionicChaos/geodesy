@@ -79,6 +79,9 @@ namespace geodesy::runtime {
 			int 							ImageUsage;
 			creator();
 		};
+
+		// Runtime Type Information (RTTI) ID for the subject class.
+		constexpr static uint32_t rttiid = generate_rttiid<subject>();
 				
 		std::shared_ptr<framechain> 											Framechain;
 		std::vector<std::vector<std::shared_ptr<core::gpu::framebuffer>>> 		Framebuffer;

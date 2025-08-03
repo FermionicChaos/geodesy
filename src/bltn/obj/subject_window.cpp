@@ -90,6 +90,7 @@ namespace geodesy::bltn::obj {
 	}
 
 	subject_window::creator::creator() {
+		this->RTTIID = subject_window::rttiid;
 		this->Subject = nullptr;
 	}
 

@@ -36,18 +36,18 @@ namespace geodesy::runtime {
 		~app();
 
 		template<typename T, typename... Args>
-		std::shared_ptr<T> create_stage(std::shared_ptr<core::gpu::context> aContext, std::string aName, Args&&... aArgs) {
-			std::shared_ptr<T> NewStage(new T(
+		std::shared_ptr<T> create(std::shared_ptr<core::gpu::context> aContext, std::string aName, Args&&... aArgs) {
+			std::shared_ptr<T> NewStage = geodesy::make<T>(
 				aContext,
 				std::move(aName),
 				std::forward<Args>(aArgs)...
-			));
-			this->Stage.push_back(NewStage);
-			this->StageLookup[NewStage->Name] = NewStage;
+			);
 			return NewStage;
 		}
 
 		void init();
+		// virtual std::shared_ptr<stage> build_stage();
+		// virtual std::shared_ptr<object> build_object(object::creator* aCreator);
 		virtual void run() = 0;
 		
 		std::map<std::shared_ptr<core::gpu::context>, core::gpu::submission_batch> update(double aDeltaTime);

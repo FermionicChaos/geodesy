@@ -357,6 +357,7 @@ namespace geodesy::bltn::obj {
 	}
 
 	system_window::creator::creator() {
+		this->RTTIID = system_window::rttiid;
 		this->Direction 		= { -90.0f, 0.0f }; // Default direction is looking down the negative Z-axis.
 		this->Display			= nullptr;
 		this->ColorSpace		= swapchain::colorspace::SRGB_NONLINEAR;

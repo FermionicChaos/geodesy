@@ -117,6 +117,8 @@ is highly experimental. Efforts have made the engine easy to use on multiple pla
 
 ## TODO List:
 
+- Finish up deferred renderer.
+
 - Generalized Asset loading system through network, virtual file system, and local file system. 
 
 - Factory creation system for run time loading stages/objects
