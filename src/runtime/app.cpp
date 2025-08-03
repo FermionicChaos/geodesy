@@ -33,24 +33,13 @@ namespace geodesy::runtime {
 		this->run();
 	}
 
-	std::map<std::shared_ptr<gpu::context>, gpu::submission_batch> app::update(double aDeltaTime) {
-		std::map<std::shared_ptr<gpu::context>, gpu::submission_batch> UpdateOperations;
+	void app::update(double aDeltaTime) {
 		this->Time += aDeltaTime;
-		// Iterate through each stage and update host resources, while acquiring device update operations.
+		// Iterate through each stage and update host resources.
 		for (auto& Stg : this->Stage) {
 			// Update entire stage.
-			gpu::submission_batch StageUpdateOperations = Stg->update(aDeltaTime);
-			if (UpdateOperations.count(Stg->Context) == 0) {
-				// If the context doesn't exist, create it.
-				UpdateOperations[Stg->Context] = StageUpdateOperations;
-			}
-			else {
-				// If the context does exist, append the operations.
-				UpdateOperations[Stg->Context] += StageUpdateOperations;
-			}
+			Stg->update(aDeltaTime);
 		}
-
-		return UpdateOperations;
 	}
 
 	std::map<std::shared_ptr<gpu::context>, gpu::submission_batch> app::render() {

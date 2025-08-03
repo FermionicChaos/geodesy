@@ -155,9 +155,7 @@ namespace geodesy::runtime {
 	}
 
 	// Does Nothing by default.
-	gpu::submission_batch stage::update(double aDeltaTime) {
-		gpu::submission_batch StageUpdateInfo;
-
+	void stage::update(double aDeltaTime) {
 		this->Time += aDeltaTime;
 
 		// Build Node Cache.
@@ -199,8 +197,6 @@ namespace geodesy::runtime {
 			// Load Global Transforms into GPU memory for rendering.
 			this->NodeCache[i]->device_update();
 		}
-
-		return StageUpdateInfo;
 	}
 
 	gpu::submission_batch stage::render() {

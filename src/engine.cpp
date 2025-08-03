@@ -208,29 +208,29 @@ namespace geodesy {
 	// ! Abandoned: Dead Code.
 	VkResult engine::update_resources(runtime::app* aApp) {
 		VkResult Result = VK_SUCCESS;
-		std::map<std::shared_ptr<context>, core::gpu::submission_batch> UpdateOperations;
+		// std::map<std::shared_ptr<context>, core::gpu::submission_batch> UpdateOperations;
 
 		aApp->Mutex.lock();
 
-		UpdateOperations = aApp->update(this->ThreadController.total_time());
+		aApp->update(this->ThreadController.total_time());
 
 		aApp->Mutex.unlock();
 
 		// --------------- Per Device Context work is done here --------------- //
 
-		for (std::shared_ptr<context> Ctx : Context) {
-			// Lock Context for execution.
-			Ctx->Mutex.lock();
+		// for (std::shared_ptr<context> Ctx : Context) {
+		// 	// Lock Context for execution.
+		// 	Ctx->Mutex.lock();
 			
-			// Execute all transfer device operations.
-			Result = Ctx->execute(device::operation::TRANSFER_AND_COMPUTE, UpdateOperations[Ctx].SubmitInfo);
+		// 	// Execute all transfer device operations.
+		// 	Result = Ctx->execute(device::operation::TRANSFER_AND_COMPUTE, UpdateOperations[Ctx].SubmitInfo);
 
-			// Wait for other inflight operations to finish.
-			Result = Ctx->wait(device::operation::TRANSFER_AND_COMPUTE );
+		// 	// Wait for other inflight operations to finish.
+		// 	Result = Ctx->wait(device::operation::TRANSFER_AND_COMPUTE );
 
-			// Unlock device context.
-			Ctx->Mutex.unlock();
-		}
+		// 	// Unlock device context.
+		// 	Ctx->Mutex.unlock();
+		// }
 
 		return Result;
 	}
