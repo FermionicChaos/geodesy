@@ -32,20 +32,26 @@ namespace geodesy::bltn::obj {
 		ColorCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
 		ColorCreateInfo.Usage		= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::STORAGE | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
 
-		image::format ColorFormat = image::format::R32G32B32A32_SFLOAT;
-		image::format DepthFormat = image::format::D32_SFLOAT;
+		// Ultra-mobile-compatible formats (supports even oldest mobile GPUs)
+		image::format AlbedoFormat = image::format::R8G8B8A8_UNORM; 			// Albedo colors (normalized 0-1)
+		image::format PositionFormat = image::format::R16G16B16A16_SFLOAT; 		// World positions (half precision for mobile)
+		image::format NormalFormat = image::format::R8G8B8A8_UNORM; 			// Normals (normalized 0-1, can be packed)
+		image::format MaterialFormat = image::format::R8G8B8A8_UNORM; 			// Material properties (0-1 range)
+		image::format EmissiveFormat = image::format::R8G8B8A8_UNORM; 			// LDR emissive (maximum compatibility)
+		image::format DepthFormat = image::format::D16_UNORM; 					// Most compatible depth format
+		image::format ColorFormat = image::format::R16G16B16A16_SFLOAT; 		// HDR final output (maximum compatibility)
 
 		this->Resolution = aResolution;
 		for (std::size_t i = 0; i < this->Image.size(); i++) {
 			// This is the finalized color output.
-			// Opaque Geometry Buffer, used for Opaque and Transparent mesh instances.
-			this->Image[i]["OGB.Color"] 			= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Position"] 			= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Normal"] 			= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.SS"] 				= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.ORM"] 				= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.TranslucencyMask"] 	= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.Emissive"] 			= aContext->create_image(ColorCreateInfo, ColorFormat, aResolution[0], aResolution[1]);
+			// Modified Geometry Buffer for Hybrid Rendering.
+			this->Image[i]["OGB.Color"] 			= aContext->create_image(ColorCreateInfo, AlbedoFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Position"] 			= aContext->create_image(ColorCreateInfo, PositionFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Normal"] 			= aContext->create_image(ColorCreateInfo, NormalFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.SS"] 				= aContext->create_image(ColorCreateInfo, MaterialFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.ORM"] 				= aContext->create_image(ColorCreateInfo, MaterialFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.TranslucencyMask"] 	= aContext->create_image(ColorCreateInfo, MaterialFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Emissive"] 			= aContext->create_image(ColorCreateInfo, EmissiveFormat, aResolution[0], aResolution[1]);
 			// Shared Depth Buffer for all images.
 			this->Image[i]["Depth"] 				= aContext->create_image(DepthCreateInfo, DepthFormat, aResolution[0], aResolution[1]);
 			// Final Output after post processing.
@@ -427,7 +433,7 @@ namespace geodesy::bltn::obj {
 	std::shared_ptr<runtime::object::renderer> camera3d::default_renderer(object* aObject) {
 		return std::dynamic_pointer_cast<runtime::object::renderer>(geodesy::make<stage_rasterizer>(this, aObject));
 	}
-	
+
 	std::shared_ptr<runtime::object::renderer> camera3d::default_post_processor(runtime::stage* aStage) {
 		return std::dynamic_pointer_cast<runtime::object::renderer>(geodesy::make<stage_postprocessor>(this, aStage));
 	}
