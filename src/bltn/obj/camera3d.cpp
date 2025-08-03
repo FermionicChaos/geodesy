@@ -50,8 +50,8 @@ namespace geodesy::bltn::obj {
 			this->Image[i]["OGB.Normal"] 			= aContext->create_image(ColorCreateInfo, NormalFormat, aResolution[0], aResolution[1]);
 			this->Image[i]["OGB.SS"] 				= aContext->create_image(ColorCreateInfo, MaterialFormat, aResolution[0], aResolution[1]);
 			this->Image[i]["OGB.ORM"] 				= aContext->create_image(ColorCreateInfo, MaterialFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.TranslucencyMask"] 	= aContext->create_image(ColorCreateInfo, MaterialFormat, aResolution[0], aResolution[1]);
 			this->Image[i]["OGB.Emissive"] 			= aContext->create_image(ColorCreateInfo, EmissiveFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.TranslucencyMask"] 	= aContext->create_image(ColorCreateInfo, MaterialFormat, aResolution[0], aResolution[1]);
 			// Shared Depth Buffer for all images.
 			this->Image[i]["Depth"] 				= aContext->create_image(DepthCreateInfo, DepthFormat, aResolution[0], aResolution[1]);
 			// Final Output after post processing.
@@ -71,8 +71,8 @@ namespace geodesy::bltn::obj {
 			this->Image[i]["OGB.Normal"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.SS"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.ORM"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
-			this->Image[i]["OGB.TranslucencyMask"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.Emissive"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["OGB.TranslucencyMask"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			// Shared Depth Buffer for all images.
 			this->Image[i]["Depth"]->clear_depth(ClearCommand, { 0.0f, 0 });
 			// Final Output Color Image.
@@ -225,6 +225,7 @@ namespace geodesy::bltn::obj {
 		DescriptorArray->bind(1, 4, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.SS"]);
 		DescriptorArray->bind(1, 5, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.ORM"]);
 		DescriptorArray->bind(1, 6, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Emissive"]);
+		DescriptorArray->bind(1, 7, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.TranslucencyMask"]);
 		// TODO: Include Translucency Mask for Ray Tracing.
 		// Bind Camera Uniform Buffer.
 		DescriptorArray->bind(2, 0, 0, aCamera3D->SubjectUniformBuffer);
