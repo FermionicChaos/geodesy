@@ -69,35 +69,32 @@ namespace geodesy::runtime {
 			light_uniform_data() : Count(0) {}
 		};
 
-		// This is a helper utility function that helps create arbitrary objects.
-		template<typename object_type, typename... args>
-		std::shared_ptr<object_type> create_object(args&&... aArgs) {
-			std::shared_ptr<object_type> NewObject(new object_type(
-				this->Context,
-				this,
-				std::forward<args>(aArgs)...
-			));
-			this->Object.push_back(NewObject);
-			this->ObjectLookup[NewObject->Name] = NewObject;
-			return NewObject;
-		}
+		struct creator {
+			std::string 							Name;
+			uint32_t								RTTIID;
+			std::vector<object::creator*> 			ObjectCreationList;
+			creator();
+		};
 
 		// Polymorphic factory method for runtime object creation using type information
 		template<typename T>
-		std::shared_ptr<T> create(runtime::object::creator* aCreator) {
+		static std::shared_ptr<T> create(std::shared_ptr<core::gpu::context> aContext, stage* aStage, object::creator* aCreator) {
 			std::shared_ptr<T> NewObject = geodesy::make<T>(
-				this->Context,
-				this,
+				aContext,
+				aStage,
 				static_cast<typename T::creator*>(aCreator)
 			);
 			return NewObject;
 		}
 
+		// Runtime Type Information (RTTI) ID for the object.
+		constexpr static uint32_t rttiid = generate_rttiid<stage>();
 		static std::vector<subject*> purify_by_subject(const std::vector<std::shared_ptr<object>>& aObjectList);
 		static std::vector<workload> determine_thread_workload(size_t aElementCount, size_t aThreadCount);
 
 		// ! ----- Stage Host Memory ----- ! //
 		std::string													Name;
+		uint32_t													RTTIID;
 		double														Time;
 		std::vector<core::phys::node*>								NodeCache; // This is a list of all nodes in the stage, used for updating.
 		std::map<std::string, std::shared_ptr<object>> 				ObjectLookup;
@@ -110,11 +107,11 @@ namespace geodesy::runtime {
 		std::shared_ptr<core::gpu::buffer> 							LightUniformBuffer;
 		std::map<subject*, std::shared_ptr<object::renderer>> 		Renderer;
 
-		stage(std::shared_ptr<core::gpu::context> aContext, std::string aName, std::vector<object::creator*> aCreationList = {});
+		stage(std::shared_ptr<core::gpu::context> aContext, creator* aCreator);
 		~stage();
 
-		std::vector<std::shared_ptr<object>> build_objects(std::vector<object::creator*> aCreationList);
-		virtual std::shared_ptr<object> build_object(object::creator* aCreator);
+		std::vector<std::shared_ptr<object>> build_objects(std::shared_ptr<core::gpu::context> aContext, std::vector<object::creator*> aCreationList);
+		virtual std::shared_ptr<object> build_object(std::shared_ptr<core::gpu::context> aContext, stage* aStage, object::creator* aObjectCreator);
 		void build_node_cache();
 		void build_scene_geometry();
 

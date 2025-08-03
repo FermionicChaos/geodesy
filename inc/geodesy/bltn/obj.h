@@ -7,5 +7,6 @@
 #include "obj/virtual_window.h"
 #include "obj/subject_window.h"
 #include "obj/camera3d.h"
+#include "obj/cameravr.h"
 
 #endif // !GEODESY_BLTN_OBJ_H

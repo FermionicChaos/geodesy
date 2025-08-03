@@ -1,10 +1,15 @@
 #include <geodesy/engine.h>
 
+// Built-in objects and stages for core geodesy engine.
+#include <geodesy/bltn.h>
+
 #include <omp.h>
 
 namespace geodesy::runtime {
 
 	using namespace core;
+
+	using namespace bltn::obj;
 
 	app::app(engine* aEngine, std::string aName, math::vec<uint, 3> aVersion) {
 		this->Engine = aEngine;
@@ -65,6 +70,13 @@ namespace geodesy::runtime {
 		}
 
 		return RenderOperations;
+	}
+
+	std::shared_ptr<stage> app::build_stage(std::shared_ptr<core::gpu::context> aContext, stage::creator* aStageCreator) {
+		switch(aStageCreator->RTTIID) {
+		case stage::rttiid: 			return app::create<stage>(aContext, aStageCreator);
+		default: 						return nullptr;
+		}
 	}
 
 }

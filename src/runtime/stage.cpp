@@ -7,6 +7,8 @@
 #include <geodesy/bltn/obj/subject_window.h>
 #include <geodesy/bltn/obj/system_window.h>
 
+#include <geodesy/runtime/app.h>
+
 // Why tf is single threaded better?
 // #define ENABLE_MULTITHREADED_PROCESSING
 
@@ -20,6 +22,11 @@ namespace geodesy::runtime {
 
 	using namespace core;
 	using namespace bltn::obj;
+
+	stage::creator::creator() {
+		this->Name = "";
+		this->RTTIID = stage::rttiid;
+	}
 
 	std::vector<subject*> stage::purify_by_subject(const std::vector<std::shared_ptr<object>>& aObjectList) {
 		std::vector<subject*> SubjectList;
@@ -49,13 +56,13 @@ namespace geodesy::runtime {
 		return Workload;
 	}
 
-	stage::stage(std::shared_ptr<core::gpu::context> aContext, std::string aName, std::vector<object::creator*> aCreationList) {
-		this->Name		= aName;
+	stage::stage(std::shared_ptr<core::gpu::context> aContext, creator* aCreator) {
+		this->Name		= aCreator->Name;
 		this->Time		= 0.0;
 		this->Context	= aContext;
 
 		// Create Stage Objects.
-		this->Object = this->build_objects(aCreationList);
+		this->Object = this->build_objects(aContext, aCreator->ObjectCreationList);
 
 		// Linearize and cache all nodes in the stage.
 		this->build_node_cache();
@@ -89,10 +96,10 @@ namespace geodesy::runtime {
 
 	}
 
-	std::vector<std::shared_ptr<object>> stage::build_objects(std::vector<object::creator*> aCreationList) {
+	std::vector<std::shared_ptr<object>> stage::build_objects(std::shared_ptr<core::gpu::context> aContext, std::vector<object::creator*> aCreationList) {
 		std::vector<std::shared_ptr<object>> ObjectList;
 		for (auto& Creator : aCreationList) {
-			std::shared_ptr<object> NewObject = this->build_object(Creator);
+			std::shared_ptr<object> NewObject = stage::build_object(aContext, this, Creator);
 			if (NewObject != nullptr) {
 				ObjectList.push_back(NewObject);
 			}
@@ -100,15 +107,15 @@ namespace geodesy::runtime {
 		return ObjectList;
 	}
 
-	std::shared_ptr<object> stage::build_object(object::creator* aCreator) {
-		switch(aCreator->RTTIID) {
-		case object::rttiid: 			return stage::create<object>(aCreator);
-		// case subject::rttiid: 			return stage::create<subject>(aCreator); // Not Creatable
-		case camera3d::rttiid: 			return stage::create<camera3d>(aCreator);
-		case cameravr::rttiid: 			return stage::create<cameravr>(aCreator);
-		// case window::rttiid: 			return stage::create<window>(aCreator); // Not Creatable
-		case subject_window::rttiid: 	return stage::create<subject_window>(aCreator);
-		case system_window::rttiid: 	return stage::create<system_window>(aCreator);
+	std::shared_ptr<object> stage::build_object(std::shared_ptr<core::gpu::context> aContext, stage* aStage, object::creator* aObjectCreator) {
+		switch(aObjectCreator->RTTIID) {
+		case object::rttiid: 			return stage::create<object>(aContext, aStage, aObjectCreator);
+		// case subject::rttiid: 			return stage::create<subject>(aContext, aStage, aObjectCreator); // Not Creatable
+		case camera3d::rttiid: 			return stage::create<camera3d>(aContext, aStage, aObjectCreator);
+		case cameravr::rttiid: 			return stage::create<cameravr>(aContext, aStage, aObjectCreator);
+		// case window::rttiid: 			return stage::create<window>(aContext, aStage, aObjectCreator); // Not Creatable
+		case subject_window::rttiid: 	return stage::create<subject_window>(aContext, aStage, aObjectCreator);
+		case system_window::rttiid: 	return stage::create<system_window>(aContext, aStage, aObjectCreator);
 		default: 						return nullptr;
 		}
 	}
