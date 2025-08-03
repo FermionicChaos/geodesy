@@ -109,7 +109,7 @@ namespace geodesy::core::gfx {
 		this->NormalTextureIndex 							= -1;
 		this->HeightTextureIndex 							= -1;
 		this->HeightScale 									= 1.0f;
-		this->HeightStepCount 								= 1;
+		this->HeightStepCount 								= 8;
 		this->AmbientLightingTextureWeight 					= 0.0f;
 		this->AmbientLightingWeight 						= 0.0f;
 		this->AmbientLightingTextureIndex 					= -1;
