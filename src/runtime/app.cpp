@@ -29,6 +29,13 @@ namespace geodesy::runtime {
 		}
 	}
 
+	std::shared_ptr<stage> app::build_stage(std::shared_ptr<core::gpu::context> aContext, stage::creator* aStageCreator) {
+		switch(aStageCreator->RTTIID) {
+		case stage::rttiid: 			return app::create<stage>(aContext, aStageCreator);
+		default: 						return nullptr;
+		}
+	}
+
 	void app::init() {
 		this->run();
 	}
@@ -59,13 +66,6 @@ namespace geodesy::runtime {
 		}
 
 		return RenderOperations;
-	}
-
-	std::shared_ptr<stage> app::build_stage(std::shared_ptr<core::gpu::context> aContext, stage::creator* aStageCreator) {
-		switch(aStageCreator->RTTIID) {
-		case stage::rttiid: 			return app::create<stage>(aContext, aStageCreator);
-		default: 						return nullptr;
-		}
 	}
 
 }

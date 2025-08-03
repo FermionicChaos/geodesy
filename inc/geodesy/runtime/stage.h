@@ -76,6 +76,9 @@ namespace geodesy::runtime {
 			creator();
 		};
 
+		// Runtime Type Information (RTTI) ID for the object.
+		constexpr static uint32_t rttiid = generate_rttiid<stage>();
+
 		// Polymorphic factory method for runtime object creation using type information
 		template<typename T>
 		static std::shared_ptr<T> create(std::shared_ptr<core::gpu::context> aContext, stage* aStage, object::creator* aCreator) {
@@ -86,9 +89,6 @@ namespace geodesy::runtime {
 			);
 			return NewObject;
 		}
-
-		// Runtime Type Information (RTTI) ID for the object.
-		constexpr static uint32_t rttiid = generate_rttiid<stage>();
 		static std::vector<subject*> purify_by_subject(const std::vector<std::shared_ptr<object>>& aObjectList);
 		static std::vector<workload> determine_thread_workload(size_t aElementCount, size_t aThreadCount);
 
