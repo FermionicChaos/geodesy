@@ -30,7 +30,7 @@ namespace geodesy::bltn::obj {
 	// std::atomic<GLFWwindow*> system_window::DestroyWindow					= NULL;
 
 	std::set<std::string> system_window::EngineExtensionsModule = {
-
+		"VK_EXT_swapchain_colorspace"
 	};
 	std::set<std::string> system_window::EngineLayersModule = {
 
