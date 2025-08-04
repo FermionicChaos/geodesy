@@ -48,7 +48,8 @@ namespace geodesy::bltn::obj {
 			this->Image[i]["OGB.Color"] 			= aContext->create_image(ColorCreateInfo, AlbedoFormat, aResolution[0], aResolution[1]);
 			this->Image[i]["OGB.Position"] 			= aContext->create_image(ColorCreateInfo, PositionFormat, aResolution[0], aResolution[1]);
 			this->Image[i]["OGB.Normal"] 			= aContext->create_image(ColorCreateInfo, NormalFormat, aResolution[0], aResolution[1]);
-			this->Image[i]["OGB.SS"] 				= aContext->create_image(ColorCreateInfo, MaterialFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Tangent"] 			= aContext->create_image(ColorCreateInfo, NormalFormat, aResolution[0], aResolution[1]);
+			this->Image[i]["OGB.Bitangent"] 		= aContext->create_image(ColorCreateInfo, NormalFormat, aResolution[0], aResolution[1]);
 			this->Image[i]["OGB.ORM"] 				= aContext->create_image(ColorCreateInfo, MaterialFormat, aResolution[0], aResolution[1]);
 			this->Image[i]["OGB.Emissive"] 			= aContext->create_image(ColorCreateInfo, EmissiveFormat, aResolution[0], aResolution[1]);
 			this->Image[i]["OGB.TranslucencyMask"] 	= aContext->create_image(ColorCreateInfo, MaterialFormat, aResolution[0], aResolution[1]);
@@ -69,7 +70,8 @@ namespace geodesy::bltn::obj {
 			this->Image[i]["OGB.Color"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.Position"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.Normal"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
-			this->Image[i]["OGB.SS"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["OGB.Tangent"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
+			this->Image[i]["OGB.Bitangent"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.ORM"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.Emissive"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
 			this->Image[i]["OGB.TranslucencyMask"]->clear(ClearCommand, { 0.0f, 0.0f, 0.0f, 1.0f });
@@ -109,7 +111,8 @@ namespace geodesy::bltn::obj {
 			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Color"],
 			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Position"],
 			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Normal"],
-			aCamera3D->Framechain->Image[aFrameIndex]["OGB.SS"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Tangent"],
+			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Bitangent"],
 			aCamera3D->Framechain->Image[aFrameIndex]["OGB.ORM"],
 			aCamera3D->Framechain->Image[aFrameIndex]["OGB.Emissive"],
 			aCamera3D->Framechain->Image[aFrameIndex]["OGB.TranslucencyMask"],
@@ -222,10 +225,11 @@ namespace geodesy::bltn::obj {
 		DescriptorArray->bind(1, 1, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Color"]);
 		DescriptorArray->bind(1, 2, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Position"]);
 		DescriptorArray->bind(1, 3, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Normal"]);
-		DescriptorArray->bind(1, 4, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.SS"]);
-		DescriptorArray->bind(1, 5, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.ORM"]);
-		DescriptorArray->bind(1, 6, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Emissive"]);
-		DescriptorArray->bind(1, 7, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.TranslucencyMask"]);
+		DescriptorArray->bind(1, 4, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Tangent"]);
+		DescriptorArray->bind(1, 5, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Bitangent"]);
+		DescriptorArray->bind(1, 6, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.ORM"]);
+		DescriptorArray->bind(1, 7, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.Emissive"]);
+		DescriptorArray->bind(1, 8, 0, aCamera3D->Framechain->Image[aFrameIndex]["OGB.TranslucencyMask"]);
 		// TODO: Include Translucency Mask for Ray Tracing.
 		// Bind Camera Uniform Buffer.
 		DescriptorArray->bind(2, 0, 0, aCamera3D->SubjectUniformBuffer);
@@ -616,11 +620,12 @@ namespace geodesy::bltn::obj {
 		Rasterizer->attach(0, this->Framechain->draw_frame()["OGB.Color"]);
 		Rasterizer->attach(1, this->Framechain->draw_frame()["OGB.Position"]);
 		Rasterizer->attach(2, this->Framechain->draw_frame()["OGB.Normal"]);
-		Rasterizer->attach(3, this->Framechain->draw_frame()["OGB.SS"]);
-		Rasterizer->attach(4, this->Framechain->draw_frame()["OGB.ORM"]);
-		Rasterizer->attach(5, this->Framechain->draw_frame()["OGB.Emissive"]);
-		Rasterizer->attach(6, this->Framechain->draw_frame()["OGB.TranslucencyMask"]);
-		Rasterizer->attach(7, this->Framechain->draw_frame()["Depth"]);
+		Rasterizer->attach(3, this->Framechain->draw_frame()["OGB.Tangent"]);
+		Rasterizer->attach(4, this->Framechain->draw_frame()["OGB.Bitangent"]);
+		Rasterizer->attach(5, this->Framechain->draw_frame()["OGB.ORM"]);
+		Rasterizer->attach(6, this->Framechain->draw_frame()["OGB.Emissive"]);
+		Rasterizer->attach(7, this->Framechain->draw_frame()["OGB.TranslucencyMask"]);
+		Rasterizer->attach(8, this->Framechain->draw_frame()["Depth"]);
 
 		// Create render pipeline for camera3d.
 		return Context->create_pipeline(Rasterizer);

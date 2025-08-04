@@ -148,10 +148,11 @@ layout(set = 1, binding = 0, rgba32f) uniform image2D OutputColor;
 layout(set = 1, binding = 1) uniform sampler2D PixelColor;
 layout(set = 1, binding = 2) uniform sampler2D PixelPosition;
 layout(set = 1, binding = 3) uniform sampler2D PixelNormal;
-layout(set = 1, binding = 4) uniform sampler2D PixelSS;
-layout(set = 1, binding = 5) uniform sampler2D PixelORM;
-layout(set = 1, binding = 6) uniform sampler2D PixelEmissive;
-layout(set = 1, binding = 7) uniform sampler2D PixelTranslucencyMask;
+layout(set = 1, binding = 4) uniform sampler2D PixelTangent;
+layout(set = 1, binding = 5) uniform sampler2D PixelBitangent;
+layout(set = 1, binding = 6) uniform sampler2D PixelORM;
+layout(set = 1, binding = 7) uniform sampler2D PixelEmissive;
+layout(set = 1, binding = 8) uniform sampler2D PixelTranslucencyMask;
 // Camera Data
 layout (set = 2, binding = 0) uniform SubjectUBO {
 	vec3 Position;
@@ -162,78 +163,16 @@ layout (set = 2, binding = 0) uniform SubjectUBO {
 
 // ----- PBR Rendering Functions ----- //
 
-// SSAO kernel samples - distributed in hemisphere
-const vec3 SSAOKernel[16] = vec3[](
-	vec3( 0.5381, 0.1856,-0.4319), vec3( 0.1379, 0.2486, 0.4430),
-	vec3( 0.3371, 0.5679,-0.0057), vec3(-0.6999,-0.0451,-0.0019),
-	vec3( 0.0689,-0.1598,-0.8547), vec3( 0.0560, 0.0069,-0.1843),
-	vec3(-0.0146, 0.1402, 0.0762), vec3( 0.0100,-0.1924,-0.0344),
-	vec3(-0.3577,-0.5301,-0.4358), vec3(-0.3169, 0.1063, 0.0158),
-	vec3( 0.0103,-0.5884, 0.0716), vec3(-0.0897,-0.4940, 0.3287),
-	vec3( 0.7119,-0.0154,-0.0918), vec3(-0.0533, 0.0596,-0.5411),  
-	vec3( 0.0352,-0.0631, 0.5460), vec3(-0.4776, 0.2847,-0.0271)
-);
-
-float ssao(vec3 aWorldPosition, vec3 aWorldNormal, vec2 aScreenUV) {
-	// SSAO parameters
-	const float SSAORadius = 0.5;        // Sample radius in world units
-	const float SSAOBias = 0.025;        // Bias to prevent self-Occulsion artifacts
-	const int SSAOSamples = 16;          // Number of sample points
-	const float SSAOStrength = 1.0;      // Overall SSAO strength multiplier
-	
-	// Calculate fragment depth (distance from camera)
-	float FragmentDepth = length(aWorldPosition - Subject.Position);
-	
-	// Create TBN matrix for transforming kernel samples to world space
-	// We need a tangent vector perpendicular to the normal
-	vec3 rvec = normalize(cross(aWorldNormal, vec3(0.0, 1.0, 0.0)));
-	if (length(rvec) < 0.1) {
-		// If normal is too close to (0,1,0), use different reference vector
-		rvec = normalize(cross(aWorldNormal, vec3(1.0, 0.0, 0.0)));
-	}
-	vec3 tangent = normalize(rvec);
-	vec3 bitangent = normalize(cross(aWorldNormal, tangent));
-	mat3 TBN = mat3(tangent, bitangent, aWorldNormal);
-	
-	float Occulsion = 0.0;
-	
-	// Sample surrounding points
-	for (int i = 0; i < SSAOSamples; i++) {
-		// Transform sample from tangent space to world space
-		vec3 samplePos = TBN * SSAOKernel[i];
-		samplePos = aWorldPosition + samplePos * SSAORadius;
-		
-		// Project sample position to screen space
-		vec4 offset = Subject.PRT * vec4(samplePos, 1.0);
-		offset.xyz /= offset.w; // Perspective divide
-		offset.xyz = offset.xyz * 0.5 + 0.5; // Transform to [0,1] range
-		
-		// Check if sample is within screen bounds
-		if (offset.x < 0.0 || offset.x > 1.0 || offset.y < 0.0 || offset.y > 1.0) {
-			continue;
-		}
-		
-		// Sample the depth at this screen position
-		vec3 sampleWorldPos = texture(PixelPosition, offset.xy).xyz;
-		float sampleDepth = length(sampleWorldPos - Subject.Position);
-		
-		// Check if sample point is occluded
-		float rangeCheck = smoothstep(0.0, 1.0, SSAORadius / abs(FragmentDepth - sampleDepth));
-		
-		// If the sampled point is closer to camera than our sample position, 
-		// then our sample position is occluded
-		float depthDifference = sampleDepth - length(samplePos - Subject.Position);
-		if (depthDifference > SSAOBias) {
-			Occulsion += rangeCheck;
-		}
-	}
-	
-	// Average Occulsion and invert (1.0 = no Occulsion, 0.0 = full Occulsion)
-	Occulsion = (Occulsion / float(SSAOSamples));
-	
-	// Apply strength multiplier
-	return pow(Occulsion, SSAOStrength);
+float screen_space_ambient_occlusion(
+	vec3 aWorldPosition, 
+	vec3 aWorldNormal, 
+	vec2 aScreenUV
+) {
+	// Sample SSAO texture at the given UV coordinates
+	float SSAOFactor = 0.0f;
+	return SSAOFactor;
 }
+
 
 // Bloom effect function with radial gaussian blur
 vec3 bloom(vec2 aScreenUV, vec2 aResolution) {
@@ -400,7 +339,7 @@ vec3 lighting_and_shadows(
 			vec3 kD = (vec3(1.0) - kS) * (1.0 - aMetallic); // Metallic surfaces have no diffuse
 
 			// Apply AO to the final combined result for indirect/bounce lighting approximation
-			LightContribution = (kD*Diffuse + kS*Specular) * aLight.Color * Attenuation;
+			LightContribution = (kD*Diffuse) * aLight.Color * Attenuation; // Disable specular for directional light
 		}
 		break;
 	case POINT: 
@@ -492,8 +431,6 @@ void main() {
 	// Formula: normal = (encoded * 2.0) - 1.0
 	vec3 EncodedNormal = texture(PixelNormal, UV).xyz;
 	vec3 WorldNormal = normalize((EncodedNormal * 2.0) - vec3(1.0));
-	float Specular = texture(PixelSS, UV).r;
-	float Shininess = texture(PixelSS, UV).g;
 	float AmbientOcclusion = texture(PixelORM, UV).r;
 	float Roughness = texture(PixelORM, UV).g;
 	float Metallic = texture(PixelORM, UV).b;
@@ -536,6 +473,9 @@ void main() {
 	
 	// Add direct emissive contribution (for immediate glow)
 	FinalColor += Emissive;
+
+	// Apply gamma correction to the final color
+	FinalColor = pow(FinalColor, vec3(1.0 / 2.2)); // Gamma correction
 
 	// Write the final color per pixel to the output color image.
 	imageStore(OutputColor, RayIndex, vec4(FinalColor, 1.0));

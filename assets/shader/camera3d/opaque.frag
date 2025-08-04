@@ -148,10 +148,11 @@ layout (set = 1, binding = 9) uniform sampler2D MaterialMetallic; 			// float Me
 layout (location = 0) out vec4 PixelColor;
 layout (location = 1) out vec4 PixelPosition;
 layout (location = 2) out vec4 PixelNormal;
-layout (location = 3) out vec4 PixelSS;
-layout (location = 4) out vec4 PixelARM;
-layout (location = 5) out vec4 PixelEmissive;
-layout (location = 6) out vec4 PixelTranslucencyMask;
+layout (location = 3) out vec4 PixelTangent;
+layout (location = 4) out vec4 PixelBitangent;
+layout (location = 5) out vec4 PixelARM;
+layout (location = 6) out vec4 PixelEmissive;
+layout (location = 7) out vec4 PixelTranslucencyMask;
 
 // -----------------------------------------------------------------------------
 //  Parallax mapping by binary search (bisection)
@@ -348,10 +349,6 @@ void main() {
 
 	// Merge Ambient Occlusion, Metallic, and Roughness into a single vec4.
 	PixelARM = vec4(MP.AmbientOcclusion, MP.Roughness, MP.Metallic, MP.Opacity);
-
-	// TODO: Figure out how alpha blend this.
-	// Merge Specular and Shininess into a single vec4.
-	PixelSS = vec4(MP.Specular, MP.Shininess);
 
 	vec3 FinalNormal = n;
 	if (Material.NormalTextureIndex >= 0) {
