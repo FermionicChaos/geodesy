@@ -525,12 +525,15 @@ void main() {
 			// Use Full Ray Tracing for Translucent Materials
 		}
 	}
-	
+
 	// Add direct emissive contribution (for immediate glow)
-	FinalColor += 2.0*Emissive;
+	FinalColor += 3.0*Emissive;
 
 	// Apply gamma correction to the final color
 	FinalColor = pow(FinalColor, vec3(1.0 / 2.2)); // Gamma correction
+
+	// Reinhard tone mapping to compress color range
+	// FinalColor = FinalColor / (FinalColor + vec3(1.0));
 
 	// Write the final color per pixel to the output color image.
 	imageStore(OutputColor, RayIndex, vec4(FinalColor, 1.0));
