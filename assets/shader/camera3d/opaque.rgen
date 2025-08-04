@@ -516,7 +516,7 @@ void main() {
 	FinalColor += 3.0*Emissive;
 
 	// Apply gamma correction to the final color
-	FinalColor = pow(FinalColor, vec3(1.0 / 2.2)); // Gamma correction
+	// FinalColor = pow(FinalColor, vec3(1.0 / 2.2)); // Gamma correction
 
 	// Reinhard tone mapping to compress color range
 	// FinalColor = FinalColor / (FinalColor + vec3(1.0));
