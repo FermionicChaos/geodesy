@@ -38,7 +38,6 @@ namespace geodesy::core::gfx {
 			alignas(4) float 					SpotAngle;
 
 			light();
-			light(float aIntensity, math::vec<float, 3> aColor, math::vec<float, 3> aPosition);
 		};
 
 		static bool initialize();
