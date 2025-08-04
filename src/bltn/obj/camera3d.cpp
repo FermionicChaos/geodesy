@@ -32,6 +32,7 @@ namespace geodesy::bltn::obj {
 		ColorCreateInfo.Memory		= device::memory::DEVICE_LOCAL;
 		ColorCreateInfo.Usage		= image::usage::SAMPLED | image::usage::COLOR_ATTACHMENT | image::usage::STORAGE | image::usage::TRANSFER_SRC | image::usage::TRANSFER_DST;
 
+		// ? Note: Why does half precision PositionFormat cause graphical artifacts unlike full precision floats?
 		// Ultra-mobile-compatible formats (supports even oldest mobile GPUs)
 		image::format AlbedoFormat = image::format::R8G8B8A8_UNORM; 			// Albedo colors (normalized 0-1)
 		image::format PositionFormat = image::format::R16G16B16A16_SFLOAT; 		// World positions (half precision for mobile)

@@ -238,85 +238,50 @@ float screen_space_ambient_occlusion(
 	return clamp(pow(Occlusion, SSAOStrength), 0.0, 1.0);
 }
 
-// Pre-computed Gaussian weights for smoother blur (15-tap kernel)
-const int KernelSize = 15;
-const float GaussianWeights[KernelSize] = float[](
-	0.006136, 0.024477, 0.067234, 0.124009, 0.179044,
-	0.20236,  0.179044, 0.124009, 0.067234, 0.024477,
-	0.006136, 0.001316, 0.000205, 0.000023, 0.000002
-);
-// Bloom parameters for ultra-smooth blur
-const float BloomRadius = 10.0;      // Large radius for very smooth blur
-const float BloomIntensity = 1.0;    // Balanced intensity
-const float BloomThreshold = 0.1;    // Low threshold for subtle bloom
-const float BloomSigma = 4.0;        // Large sigma for very smooth falloff
-
+// Ultra-fast bloom with fixed sample pattern
 vec3 bloom(vec2 aScreenUV, vec2 aResolution) {
+	// Optimized bloom parameters
+	const float BloomRadius = 4.0;        // Much smaller radius
+	const float BloomIntensity = 1.5;     // Increased intensity to compensate
+	const float BloomThreshold = 0.2;     // Higher threshold
 	
 	vec3 BloomColor = vec3(0.0);
-	float TotalWeight = 0.0;
+	int SampleCount = 0;
 	
-	// Calculate pixel size in UV coordinates
+	// Fixed 5x5 sampling pattern (25 samples total)
 	vec2 PixelSize = 1.0 / aResolution;
 	
-	// Two-pass separable Gaussian blur for maximum smoothness
-	
-	// Pass 1: Horizontal blur
-	vec3 HorizontalBlur = vec3(0.0);
-	float HorizontalWeight = 0.0;
-	
-	for (int i = 0; i < KernelSize; i++) {
-		float Offset = float(i - KernelSize/2);
-		vec2 SampleUV = aScreenUV + vec2(Offset * PixelSize.x, 0.0);
-		
-		if (SampleUV.x >= 0.0 && SampleUV.x <= 1.0) {
-			vec3 SampleEmissive = texture(PixelEmissive, SampleUV).rgb;
+	// Unrolled loops for better GPU performance
+	for (int x = -2; x <= 2; x++) {
+		for (int y = -2; y <= 2; y++) {
+			vec2 SampleUV = aScreenUV + vec2(float(x), float(y)) * PixelSize * BloomRadius;
 			
-			// Smooth threshold application
-			float EmissiveLuminance = dot(SampleEmissive, vec3(0.299, 0.587, 0.114));
-			float ThresholdFactor = smoothstep(BloomThreshold * 0.5, BloomThreshold * 2.0, EmissiveLuminance);
-			
-			if (ThresholdFactor > 0.0) {
-				float Weight = GaussianWeights[i] * ThresholdFactor;
-				HorizontalBlur += SampleEmissive * Weight;
-				HorizontalWeight += Weight;
+			// Skip bounds check for inner samples (assume most are valid)
+			if (abs(x) <= 1 && abs(y) <= 1) {
+				vec3 SampleEmissive = texture(PixelEmissive, SampleUV).rgb;
+				float Luminance = dot(SampleEmissive, vec3(0.299, 0.587, 0.114));
+				
+				if (Luminance > BloomThreshold) {
+					BloomColor += SampleEmissive;
+					SampleCount++;
+				}
+			} else {
+				// Only check bounds for edge samples
+				if (SampleUV.x >= 0.0 && SampleUV.x <= 1.0 && SampleUV.y >= 0.0 && SampleUV.y <= 1.0) {
+					vec3 SampleEmissive = texture(PixelEmissive, SampleUV).rgb;
+					float Luminance = dot(SampleEmissive, vec3(0.299, 0.587, 0.114));
+					
+					if (Luminance > BloomThreshold) {
+						BloomColor += SampleEmissive;
+						SampleCount++;
+					}
+				}
 			}
 		}
 	}
 	
-	// Pass 2: Vertical blur (using horizontal result as approximation)
-	vec3 VerticalBlur = vec3(0.0);
-	float VerticalWeight = 0.0;
-	
-	for (int i = 0; i < KernelSize; i++) {
-		float Offset = float(i - KernelSize/2);
-		vec2 SampleUV = aScreenUV + vec2(0.0, Offset * PixelSize.y);
-		
-		if (SampleUV.y >= 0.0 && SampleUV.y <= 1.0) {
-			vec3 SampleEmissive = texture(PixelEmissive, SampleUV).rgb;
-			
-			// Smooth threshold application
-			float EmissiveLuminance = dot(SampleEmissive, vec3(0.299, 0.587, 0.114));
-			float ThresholdFactor = smoothstep(BloomThreshold * 0.5, BloomThreshold * 2.0, EmissiveLuminance);
-			
-			if (ThresholdFactor > 0.0) {
-				float Weight = GaussianWeights[i] * ThresholdFactor;
-				VerticalBlur += SampleEmissive * Weight;
-				VerticalWeight += Weight;
-			}
-		}
-	}
-	
-	// Combine both passes for ultra-smooth result
-	BloomColor = vec3(0.0);
-	if (HorizontalWeight > 0.0) BloomColor += (HorizontalBlur / HorizontalWeight) * 0.5;
-	if (VerticalWeight > 0.0) BloomColor += (VerticalBlur / VerticalWeight) * 0.5;
-	
-	// Apply intensity with gentle tone mapping
-	BloomColor *= BloomIntensity;
-	BloomColor = BloomColor / (1.0 + BloomColor * 0.5); // Gentle tone mapping
-	
-	return BloomColor;
+	// Simple average with intensity boost
+	return SampleCount > 0 ? (BloomColor / float(SampleCount)) * BloomIntensity : vec3(0.0);
 }
 
 float normal_distribution(float aNdotH, float aRoughness) {
@@ -531,10 +496,10 @@ void main() {
 	vec3 ViewDir = normalize(Subject.Position - WorldPosition);
 
 	// Apply SSAO
-	AmbientOcclusion *= screen_space_ambient_occlusion(UV, WorldPosition, WorldNormal);
+	// AmbientOcclusion *= screen_space_ambient_occlusion(UV, WorldPosition, WorldNormal);
 
 	// Blur Emissive Color to create bloom effect
-	Emissive += bloom(UV, vec2(Resolution));
+	// Emissive += bloom(UV, vec2(Resolution));
 
 	// Ray origin will start at the world position of the fragment.
 	Ray.Origin = WorldPosition;
@@ -562,7 +527,7 @@ void main() {
 	}
 	
 	// Add direct emissive contribution (for immediate glow)
-	FinalColor += Emissive;
+	FinalColor += 2.0*Emissive;
 
 	// Apply gamma correction to the final color
 	FinalColor = pow(FinalColor, vec3(1.0 / 2.2)); // Gamma correction
