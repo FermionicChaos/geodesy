@@ -355,14 +355,13 @@ vec3 lighting_and_shadows(
 			// Calculate the half vector for specular calculations
 			vec3 HalfVector = normalize(LightDirection + aViewDirection);
 
-			// Directional light is treated as a ray with infinite distance. Ray tracing should check for intersection with geometry.
-			// If no intersection, the pixel is illuminated by the light source.
-			// Ray.Origin = WorldPosition + WorldNormal * 0.001;
-			// Ray.Direction = normalize(Light.Source[i].Direction);
+			// // If no intersection, the pixel is illuminated by the light source.
+			// Ray.Origin = aPixelPosition + aPixelNormal*0.001;
+			// Ray.Direction = normalize(LightDirection);
 			// Ray.Hit = 0;
 
-			// ! Disabled for Raytracing debugging
-			// Trace shadow ray to check for occlusion
+			// // ! Disabled for Raytracing debugging
+			// // Trace shadow ray to check for occlusion
 			// traceRayEXT(
 			// 	TLAS,
 			// 	gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT,
@@ -375,26 +374,11 @@ vec3 lighting_and_shadows(
 			// 	0
 			// );
 
-			// If light is obstructed, skip lighting calculation
+			// // If light is obstructed, skip lighting calculation
 			// if (Ray.Hit == 1) break; // If hit, skip lighting calculation
 
-			// Calculate light attenuation (linear falloff for better visuals)
-			// Use 1/r instead of 1/r² for more gradual, artistic falloff
-			float Attenuation = aLight.Intensity;
-
-			// Calculate diffuse term (Lambertian)
-			vec3 Diffuse = aAlbedo.rgb * NdotL;
-
-			// Calculate specular term using PBR (only after confirming surface faces light)
-			vec3 Specular = vec3(rs(LightDirection, aPixelNormal, aViewDirection, aRoughness, aMetallic));
-
-			// Combine diffuse and specular based on metallic workflow
-			vec3 F0 = mix(vec3(0.04), aAlbedo.rgb, aMetallic); // Base reflectance
-			vec3 kS = vec3(fresnel_schlick(max(dot(HalfVector, aViewDirection), 0.0), F0.r));
-			vec3 kD = (vec3(1.0) - kS) * (1.0 - aMetallic); // Metallic surfaces have no diffuse
-
 			// Apply AO to the final combined result for indirect/bounce lighting approximation
-			LightContribution = (kD*Diffuse) * aLight.Color * Attenuation * aAmbientOcclusion; // Disable specular for directional light
+			LightContribution = aAlbedo.rgb * NdotL * aLight.Color * aLight.Intensity * aAmbientOcclusion; // Disable specular for directional light
 		}
 		break;
 	case POINT: 
@@ -411,17 +395,19 @@ vec3 lighting_and_shadows(
 			float NdotL = dot(aPixelNormal, LightDirection);
 			if (NdotL <= 0.0) break; // Surface facing away from light
 
+			// Check if Pixel is
+
 			// Calculate the half vector for specular calculations
 			vec3 HalfVector = normalize(LightDirection + aViewDirection);
 
-			// Directional light is treated as a ray with infinite distance. Ray tracing should check for intersection with geometry.
-			// If no intersection, the pixel is illuminated by the light source.
-			// Ray.Origin = WorldPosition + WorldNormal * 0.001;
-			// Ray.Direction = normalize(Light.Source[i].Direction);
+			// // Directional light is treated as a ray with infinite distance. Ray tracing should check for intersection with geometry.
+			// // If no intersection, the pixel is illuminated by the light source.
+			// Ray.Origin = aPixelPosition + aPixelNormal*0.001;
+			// Ray.Direction = normalize(LightDirection);
 			// Ray.Hit = 0;
 
-			// ! Disabled for Raytracing debugging
-			// Trace shadow ray to check for occlusion
+			// // ! Disabled for Raytracing debugging
+			// // Trace shadow ray to check for occlusion
 			// traceRayEXT(
 			// 	TLAS,
 			// 	gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT,
@@ -434,7 +420,7 @@ vec3 lighting_and_shadows(
 			// 	0
 			// );
 
-			// If light is obstructed, skip lighting calculation
+			// // If light is obstructed, skip lighting calculation
 			// if (Ray.Hit == 1) break; // If hit, skip lighting calculation
 
 			// Calculate light attenuation (linear falloff for better visuals)
