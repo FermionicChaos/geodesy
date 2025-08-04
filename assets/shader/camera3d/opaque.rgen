@@ -1,0 +1,547 @@
+#version 460
+#extension GL_EXT_ray_tracing : require
+
+// this shader launches a ray into the direction of each light source checking for intersections.
+// If an intersection is found, the pixel is in shadow, if not, the pixel is illuminated by the light source.
+
+#define MAX_STAGE_TEXTURES 1024
+#define MAX_STAGE_MATERIALS 32
+#define MAX_STAGE_LIGHTS 192
+
+#define AMBIENT 1
+#define DIRECTIONAL 2
+#define POINT 3
+#define SPOT 4
+#define AREA 5
+
+const float pi = 3.14159265359;
+
+struct payload {
+	vec3 Origin;
+	vec3 Direction;
+	int Hit;
+	int HitInstanceID;
+	vec3 HitLocation;
+	vec2 UV;
+	int MaterialIndex;
+};
+
+// Standard material info struct
+struct material {
+	int 	Transparency;
+	float 	AlbedoVertexWeight;
+	float 	AlbedoTextureWeight;
+	float 	AlbedoWeight;
+	int 	AlbedoTextureIndex;
+	vec3 	Albedo;
+	float 	OpacityTextureWeight;
+	float 	OpacityWeight;
+	int 	OpacityTextureIndex;
+	float 	Opacity;
+	float 	NormalVertexWeight;
+	float 	NormalTextureWeight;
+	int 	NormalTextureIndex;
+	int 	HeightTextureIndex;
+	float 	HeightScale;
+	int 	HeightStepCount;
+	float 	AmbientLightingTextureWeight;
+	float 	AmbientLightingWeight;
+	int 	AmbientLightingTextureIndex;
+	vec3 	AmbientLighting;
+	float 	EmissiveTextureWeight;
+	float 	EmissiveWeight;
+	int 	EmissiveTextureIndex;
+	vec3 	Emissive;
+	float 	SpecularTextureWeight;
+	float 	SpecularWeight;
+	int 	SpecularTextureIndex;
+	vec3 	Specular;
+	float 	ShininessTextureWeight;
+	float 	ShininessWeight;
+	int 	ShininessTextureIndex;
+	float 	Shininess;
+	float 	AmbientOcclusionTextureWeight;
+	float 	AmbientOcclusionWeight;
+	int 	AmbientOcclusionTextureIndex;
+	float 	AmbientOcclusion;
+	float 	MetallicTextureWeight;
+	float 	MetallicWeight;
+	int 	MetallicTextureIndex;
+	float 	Metallic;
+	float 	RoughnessTextureWeight;
+	float 	RoughnessWeight;
+	int 	RoughnessTextureIndex;
+	float 	Roughness;
+	float 	IORVertexWeight;
+	float 	IORTextureWeight;
+	float 	IORWeight;
+	int 	IORTextureIndex;
+	float 	IOR;
+	float 	SheenColorTextureWeight;
+	float 	SheenColorWeight;
+	int 	SheenColorTextureIndex;
+	vec3 	SheenColor;
+	float 	SheenIntensityTextureWeight;
+	float 	SheenIntensityWeight;
+	float 	SheenRoughnessTextureWeight;
+	float 	SheenRoughnessWeight;
+	int 	SheenMaskTextureIndex;
+	float 	SheenRoughness;
+	float 	SheenIntensity;
+	float 	ClearCoatStrengthTextureWeight;
+	float 	ClearCoatStrengthWeight;
+	float 	ClearCoatRoughnessTextureWeight;
+	float 	ClearCoatRoughnessWeight;
+	int 	ClearCoatStrengthRoughnessTextureIndex;
+	float 	ClearCoatStrength;
+	float 	ClearCoatRoughness;
+	float 	ClearCoatNormalTextureWeight;
+	float 	ClearCoatNormalWeight;
+	int 	ClearCoatNormalTextureIndex;
+	vec3 	ClearCoatNormal;
+	float 	ClearCoatTintTextureWeight;
+	float 	ClearCoatTintWeight;
+	int 	ClearCoatTintTextureIndex;
+	vec3 	ClearCoatTint;
+	float 	ClearCoatIOR;
+	float 	ClearCoatThickness;
+};
+
+struct light {
+	int 	Type;
+	float 	Intensity;
+	vec3 	Color;
+	vec3 	Position;
+	vec3 	Direction;
+	float 	SpotAngle;
+};
+
+// Ray Payload
+layout(location = 0) rayPayloadEXT payload Ray;
+// Scene Geometry
+layout(set = 0, binding = 0) uniform accelerationStructureEXT TLAS;
+// Scene Material Textures
+layout(set = 0, binding = 1) uniform sampler2D MaterialColor[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 2) uniform sampler2D MaterialOpacity[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 3) uniform sampler2D MaterialNormalMap[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 4) uniform sampler2D MaterialHeightMap[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 5) uniform sampler2D MaterialEmissive[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 6) uniform sampler2D MaterialSpecular[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 7) uniform sampler2D MaterialShininess[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 8) uniform sampler2D MaterialAmbientOcclusion[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 9) uniform sampler2D MaterialRoughness[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 10) uniform sampler2D MaterialMetallic[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 11) uniform sampler2D MaterialSheen[MAX_STAGE_TEXTURES];
+layout(set = 0, binding = 12) uniform sampler2D MaterialClearCoat[MAX_STAGE_TEXTURES];
+// Full materials for every mesh instace in the scene.
+layout(set = 0, binding = 13) uniform MaterialUBO {
+	material Data[MAX_STAGE_MATERIALS];
+	int Count;
+} Material;
+// Deferred shading for light sources for both lighting and shadows.
+layout(set = 0, binding = 14) uniform LightUBO {
+	light Source[MAX_STAGE_LIGHTS];
+	int Count;
+} Light;
+// Geometry Buffer Data
+layout(set = 1, binding = 0, rgba32f) uniform image2D OutputColor;
+layout(set = 1, binding = 1) uniform sampler2D PixelColor;
+layout(set = 1, binding = 2) uniform sampler2D PixelPosition;
+layout(set = 1, binding = 3) uniform sampler2D PixelNormal;
+layout(set = 1, binding = 4) uniform sampler2D PixelSS;
+layout(set = 1, binding = 5) uniform sampler2D PixelORM;
+layout(set = 1, binding = 6) uniform sampler2D PixelEmissive;
+layout(set = 1, binding = 7) uniform sampler2D PixelTranslucencyMask;
+// Camera Data
+layout (set = 2, binding = 0) uniform SubjectUBO {
+	vec3 Position;
+	mat4 Rotation;
+	mat4 Projection;
+	mat4 PRT;
+} Subject;
+
+// ----- PBR Rendering Functions ----- //
+
+// SSAO kernel samples - distributed in hemisphere
+const vec3 SSAOKernel[16] = vec3[](
+	vec3( 0.5381, 0.1856,-0.4319), vec3( 0.1379, 0.2486, 0.4430),
+	vec3( 0.3371, 0.5679,-0.0057), vec3(-0.6999,-0.0451,-0.0019),
+	vec3( 0.0689,-0.1598,-0.8547), vec3( 0.0560, 0.0069,-0.1843),
+	vec3(-0.0146, 0.1402, 0.0762), vec3( 0.0100,-0.1924,-0.0344),
+	vec3(-0.3577,-0.5301,-0.4358), vec3(-0.3169, 0.1063, 0.0158),
+	vec3( 0.0103,-0.5884, 0.0716), vec3(-0.0897,-0.4940, 0.3287),
+	vec3( 0.7119,-0.0154,-0.0918), vec3(-0.0533, 0.0596,-0.5411),  
+	vec3( 0.0352,-0.0631, 0.5460), vec3(-0.4776, 0.2847,-0.0271)
+);
+
+float ssao(vec3 aWorldPosition, vec3 aWorldNormal, vec2 aScreenUV) {
+	// SSAO parameters
+	const float SSAORadius = 0.5;        // Sample radius in world units
+	const float SSAOBias = 0.025;        // Bias to prevent self-Occulsion artifacts
+	const int SSAOSamples = 16;          // Number of sample points
+	const float SSAOStrength = 1.0;      // Overall SSAO strength multiplier
+	
+	// Calculate fragment depth (distance from camera)
+	float FragmentDepth = length(aWorldPosition - Subject.Position);
+	
+	// Create TBN matrix for transforming kernel samples to world space
+	// We need a tangent vector perpendicular to the normal
+	vec3 rvec = normalize(cross(aWorldNormal, vec3(0.0, 1.0, 0.0)));
+	if (length(rvec) < 0.1) {
+		// If normal is too close to (0,1,0), use different reference vector
+		rvec = normalize(cross(aWorldNormal, vec3(1.0, 0.0, 0.0)));
+	}
+	vec3 tangent = normalize(rvec);
+	vec3 bitangent = normalize(cross(aWorldNormal, tangent));
+	mat3 TBN = mat3(tangent, bitangent, aWorldNormal);
+	
+	float Occulsion = 0.0;
+	
+	// Sample surrounding points
+	for (int i = 0; i < SSAOSamples; i++) {
+		// Transform sample from tangent space to world space
+		vec3 samplePos = TBN * SSAOKernel[i];
+		samplePos = aWorldPosition + samplePos * SSAORadius;
+		
+		// Project sample position to screen space
+		vec4 offset = Subject.PRT * vec4(samplePos, 1.0);
+		offset.xyz /= offset.w; // Perspective divide
+		offset.xyz = offset.xyz * 0.5 + 0.5; // Transform to [0,1] range
+		
+		// Check if sample is within screen bounds
+		if (offset.x < 0.0 || offset.x > 1.0 || offset.y < 0.0 || offset.y > 1.0) {
+			continue;
+		}
+		
+		// Sample the depth at this screen position
+		vec3 sampleWorldPos = texture(PixelPosition, offset.xy).xyz;
+		float sampleDepth = length(sampleWorldPos - Subject.Position);
+		
+		// Check if sample point is occluded
+		float rangeCheck = smoothstep(0.0, 1.0, SSAORadius / abs(FragmentDepth - sampleDepth));
+		
+		// If the sampled point is closer to camera than our sample position, 
+		// then our sample position is occluded
+		float depthDifference = sampleDepth - length(samplePos - Subject.Position);
+		if (depthDifference > SSAOBias) {
+			Occulsion += rangeCheck;
+		}
+	}
+	
+	// Average Occulsion and invert (1.0 = no Occulsion, 0.0 = full Occulsion)
+	Occulsion = (Occulsion / float(SSAOSamples));
+	
+	// Apply strength multiplier
+	return pow(Occulsion, SSAOStrength);
+}
+
+// Bloom effect function with radial gaussian blur
+vec3 bloom(vec2 aScreenUV, vec2 aResolution) {
+	// Bloom parameters
+	const float BloomRadius = 60.0;      // Radius of the bloom effect in pixels
+	const float BloomIntensity = 3;    // Overall bloom intensity multiplier
+	const int BloomSamples = 32;         // Number of radial samples for blur
+	const float BloomThreshold = 0.1;    // Minimum emissive brightness to contribute to bloom
+	
+	vec3 BloomColor = vec3(0.0);
+	float TotalWeight = 0.0;
+	
+	// Calculate pixel size in UV coordinates
+	vec2 PixelSize = 1.0 / aResolution;
+	
+	// Sample in a radial pattern around the current pixel
+	for (int i = 0; i < BloomSamples; i++) {
+		// Create radial sample positions using polar coordinates
+		float Angle = float(i) * (2.0 * pi / float(BloomSamples));
+		
+		// Multiple radius samples for better blur distribution
+		for (int r = 1; r <= 3; r++) {
+			float Radius = BloomRadius * float(r) / 3.0;
+			
+			// Calculate sample offset
+			vec2 Offset = vec2(cos(Angle), sin(Angle)) * Radius * PixelSize;
+			vec2 SampleUV = aScreenUV + Offset;
+			
+			// Check bounds
+			if (SampleUV.x >= 0.0 && SampleUV.x <= 1.0 && SampleUV.y >= 0.0 && SampleUV.y <= 1.0) {
+				// Sample emissive color at this position
+				vec3 SampleEmissive = texture(PixelEmissive, SampleUV).rgb;
+				
+				// Apply threshold - only bright emissive areas contribute to bloom
+				float EmissiveLuminance = dot(SampleEmissive, vec3(0.299, 0.587, 0.114));
+				if (EmissiveLuminance > BloomThreshold) {
+					// Calculate gaussian weight based on distance
+					float Distance = length(Offset / PixelSize);
+					float Weight = exp(-(Distance * Distance) / (2.0 * BloomRadius * BloomRadius));
+					
+					// Accumulate weighted color
+					BloomColor += SampleEmissive * Weight;
+					TotalWeight += Weight;
+				}
+			}
+		}
+	}
+	
+	// Normalize and apply intensity
+	if (TotalWeight > 0.0) {
+		BloomColor = (BloomColor / TotalWeight) * BloomIntensity;
+	}
+	
+	return BloomColor;
+}
+
+float normal_distribution(float aNdotH, float aRoughness) {
+	// Defines the specular highlight of light reflection.
+	float a = aRoughness * aRoughness;  // Squared roughness (alpha^2)
+	
+	// Compute GGX denominator (squared term in denominator)
+	float aDenom = ((aNdotH * aNdotH) * (a - 1.0) + 1.0);
+	
+	// Compute GGX normal distribution function
+	return (a / (pi * aDenom * aDenom)); // Correct squaring of denominator
+}
+
+float geometric_attenuation(float aHdotN, float aVdotH, float aNdotV, float aNdotL) {
+	return min(1.0, min(2.0 * aHdotN * aNdotV / aVdotH, 2.0 * aHdotN * aNdotL / aVdotH));
+}
+
+float fresnel_schlick(float aVdotH, float aF0) {
+	float Factor = 1.0 - aVdotH;
+	float Factor5 = Factor * Factor * Factor * Factor * Factor; // Faster than pow()
+	return aF0 + (1.0 - aF0) * Factor5;
+}
+
+float rs(vec3 aL, vec3 aN, vec3 aV, float aRoughness, float aMetallic) {
+	// Load onto stack for multi usage.
+	vec3 h = normalize(aL + aV);
+	float HdotN = max(dot(h, aN), 0.001);
+	float VdotH = max(dot(aV, h), 0.001);
+	float NdotV = max(dot(aN, aV), 0.001);
+	float NdotL = max(dot(aN, aL), 0.001);
+	float F0 = mix(0.04, 1.0, aMetallic);
+
+	// Check if surface faces the light before calculating specular
+	if (NdotL < 0.0) {
+		return 0.0; // No specular contribution for back-facing surfaces
+	}
+
+	// Load cook torrance terms.
+	float D = normal_distribution(dot(aN, h), aRoughness);
+	float G = geometric_attenuation(HdotN, VdotH, NdotV, NdotL);
+	float F = fresnel_schlick(dot(h, aV), F0);
+
+	// return full specular term of the BRDF.
+	return (D * G * F) / (4.0 * NdotL * NdotV);
+}
+
+vec3 lighting_and_shadows(
+	light aLight, 
+	vec4 aAlbedo, 
+	vec3 aPixelPosition, 
+	vec3 aPixelNormal, 
+	vec3 aViewDirection,
+	float aAmbientOcclusion,
+	float aRoughness,
+	float aMetallic
+) {
+	vec3 LightContribution = vec3(0.0);
+	switch (aLight.Type) {
+	case AMBIENT:
+		// Ambient light affects all surfaces equally, modulated by AO
+		LightContribution = aAlbedo.rgb * aAmbientOcclusion * aLight.Color * aLight.Intensity;
+		break;
+	case DIRECTIONAL: {
+			// Light Direction Vector
+			vec3 LightDirection = normalize(-aLight.Direction);
+
+			// Check if surface faces the light (back-face culling for lighting)
+			float NdotL = dot(aPixelNormal, LightDirection);
+			if (NdotL <= 0.0) break; // Surface facing away from light
+
+			// Calculate the half vector for specular calculations
+			vec3 HalfVector = normalize(LightDirection + aViewDirection);
+
+			// Directional light is treated as a ray with infinite distance. Ray tracing should check for intersection with geometry.
+			// If no intersection, the pixel is illuminated by the light source.
+			// Ray.Origin = WorldPosition + WorldNormal * 0.001;
+			// Ray.Direction = normalize(Light.Source[i].Direction);
+			// Ray.Hit = 0;
+
+			// ! Disabled for Raytracing debugging
+			// Trace shadow ray to check for occlusion
+			// traceRayEXT(
+			// 	TLAS,
+			// 	gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT,
+			// 	0xFF,
+			// 	0, 0, 0,
+			// 	Ray.Origin,
+			// 	0.0,
+			// 	Ray.Direction,
+			// 	LightDistance,
+			// 	0
+			// );
+
+			// If light is obstructed, skip lighting calculation
+			// if (Ray.Hit == 1) break; // If hit, skip lighting calculation
+
+			// Calculate light attenuation (linear falloff for better visuals)
+			// Use 1/r instead of 1/r² for more gradual, artistic falloff
+			float Attenuation = aLight.Intensity;
+
+			// Calculate diffuse term (Lambertian)
+			vec3 Diffuse = aAlbedo.rgb * NdotL;
+
+			// Calculate specular term using PBR (only after confirming surface faces light)
+			vec3 Specular = vec3(rs(LightDirection, aPixelNormal, aViewDirection, aRoughness, aMetallic));
+
+			// Combine diffuse and specular based on metallic workflow
+			vec3 F0 = mix(vec3(0.04), aAlbedo.rgb, aMetallic); // Base reflectance
+			vec3 kS = vec3(fresnel_schlick(max(dot(HalfVector, aViewDirection), 0.0), F0.r));
+			vec3 kD = (vec3(1.0) - kS) * (1.0 - aMetallic); // Metallic surfaces have no diffuse
+
+			// Apply AO to the final combined result for indirect/bounce lighting approximation
+			LightContribution = (kD*Diffuse + kS*Specular) * aLight.Color * Attenuation;
+		}
+		break;
+	case POINT: 
+	case SPOT:
+	case AREA: {
+			// Light Direction Vector
+			vec3 LightDirection = aLight.Position - aPixelPosition;
+			// Distance to light source
+			float LightDistance = length(LightDirection);
+			// Normalize the light direction vector
+			LightDirection = normalize(LightDirection);
+
+			// Check if surface faces the light (back-face culling for lighting)
+			float NdotL = dot(aPixelNormal, LightDirection);
+			if (NdotL <= 0.0) break; // Surface facing away from light
+
+			// Calculate the half vector for specular calculations
+			vec3 HalfVector = normalize(LightDirection + aViewDirection);
+
+			// Directional light is treated as a ray with infinite distance. Ray tracing should check for intersection with geometry.
+			// If no intersection, the pixel is illuminated by the light source.
+			// Ray.Origin = WorldPosition + WorldNormal * 0.001;
+			// Ray.Direction = normalize(Light.Source[i].Direction);
+			// Ray.Hit = 0;
+
+			// ! Disabled for Raytracing debugging
+			// Trace shadow ray to check for occlusion
+			// traceRayEXT(
+			// 	TLAS,
+			// 	gl_RayFlagsOpaqueEXT | gl_RayFlagsTerminateOnFirstHitEXT,
+			// 	0xFF,
+			// 	0, 0, 0,
+			// 	Ray.Origin,
+			// 	0.0,
+			// 	Ray.Direction,
+			// 	LightDistance,
+			// 	0
+			// );
+
+			// If light is obstructed, skip lighting calculation
+			// if (Ray.Hit == 1) break; // If hit, skip lighting calculation
+
+			// Calculate light attenuation (linear falloff for better visuals)
+			// Use 1/r instead of 1/r² for more gradual, artistic falloff
+			float Attenuation = aLight.Intensity / LightDistance;
+
+			// Calculate diffuse term (Lambertian)
+			vec3 Diffuse = aAlbedo.rgb * NdotL;
+
+			// Calculate specular term using PBR (only after confirming surface faces light)
+			vec3 Specular = vec3(rs(LightDirection, aPixelNormal, aViewDirection, aRoughness, aMetallic));
+
+			// Combine diffuse and specular based on metallic workflow
+			vec3 F0 = mix(vec3(0.04), aAlbedo.rgb, aMetallic); // Base reflectance
+			vec3 kS = vec3(fresnel_schlick(max(dot(HalfVector, aViewDirection), 0.0), F0.r));
+			vec3 kD = (vec3(1.0) - kS) * (1.0 - aMetallic); // Metallic surfaces have no diffuse
+
+			// Apply AO to the final combined result for indirect/bounce lighting approximation
+			LightContribution = (kD*Diffuse + kS*Specular) * aLight.Color * Attenuation;
+		}
+		break;
+	default:
+		// Unknown light source type, skip lighting calculation.
+		break;
+	}
+	return LightContribution;
+}
+
+void main() {
+	// CRITICAL: Initialize ray payload before ANY traceRayEXT calls
+	Ray.Origin = vec3(0.0);
+	Ray.Direction = vec3(0.0);
+	Ray.Hit = 0;
+	Ray.HitInstanceID = 0;  // Initialize to 0, miss shader will set to -1
+	Ray.HitLocation = vec3(0.0);
+	Ray.UV = vec2(0.0);
+	Ray.MaterialIndex = 0;
+
+	// Get Index per ray.
+	vec3 FinalColor = vec3(0.0, 0.0, 0.0);
+	ivec2 RayIndex = ivec2(gl_LaunchIDEXT.xy);
+	ivec2 Resolution = ivec2(gl_LaunchSizeEXT.xy);
+	vec2 UV = vec2(RayIndex) / vec2(Resolution);
+
+	// Load G-buffer data
+	vec4 Albedo = texture(PixelColor, UV);
+	vec3 WorldPosition = texture(PixelPosition, UV).xyz;
+	// Decode normal vector from [0,1] range back to [-1,1] range
+	// Formula: normal = (encoded * 2.0) - 1.0
+	vec3 EncodedNormal = texture(PixelNormal, UV).xyz;
+	vec3 WorldNormal = normalize((EncodedNormal * 2.0) - vec3(1.0));
+	float Specular = texture(PixelSS, UV).r;
+	float Shininess = texture(PixelSS, UV).g;
+	float AmbientOcclusion = texture(PixelORM, UV).r;
+	float Roughness = texture(PixelORM, UV).g;
+	float Metallic = texture(PixelORM, UV).b;
+	vec3 Emissive = texture(PixelEmissive, UV).rgb;
+	float TranslucencyMask = texture(PixelTranslucencyMask, UV).r*0.0f; // Disable translucency for now
+
+	// View direction of the camera.
+	vec3 ViewDir = normalize(Subject.Position - WorldPosition);
+
+	// Apply SSAO
+	// AmbientOcclusion *= ssao(WorldPosition, WorldNormal, UV);
+
+	// Ray origin will start at the world position of the fragment.
+	Ray.Origin = WorldPosition;
+
+	// Iterate through each light source adding contributions per light source based on intersection with object in TLAS.
+	for (int i = 0; i < Light.Count; i++) {
+		// TODO: Implement later.
+		// Check Translucency Mask
+		if (TranslucencyMask == 0.0) {
+			// Use Ray Tracing for basic lighting and shadows.
+			FinalColor += lighting_and_shadows(
+				Light.Source[i], 
+				Albedo, 
+				WorldPosition,
+				WorldNormal, 
+				ViewDir,
+				AmbientOcclusion,
+				Roughness,
+				Metallic
+			);
+		}
+		else {
+			// Use Full Ray Tracing for Translucent Materials
+		}
+	}
+
+	// Calculate bloom effect from emissive materials
+	// vec3 BloomColor = bloom(UV, vec2(Resolution));
+	
+	// Add direct emissive contribution (for immediate glow)
+	FinalColor += Emissive;
+
+	// Write the final color per pixel to the output color image.
+	imageStore(OutputColor, RayIndex, vec4(FinalColor, 1.0));
+	
+	// Debug options - uncomment one of these to visualize different aspects:
+	// imageStore(OutputColor, RayIndex, Albedo); // Store original albedo for debugging
+	// imageStore(OutputColor, RayIndex, vec4(SSAOFactor, SSAOFactor, SSAOFactor, 1.0)); // SSAO visualization
+	// imageStore(OutputColor, RayIndex, vec4(AmbientOcclusion, AmbientOcclusion, AmbientOcclusion, 1.0)); // Combined AO visualization
+}

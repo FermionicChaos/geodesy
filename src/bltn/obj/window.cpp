@@ -61,7 +61,7 @@ namespace geodesy::bltn::obj {
 
 	window::creator::creator() {
 		this->RTTIID = window::rttiid;
-		ModelPath 		= "assets/models/quad.obj";
+		ModelPath 		= "dep/geodesy-src/assets/models/quad.obj";
 		PixelFormat		= image::format::B8G8R8A8_UNORM;
 		Resizable		= true;
 		Decorated		= true;
@@ -83,8 +83,8 @@ namespace geodesy::bltn::obj {
 		// Uses only a quad for basic shaping features, and window parameters. Mostly used for 2D graphics.
 		// Load in shaders for rendering.
 		std::vector<std::string> AssetPath = {
-			"assets/shader/standard.vert",
-			"assets/shader/window/window.frag",
+			"dep/geodesy-src/assets/shader/standard.vert",
+			"dep/geodesy-src/assets/shader/window/window.frag",
 		};
 
 		// Open Shader Files.

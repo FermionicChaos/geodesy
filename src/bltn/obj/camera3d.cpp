@@ -320,15 +320,15 @@ namespace geodesy::bltn::obj {
 		// List of assets Camera3D will load into memory.
 		std::vector<std::string> AssetList = {
 			// Standard Vertex Shader
-			"assets/shader/standard.vert",
+			"dep/geodesy-src/assets/shader/standard.vert",
 			// Opaque Rasterization
-			"assets/shader/camera3d/opaque.frag",
+			"dep/geodesy-src/assets/shader/camera3d/opaque.frag",
 			// Translucent Rasterization
 			// "assets/shader/camera3d/translucent.frag",
 			// Opaque Lighting & Shadows
-			"assets/shader/camera3d/opaque.rgen",
-			"assets/shader/camera3d/standard.rmiss",
-			"assets/shader/camera3d/standard.rchit"
+			"dep/geodesy-src/assets/shader/camera3d/opaque.rgen",
+			"dep/geodesy-src/assets/shader/camera3d/standard.rmiss",
+			"dep/geodesy-src/assets/shader/camera3d/standard.rchit"
 			// Translucent Renderings
 			
 			// Final Post Processing
