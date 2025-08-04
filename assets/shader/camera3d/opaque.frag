@@ -350,6 +350,12 @@ void main() {
 	// Merge Ambient Occlusion, Metallic, and Roughness into a single vec4.
 	PixelARM = vec4(MP.AmbientOcclusion, MP.Roughness, MP.Metallic, MP.Opacity);
 
+	// Encode Bitangent and Tangent vectors from [-1,1] range to [0,1] range for storage
+	PixelBitangent = vec4((b + vec3(1.0)) * 0.5, MP.Opacity);
+
+	// Encode Bitangent and Tangent vectors from [-1,1] range to [0,1] range for storage
+	PixelTangent = vec4((t + vec3(1.0)) * 0.5, MP.Opacity);
+
 	vec3 FinalNormal = n;
 	if (Material.NormalTextureIndex >= 0) {
 		// Convert from [0,1] to [-1,1] range
