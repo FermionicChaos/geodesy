@@ -59,6 +59,9 @@ namespace geodesy {
 		// Initialize Window System Integration GLFW.
 		Checker &= system_window::initialize();
 
+		// Initialize OpenXR runtime.
+		Checker &= cameravr::initialize();
+
 		// Set Initialized to true.
 		Initialized = Checker;
 
@@ -72,6 +75,9 @@ namespace geodesy {
 
 	void engine::terminate() {
 		if (Initialized) {
+
+			// Terminate OpenXR runtime.
+			cameravr::terminate();
 
 			// Terminate Window System Integration GLFW.
 			system_window::terminate();
