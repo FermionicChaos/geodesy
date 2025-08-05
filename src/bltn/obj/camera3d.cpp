@@ -590,7 +590,6 @@ namespace geodesy::bltn::obj {
 		// Color Blending operations.
 		std::vector<VkPipelineColorBlendAttachmentState> AlphaBlendOperation(Rasterizer->ColorAttachment.size());
 		for (auto& AB : AlphaBlendOperation) {
-			// 🎯 DISABLE blending for G-buffer attachments - direct overwrite
 			AB.blendEnable = VK_TRUE;
 			AB.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
 			// Set to direct overwrite (not used since blendEnable = false, but good practice)
