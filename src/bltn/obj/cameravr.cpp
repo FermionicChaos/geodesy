@@ -13,6 +13,7 @@ namespace geodesy::bltn::obj {
 
 	XrInstance cameravr::Instance = XR_NULL_HANDLE; 		// OpenXR Instance handle
 	XrSystemId cameravr::SystemID = XR_NULL_SYSTEM_ID; 		// HMD
+	std::vector<XrViewConfigurationView> cameravr::Views = {};
 	// Vulkan Instance Extensions for OpenXR
 	std::set<std::string> cameravr::EngineExtensionsModule = {
 // 		// Platform-specific instance extensions
@@ -69,6 +70,21 @@ namespace geodesy::bltn::obj {
 	std::set<std::string> cameravr::ContextLayersModule = {
 
 	};
+
+	cameravr::swapchain::swapchain(std::shared_ptr<core::gpu::context> aContext, XrSession aSession, const creator& aCreator) : framechain(aContext, 60, 3) {
+		XrResult Result = XR_SUCCESS;
+		// Get Swapchain formats
+		std::set<VkFormat> SwapchainFormats;
+		{
+			uint32_t FormatCount = 0;
+			Result = xrEnumerateSwapchainFormats(aSession, 0, &FormatCount, nullptr);
+			std::vector<int64_t> RawSwapchainFormats = std::vector<int64_t>(FormatCount);
+			Result = xrEnumerateSwapchainFormats(aSession, FormatCount, &FormatCount, RawSwapchainFormats.data());
+			for (uint32_t i = 0; i < FormatCount; ++i) {
+				SwapchainFormats.insert(static_cast<VkFormat>(RawSwapchainFormats[i]));
+			}
+		}
+	}
 
 	cameravr::creator::creator() {
 		this->RTTIID = cameravr::rttiid;
@@ -240,6 +256,13 @@ namespace geodesy::bltn::obj {
                     }
 				}
 			}
+
+			{
+				uint32_t ViewCount = 0;
+				Result = xrEnumerateViewConfigurationViews(Instance, SystemID, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 0, &ViewCount, nullptr);
+				Views = std::vector<XrViewConfigurationView>(ViewCount, { XR_TYPE_VIEW_CONFIGURATION_VIEW });
+				Result = xrEnumerateViewConfigurationViews(Instance, SystemID, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, ViewCount, &ViewCount, Views.data());
+			}
 			
 			// Get Vulkan Graphics Requirements
 			{
@@ -307,18 +330,10 @@ namespace geodesy::bltn::obj {
 			SCI.systemId 				= SystemID;
 			SCI.createFlags 			= 0;
 
-			Result = xrCreateSession(Instance, &SCI, &Session);
+			Result = xrCreateSession(Instance, &SCI, &this->Session);
 		}
 
-		// // Get views for each eye.
-		// {
-		// 	// Get views
-		// 	uint32_t ViewCount = 0;
-		// 	Result = xrEnumerateViewConfigurationViews(Instance, SystemID, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 0, &ViewCount, nullptr);
-		// 	Views = std::vector<XrViewConfigurationView>(ViewCount, { XR_TYPE_VIEW_CONFIGURATION_VIEW });
-		// 	Result = xrEnumerateViewConfigurationViews(Instance, SystemID, XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, ViewCount, &ViewCount, Views.data());
-
-		// }
+		// this->Framechain = geodesy::make<cameravr::swapchain>(aContext, this->Session, cameravr::swapchain::creator());
 
 		// // Create Swapchains for each eye.
 		// {
