@@ -53,16 +53,16 @@ namespace geodesy::bltn::obj {
 				SHARED_CONTINUOUS_REFRESH 	= VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR,
 			};
 
-		    struct property {
+			struct property {
 				uint32_t					    FrameCount;
 				float 							FrameRate;
 				core::gpu::image::format 		PixelFormat;
 				colorspace						ColorSpace;
-		        int 							ImageUsage;
+				int 							ImageUsage;
 				composite 						CompositeAlpha;
 				present_mode 					PresentMode;
 				bool 							Clipped;
-		        property();
+				property();
 				property(VkSwapchainCreateInfoKHR aCreateInfo, float aFrameRate);
 			};
 
@@ -72,8 +72,8 @@ namespace geodesy::bltn::obj {
 			VkSwapchainCreateInfoKHR				CreateInfo;
 			VkSwapchainKHR							Handle;
 
-		    swapchain(std::shared_ptr<core::gpu::context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain = VK_NULL_HANDLE);
-		    ~swapchain();
+			swapchain(std::shared_ptr<core::gpu::context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain = VK_NULL_HANDLE);
+			~swapchain();
 
 			VkImageCreateInfo image_create_info() const;
 
