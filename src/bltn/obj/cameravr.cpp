@@ -11,7 +11,8 @@
 
 namespace geodesy::bltn::obj {
 
-	XrInstance cameravr::Instance = XR_NULL_HANDLE; // OpenXR Instance handle
+	XrInstance cameravr::Instance = XR_NULL_HANDLE; 		// OpenXR Instance handle
+	XrSystemId cameravr::SystemID = XR_NULL_SYSTEM_ID; 		// HMD
 	// Vulkan Instance Extensions for OpenXR
 	std::set<std::string> cameravr::EngineExtensionsModule = {
 // 		// Platform-specific instance extensions
@@ -73,7 +74,7 @@ namespace geodesy::bltn::obj {
 		this->RTTIID = cameravr::rttiid;
 	}
 
-	bool cameravr::initialize(std::set<std::string> aLayerList, std::set<std::string> aExtensionList) {
+	bool cameravr::initialize(form_factor aFormFactor, std::set<std::string> aLayerList, std::set<std::string> aExtensionList) {
 		// Convert sets to vectors for OpenXR API
 		std::vector<const char*> LayerList = {
 
@@ -154,32 +155,18 @@ namespace geodesy::bltn::obj {
 
 		// Load Vulkan Extensions
 		if (Result == XR_SUCCESS) {
-			// Get Vulkan Instance and Device Extensions. (Code Here)
-			std::vector<XrSystemId> SystemIDList = {};
+			XrSystemId SystemID = XR_NULL_SYSTEM_ID;
+			XrFormFactor FormFactor = (XrFormFactor)aFormFactor;
 			{
-				std::set<XrSystemId> SystemIDSet = {};
-				std::vector<XrFormFactor> FormFactorList = {
-					XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY,    // VR headsets + mixed reality
-					XR_FORM_FACTOR_HANDHELD_DISPLAY,        // Mobile AR
-					// Future AR glasses form factors
-				};
-				for (auto FormFactor : FormFactorList) {
-					XrSystemGetInfo SGI{};
-					XrSystemId SystemID 	= XR_NULL_SYSTEM_ID;
-					SGI.type 				= XR_TYPE_SYSTEM_GET_INFO;
-					SGI.next 				= nullptr;
-					SGI.formFactor 			= FormFactor;
-					Result = xrGetSystem(Instance, &SGI, &SystemID);
-					if (Result == XR_SUCCESS) {
-						SystemIDSet.insert(SystemID);
-					}
-				}
-				// Convert set to vector
-				SystemIDList = std::vector<XrSystemId>(SystemIDSet.begin(), SystemIDSet.end());
+				XrSystemGetInfo SGI{};
+				SGI.type 				= XR_TYPE_SYSTEM_GET_INFO;
+				SGI.next 				= nullptr;
+				SGI.formFactor 			= FormFactor;
+				Result = xrGetSystem(Instance, &SGI, &SystemID);
 			}
 
-			// If no systems found, return failure
-			if (SystemIDList.empty()) {
+			// No system ID found, return failure
+			if (Result != XR_SUCCESS || SystemID == XR_NULL_SYSTEM_ID) {
 				cameravr::terminate();
 				return false;
 			}
@@ -204,8 +191,16 @@ namespace geodesy::bltn::obj {
 				return false;
 			}
 
+			PFN_xrGetVulkanGraphicsRequirementsKHR xrGetVulkanGraphicsRequirementsKHR = nullptr;
+			Result = xrGetInstanceProcAddr(Instance, "xrGetVulkanGraphicsRequirementsKHR", reinterpret_cast<PFN_xrVoidFunction*>(&xrGetVulkanGraphicsRequirementsKHR));
+
+			if (Result != XR_SUCCESS || xrGetVulkanGraphicsRequirementsKHR == nullptr) {
+				cameravr::terminate();
+				return false;
+			}
+
 			// Get Instance Extensions
-			for (const auto& SystemID : SystemIDList) {
+			{
 				uint32_t CharacterCount = 0;
 				Result = xrGetVulkanInstanceExtensionsKHR(Instance, SystemID, 0, &CharacterCount, nullptr);
 				std::vector<char> VulkanInstanceExtensionList(CharacterCount, '\0');
@@ -226,7 +221,7 @@ namespace geodesy::bltn::obj {
 			}
 
 			// Get Device Extensions
-			for (const auto& SystemID : SystemIDList) {
+			{
 				uint32_t CharacterCount = 0;
 				Result = xrGetVulkanDeviceExtensionsKHR(Instance, SystemID, 0, &CharacterCount, nullptr);
 				std::vector<char> VulkanDeviceExtensionList(CharacterCount, '\0');
@@ -245,6 +240,24 @@ namespace geodesy::bltn::obj {
                     }
 				}
 			}
+			
+			// Get Vulkan Graphics Requirements
+			{
+				XrGraphicsRequirementsVulkanKHR GraphicsRequirements{};
+				GraphicsRequirements.type = XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN_KHR;
+				GraphicsRequirements.next = nullptr;
+				Result = xrGetVulkanGraphicsRequirementsKHR(Instance, SystemID, &GraphicsRequirements);
+				if (Result == XR_SUCCESS) {
+					printf("OpenXR requires Vulkan %u.%u.%u to %u.%u.%u\n",
+						XR_VERSION_MAJOR(GraphicsRequirements.minApiVersionSupported),
+						XR_VERSION_MINOR(GraphicsRequirements.minApiVersionSupported), 
+						XR_VERSION_PATCH(GraphicsRequirements.minApiVersionSupported),
+						XR_VERSION_MAJOR(GraphicsRequirements.maxApiVersionSupported),
+						XR_VERSION_MINOR(GraphicsRequirements.maxApiVersionSupported),
+						XR_VERSION_PATCH(GraphicsRequirements.maxApiVersionSupported)
+					);
+				}
+			}
 
 		}
 
@@ -258,61 +271,44 @@ namespace geodesy::bltn::obj {
 	}
 
 	cameravr::cameravr(std::shared_ptr<core::gpu::context> aContext, runtime::stage* aStage, creator* aCreator) : runtime::subject(aContext, aStage, aCreator) {
-		// XrResult Result = XR_SUCCESS;
-		// XrInstance Instance = XR_NULL_HANDLE;
-		// XrSystemId SystemID = XR_NULL_SYSTEM_ID;
-		// XrSession Session = XR_NULL_HANDLE;
-		// std::vector<XrViewConfigurationView> Views;
-		// XrSwapchain Swapchain = XR_NULL_HANDLE;
+		XrResult Result = XR_SUCCESS;
 
-		// std::vector<const char*> Extension = { 
-		// 	XR_KHR_VULKAN_ENABLE2_EXTENSION_NAME
-		// };
+		std::vector<XrFormFactor> FormFactorList = {
+			XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY,    // VR headsets + mixed reality
+			XR_FORM_FACTOR_HANDHELD_DISPLAY,        // Mobile AR
+			// Future AR glasses form factors
+		};
 
-		// // Create OpenXR Instance
-		// {
-		// 	XrInstanceCreateInfo InstanceCreateInfo{};
-		// 	InstanceCreateInfo.type 					= XR_TYPE_INSTANCE_CREATE_INFO;
-		// 	InstanceCreateInfo.next 					= nullptr;
-		// 	InstanceCreateInfo.createFlags 				= 0;
-		// 	InstanceCreateInfo.applicationInfo 			= { "Geodesy", 1, "Geodesy", 1, XR_CURRENT_API_VERSION };
-		// 	InstanceCreateInfo.enabledApiLayerCount 	= 0;
-		// 	InstanceCreateInfo.enabledApiLayerNames 	= nullptr;
-		// 	InstanceCreateInfo.enabledExtensionCount 	= Extension.size();
-		// 	InstanceCreateInfo.enabledExtensionNames 	= Extension.data();
+		for (auto FormFactor : FormFactorList) {
+			XrSystemGetInfo SGI{};
+			SGI.type 				= XR_TYPE_SYSTEM_GET_INFO;
+			SGI.next 				= nullptr;
+			SGI.formFactor 			= FormFactor;
+			Result = xrGetSystem(cameravr::Instance, &SGI, &this->SystemID);
+			if (Result == XR_SUCCESS) {
+				break; // Found a valid system
+			}
+		}
 
-		// 	Result = xrCreateInstance(&InstanceCreateInfo, &Instance);
-		// }
-		
-		// // Get OpenXR System ID.
-		// {
-		// 	XrSystemGetInfo SystemGetInfo{};
-		// 	SystemGetInfo.type 			= XR_TYPE_SYSTEM_GET_INFO;
-		// 	SystemGetInfo.next 			= nullptr;
-		// 	SystemGetInfo.formFactor 	= XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
-		// 	Result = xrGetSystem(Instance, &SystemGetInfo, &SystemID);
-		// }
+		// Create OpenXR Session.
+		{
+			XrGraphicsBindingVulkan2KHR GBVK2{};
+			GBVK2.type 					= XR_TYPE_GRAPHICS_BINDING_VULKAN2_KHR;
+			GBVK2.next 					= nullptr;
+			GBVK2.instance 				= Engine->Handle;
+			GBVK2.physicalDevice 		= aContext->Device->Handle;
+			GBVK2.device 				= aContext->Handle;
+			GBVK2.queueFamilyIndex 		= aContext->Device->qfi(core::gpu::device::operation::GRAPHICS_AND_COMPUTE);
+			GBVK2.queueIndex 			= 0;
 
-		// // Create OpenXR Session.
-		// {
-		// 	XrGraphicsBindingVulkan2KHR GBVK2{};
-		// 	GBVK2.type 					= XR_TYPE_GRAPHICS_BINDING_VULKAN2_KHR;
-		// 	GBVK2.next 					= nullptr;
-		// 	GBVK2.instance 				= Engine->Handle;
-		// 	GBVK2.physicalDevice 		= aContext->Device->Handle;
-		// 	GBVK2.device 				= aContext->Handle;
-		// 	GBVK2.queueFamilyIndex 		= aContext->Device->qfi(core::gpu::device::operation::GRAPHICS_AND_COMPUTE);
-		// 	GBVK2.queueIndex 			= 0;
+			XrSessionCreateInfo SCI{};
+			SCI.type 					= XR_TYPE_SESSION_CREATE_INFO;
+			SCI.next 					= &GBVK2;
+			SCI.systemId 				= SystemID;
+			SCI.createFlags 			= 0;
 
-		// 	XrSessionCreateInfo SCI{};
-		// 	SCI.type 					= XR_TYPE_SESSION_CREATE_INFO;
-		// 	SCI.next 					= &GBVK2;
-		// 	SCI.systemId 				= SystemID;
-		// 	SCI.createFlags 			= 0;
-		// 	SCI.next 					= nullptr;
-
-		// 	Result = xrCreateSession(Instance, &SCI, &Session);
-		// }
+			Result = xrCreateSession(Instance, &SCI, &Session);
+		}
 
 		// // Get views for each eye.
 		// {

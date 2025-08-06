@@ -209,16 +209,16 @@ namespace geodesy::runtime {
 		for (subject* RenderTarget : RenderTargetList) {
 
 			// Check if Render Target is ready to render.
-			if (!RenderTarget->Framechain->ready_to_render()) continue;
-
-			// Clear out previous rendering operations.
-			RenderTarget->RenderingOperations = std::vector<gpu::command_batch>();
-
-			// Reset semaphore pool.
-			RenderTarget->SemaphorePool->reset();
-
-			// Gather render operations per target.
-			RenderInfo += RenderTarget->render(this);
+			if (RenderTarget->Framechain != nullptr ? RenderTarget->Framechain->ready_to_render() : false) {
+				// Clear out previous rendering operations.
+				RenderTarget->RenderingOperations = std::vector<gpu::command_batch>();
+				
+				// Reset semaphore pool.
+				RenderTarget->SemaphorePool->reset();
+				
+				// Gather render operations per target.
+				RenderInfo += RenderTarget->render(this);
+			}
 		}
 
 		return RenderInfo;

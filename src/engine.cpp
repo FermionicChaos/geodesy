@@ -59,8 +59,8 @@ namespace geodesy {
 		// Initialize Window System Integration GLFW.
 		Checker &= system_window::initialize();
 
-		// Initialize OpenXR runtime.
-		Checker &= cameravr::initialize();
+		// Initialize OpenXR runtime. (You can try both form factors, but most likely only one will be available).
+		Checker &= cameravr::initialize(cameravr::form_factor::HEAD_MOUNTED_DISPLAY);
 
 		// Set Initialized to true.
 		Initialized = Checker;
@@ -138,7 +138,7 @@ namespace geodesy {
 			AppInfo.applicationVersion					= VK_MAKE_VERSION(0, 0, 0);
 			AppInfo.pEngineName							= this->Name.c_str();
 			AppInfo.engineVersion						= VK_MAKE_VERSION(Version[0], Version[1], Version[2]);
-			AppInfo.apiVersion							= VK_API_VERSION_1_3;
+			AppInfo.apiVersion							= VK_API_VERSION_1_2;
 
 			CreateInfo.sType							= VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 			CreateInfo.pNext							= NULL;

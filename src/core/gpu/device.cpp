@@ -2,7 +2,14 @@
 #include <geodesy/core/gpu/device.h>
 
 #include <geodesy/bltn/obj/system_window.h>
+#include <geodesy/bltn/obj/cameravr.h>
 
+#define XR_USE_GRAPHICS_API_VULKAN
+
+// Include OpenXR headers
+#include <openxr/openxr.h>
+#include <openxr/openxr_platform.h>
+#include <vulkan/vulkan.h>
 
 namespace geodesy::core::gpu {
 
@@ -17,6 +24,28 @@ namespace geodesy::core::gpu {
 
 	void device::get_system_devices(engine* aEngine) {
 		VkResult Result = VK_SUCCESS;
+		VkPhysicalDevice XrPhysicalDevice = VK_NULL_HANDLE;
+
+		// Check if OpenXR Instance is initialized, then search for preferred Vulkan graphics device
+		if (bltn::obj::cameravr::Instance != XR_NULL_HANDLE) {
+			XrResult Result = XR_SUCCESS;
+			XrSystemId SystemID = XR_NULL_SYSTEM_ID;
+
+			// Load Function Pointer for xrGetVulkanGraphicsDeviceKHR
+			PFN_xrGetVulkanGraphicsDeviceKHR xrGetVulkanGraphicsDeviceKHR = nullptr;
+			Result = xrGetInstanceProcAddr(bltn::obj::cameravr::Instance, "xrGetVulkanGraphicsDeviceKHR", reinterpret_cast<PFN_xrVoidFunction*>(&xrGetVulkanGraphicsDeviceKHR));
+
+			// If function pointer is available, use it to get Vulkan graphics device
+			if (Result == XR_SUCCESS && xrGetVulkanGraphicsDeviceKHR != nullptr) {
+				Result = xrGetVulkanGraphicsDeviceKHR(
+					bltn::obj::cameravr::Instance,
+					bltn::obj::cameravr::SystemID,
+					aEngine->Handle,
+					&XrPhysicalDevice
+				);
+			}
+		}
+
 		uint32_t Count = 0;
 		Result = vkEnumeratePhysicalDevices(aEngine->Handle, &Count, NULL);
 		if (Result != VK_SUCCESS) {
@@ -38,10 +67,21 @@ namespace geodesy::core::gpu {
 			}
 		}
 		aEngine->Device = SystemDeviceList;
-		for (std::shared_ptr<device> Device : SystemDeviceList) {
-			if (Device->Properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-				aEngine->PrimaryDevice = Device;
-			}            
+		if (XrPhysicalDevice != VK_NULL_HANDLE) {
+			for (std::shared_ptr<device> Device : SystemDeviceList) {
+				if (Device->Handle == XrPhysicalDevice) {
+					aEngine->PrimaryDevice = Device;
+					break;
+				}
+			}
+		}
+		else {
+			for (std::shared_ptr<device> Device : SystemDeviceList) {
+				if (Device->Properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+					aEngine->PrimaryDevice = Device;
+					break;
+				}
+			}
 		}
 	}
 

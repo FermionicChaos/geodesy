@@ -138,6 +138,9 @@ namespace geodesy::runtime {
 	}
 
 	submission_batch subject::render(stage* aStage) {
+		// Check if framechain is valid.
+		if (this->Framechain == nullptr) return build({});
+
 		// The next frame operation will both present previously drawn frame and acquire next
 		// frame. 
 		VkResult Result = this->Framechain->next_frame();
