@@ -362,9 +362,16 @@ namespace geodesy::core::gpu {
 
 		// Will yield the number of bits per pixel.
 		static format t2f(util::type::id aID);
+		static util::type::id base_type(int aFormat);
+		static util::type::id type(int aFormat);
 		static size_t bytes_per_pixel(int aFormat);
 		static size_t bits_per_pixel(int aFormat);
+		static size_t channel_count(int aFormat);
 		static VkImageAspectFlags aspect_flag(int aFormat);
+
+		float 											OpaquePercentage;
+		float 											TransparentPercentage;
+		float 											TranslucentPercentage;
 
 		// Image Handle Info
 		std::shared_ptr<context> 						Context;
@@ -443,6 +450,12 @@ namespace geodesy::core::gpu {
 		) const;
 
 		VkMemoryRequirements memory_requirements() const;
+
+		// Checks if the image has an alpha channel.
+		bool has_alpha_channel() const;
+
+		// Deep check for opacity, classifies image as opaque, transparent, or translucent.
+		int transparency(int aChannelSelection) const;
 
 		void zero_out();
 		void clear();

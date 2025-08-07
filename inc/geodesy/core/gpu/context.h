@@ -21,6 +21,8 @@ namespace geodesy::core::gpu {
 
 		std::mutex									Mutex;
 		std::shared_ptr<device> 					Device;
+		std::set<std::string> 						Extensions;
+		std::set<std::string> 						Layers;
 		VkDevice									Handle;
 		std::map<uint, VkQueue>						Queue;
 		std::map<uint, bool> 						InFlight;
@@ -37,8 +39,9 @@ namespace geodesy::core::gpu {
 
 		VkMemoryRequirements get_buffer_memory_requirements(VkBuffer aBufferHandle) const;
 		VkMemoryRequirements get_image_memory_requirements(VkImage aImageHandle) const;
+		bool extension_enabled(const std::string& aExtensionName);
 
-		// ----- Device Resource Management ----- //
+		// ----- Device Primitive Management ----- //
 
 		VkCommandBuffer allocate_command_buffer(device::operation aOperation, VkCommandBufferLevel aLevel = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 		std::vector<VkCommandBuffer> allocate_command_buffer(device::operation aOperation, uint32_t aCount, VkCommandBufferLevel aLevel = VK_COMMAND_BUFFER_LEVEL_PRIMARY);
@@ -58,24 +61,21 @@ namespace geodesy::core::gpu {
 		VkDeviceMemory allocate_memory(VkMemoryRequirements aMemoryRequirements, uint aMemoryType);
 		void free_memory(VkDeviceMemory& aMemoryHandle);
 
+		// ----- Device Resource Management ----- //
+
 		std::shared_ptr<buffer> create_buffer(buffer::create_info aCreateInfo, int aVertexCount, util::variable aVertexLayout, void* aVertexData = NULL);
 		std::shared_ptr<buffer> create_buffer(uint aMemoryType, uint aBufferUsage, int aVertexCount, util::variable aVertexLayout, void* aVertexData = NULL);
 		std::shared_ptr<buffer> create_buffer(buffer::create_info aCreateInfo, size_t aBufferSize, void* aBufferData = NULL);
 		std::shared_ptr<buffer> create_buffer(uint aMemoryType, uint aBufferUsage, size_t aBufferSize, void* aBufferData = NULL);
 		std::shared_ptr<buffer> create_buffer(uint aMemoryType, uint aBufferUsage, size_t aElementCount, size_t aBufferSize, void* aBufferData = NULL);
-
-		std::shared_ptr<image> create_image(image::create_info aCreateInfo, std::string aFilePath);
 		std::shared_ptr<image> create_image(image::create_info aCreateInfo, std::shared_ptr<image> aHostImage);
 		std::shared_ptr<image> create_image(image::create_info aCreateInfo, image::format aFormat, uint aX, uint aY = 1, uint aZ = 1, uint aT = 1, void* aTextureData = NULL);
-
 		std::shared_ptr<descriptor::array> create_descriptor_array(std::shared_ptr<pipeline> aPipeline, VkSamplerCreateInfo aSamplerCreateInfo = descriptor::DefaultSamplerCreateInfo);
-
 		std::shared_ptr<framebuffer> create_framebuffer(std::shared_ptr<pipeline> aPipeline, std::vector<std::shared_ptr<image>> aImageAttachements, math::vec<uint, 3> aResolution);
 		std::shared_ptr<framebuffer> create_framebuffer(std::shared_ptr<pipeline> aPipeline, std::map<std::string, std::shared_ptr<image>> aImage, std::vector<std::string> aAttachmentSelection, math::vec<uint, 3> aResolution);
-
 		std::shared_ptr<pipeline> create_pipeline(std::shared_ptr<pipeline::rasterizer> aRasterizer, VkRenderPass aRenderPass = VK_NULL_HANDLE, uint32_t aSubpassIndex = 0);
-
-		// std::shared_ptr<gfx::model> create_model(gpu::image::create_info aCreateInfo, std::string aFilePath);
+		std::shared_ptr<pipeline> create_pipeline(std::shared_ptr<pipeline::raytracer> aRayTracer);
+		// std::shared_ptr<pipeline> create_pipeline(std::shared_ptr<pipeline::compute> aComputePipeline);
 		std::shared_ptr<gfx::model> create_model(std::shared_ptr<gfx::model> aModel, gpu::image::create_info aCreateInfo = {});
 
 		// ----- Command Buffer Recording ----- //
@@ -95,6 +95,8 @@ namespace geodesy::core::gpu {
 
 		// ----- Command Buffer Execution ----- //
 
+		VkResult wait();
+		VkResult wait(device::operation aDeviceOperation);
 		VkResult wait(VkFence aFence);
 		VkResult wait(std::vector<VkFence> aFenceList, VkBool32 aWaitOnAll = VK_TRUE);
 

@@ -6,28 +6,12 @@ namespace geodesy::runtime {
 	using namespace core;
 	using namespace gpu;
 
-	object::uniform_data::uniform_data(
-		math::vec<float, 3> aPosition, 
-		math::vec<float, 3> aDirRight, 
-		math::vec<float, 3> aDirUp, 
-		math::vec<float, 3> aDirForward,
-		math::vec<float, 3> aScale
-	) {
-		this->Position = aPosition;
-		this->Orientation = {
-			aDirRight[0], 	aDirForward[0], 	aDirUp[0], 		0.0f,
-			aDirRight[1], 	aDirForward[1], 	aDirUp[1], 		0.0f,
-			aDirRight[2], 	aDirForward[2], 	aDirUp[2], 		0.0f,
-			0.0f, 			0.0f, 				0.0f, 			1.0f
-		};
-		this->Scale = aScale;
-	}
-
 	object::creator::creator() {
 		this->Name 					= "";
+		this->RTTIID 				= object::rttiid;
 		this->ModelPath 			= "";
 		this->Position 				= { 0.0f, 0.0f, 0.0f };
-		this->Direction 			= { -90.0f, 0.0f };
+		this->Direction 			= { 0.0f, 0.0f };
 		this->Scale 				= { 1.0f, 1.0f, 1.0f };
 		this->AnimationWeights 		= std::vector<float>(1, 1.0f);
 		this->MotionType 			= motion::STATIC;
@@ -36,16 +20,23 @@ namespace geodesy::runtime {
 	}
 
 	object::draw_call::draw_call() {
-		DistanceFromSubject 	= 0.0f;
 		TransparencyMode 		= gfx::material::transparency::OPAQUE;
+		RenderingPriority 		= 0.0f;
 		DrawCommand 			= VK_NULL_HANDLE;
 	}
 
+	void object::draw_call::update(
+		subject* aSubject, 
+		size_t aFrameIndex,
+		object* aObject, 
+		size_t aMeshInstanceIndex
+	) {}
+
 	object::renderer::renderer() {}
 
-	object::renderer::renderer(object* aObject, subject* aSubject) {
-		this->Object = aObject;
+	object::renderer::renderer(subject* aSubject, object* aObject) {
 		this->Subject = aSubject;
+		this->Object = aObject;
 	}
 
 	object::renderer::~renderer() {
@@ -63,17 +54,34 @@ namespace geodesy::runtime {
 		return this->DrawCallList[aIndex];
 	}
 
+	void object::renderer::update(
+		double aDeltaTime, 
+		double aTime
+	) {
+		// Update the renderer with the current time and delta time.
+		// This is where you would update the draw calls based on the object's state.
+		for (size_t i = 0; i < this->DrawCallList.size(); i++) {
+			for (size_t j = 0; j < this->DrawCallList[i].size(); j++) {
+				// Update each draw call based on updated scene data.
+				this->DrawCallList[i][j]->update(this->Subject, i, this->Object, j);
+			}
+		}
+	}
+
 	object::object(std::shared_ptr<core::gpu::context> aContext, stage* aStage, creator* aCreator) : core::gfx::node() {
+		// Default direction in stage space is +y
+		this->Type 				= core::phys::node::type::OBJECT;
+		this->Theta 			= math::radians(aCreator->Direction[0] + 90.0f);
+		this->Phi 				= math::radians(aCreator->Direction[1] + 90.0f);
 		this->Name 				= aCreator->Name;
+		this->RTTIID 			= aCreator->RTTIID;
 		this->Stage 			= aStage;
 		this->Engine 			= aContext->Device->Engine;
 		this->Position 			= aCreator->Position;
-		this->Theta 			= math::radians(aCreator->Direction[0] + 90.0f);
-		this->Phi 				= math::radians(aCreator->Direction[1] + 90.0f);
-		this->DirectionRight 	= {  std::sin(Phi), 					-std::cos(Phi), 					0.0f 			};
-		this->DirectionUp 		= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
-		this->DirectionFront 	= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
+		this->Orientation 		= math::orientation(this->Theta, this->Phi);
 		this->Scale 			= aCreator->Scale;
+		this->DefaultTransform  = phys::calculate_transform(this->Position, this->Orientation, this->Scale);
+		this->CurrentTransform 	= this->DefaultTransform; // Set current transform to default.
 
 		this->Context 			= aContext;
 
@@ -98,36 +106,56 @@ namespace geodesy::runtime {
 
 				// TODO: Do a Device Context Registry to check which host models have been loaded
 				// into device memory, and recycle them if they have been loaded already.
-				this->Model = std::shared_ptr<gfx::model>(new gfx::model(aContext, HostModel, MaterialTextureInfo));
+				this->Model = aContext->create_model(HostModel, MaterialTextureInfo);
+
+				// Give the transform hierarchy to object, and make it root.
+				this->swap(this->Model->Hierarchy.get());
 
 				// If model has animations, then create animation data.
 				if (this->Model->Animation.size() > 0) {
-					// Include Bind Pose as the first Weight.
+					// Include Bind Pose as the first Weight, these are TPose Weights.
 					this->AnimationWeights = std::vector<float>(this->Model->Animation.size() + 1, 0.0f);
 					this->AnimationWeights[0] = 1.0f;
 				}
 
-				this->AnimationWeights = aCreator->AnimationWeights;
+				// Load animation weight data.
+				for (size_t i = 0; i < std::min(this->AnimationWeights.size(), aCreator->AnimationWeights.size()); i++) {
+					this->AnimationWeights[i] = aCreator->AnimationWeights[i];
+				}
 			}
 		}
 
-		// Object Uniform Buffer Creation from GPU Device Context.
-		buffer::create_info UBCI;
-		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
-		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
+		// Linearize node tree for faster processing.
+		this->LinearizedNodeTree = this->linearize();
 
-		uniform_data UniformData = uniform_data(
-			this->Position, 
-			this->DirectionRight, 
-			this->DirectionUp, 
-			this->DirectionFront,
-			this->Scale
-		);
-		this->UniformBuffer = aContext->create_buffer(UBCI, sizeof(uniform_data), &UniformData);
-		this->UniformBuffer->map_memory(0, sizeof(uniform_data));
+		// Gather mesh instances.
+		this->TotalMeshInstance = this->gather_instances();
 	}
 
 	object::~object() {}
+
+	void object::copy_data(const core::phys::node* aNode) {
+		// This function simply copies all data not related to the hierarchy.
+		// This is used to copy data from one node to another.
+		this->Identifier = aNode->Identifier;
+		// this->Type = aNode->Type;
+		// this->Mass = aNode->Mass;
+		// this->InertiaTensor = aNode->InertiaTensor;
+		// this->Position = aNode->Position;
+		// this->Orientation = aNode->Orientation;
+		// this->Scale = aNode->Scale;
+		// this->LinearMomentum = aNode->LinearMomentum;
+		// this->AngularMomentum = aNode->AngularMomentum;
+		// this->DefaultTransform = aNode->DefaultTransform;
+		// this->CurrentTransform = aNode->CurrentTransform; // Copy the current transform.
+		// this->GlobalTransform = aNode->GlobalTransform; // Copy the global transform.
+		this->CollisionMesh = aNode->CollisionMesh; // Copy the collision mesh if it exists.
+		// Copy over mesh instance data.
+		this->MeshInstance.resize(((gfx::node*)aNode)->MeshInstance.size());
+		for (size_t i = 0; i < this->MeshInstance.size(); i++) {
+			this->MeshInstance[i] = gfx::mesh::instance(this->Context, ((gfx::node*)aNode)->MeshInstance[i], this->Root, this);
+		}
+	}
 
 	bool object::is_subject() {
 		return false;
@@ -137,27 +165,36 @@ namespace geodesy::runtime {
 
 	}
 
-	void object::update(double aDeltaTime, math::vec<float, 3> aAppliedForce, math::vec<float, 3> aAppliedTorque) {
+	void object::host_update(
+		double 										aDeltaTime, 
+		double 										aTime, 
+		const std::vector<phys::force>& 			aAppliedForces
+	) {
 
-		core::gfx::node::update(aDeltaTime);
-
-		// TODO: Add update using angular momentum to change orientation of object over time.
-
-		this->DirectionRight			= {  std::sin(Phi), 					-std::cos(Phi), 					0.0f 			};
-		this->DirectionUp				= { -std::cos(Theta) * std::cos(Phi), 	-std::cos(Theta) * std::sin(Phi), 	std::sin(Theta) };
-		this->DirectionFront			= {  std::sin(Theta) * std::cos(Phi), 	 std::sin(Theta) * std::sin(Phi), 	std::cos(Theta) };
-
-		*(uniform_data*)this->UniformBuffer->Ptr = uniform_data(
+		this->CurrentTransform = phys::calculate_transform(
 			this->Position, 
-			this->DirectionRight, 
-			this->DirectionUp, 
-			this->DirectionFront,
+			this->Orientation,
 			this->Scale
 		);
 
-		// Update Model if animation data exists.
-		if ((this->Model.get() != nullptr) && (this->Model->Animation.size() > 0)) {
-			this->Model->update(aDeltaTime, this->AnimationWeights);
+	}
+
+	void object::device_update(
+		double 										aDeltaTime, 
+		double 										aTime, 
+		const std::vector<core::phys::force>& 		aAppliedForces
+	) {
+
+		// Update any mesh instances that exist at root.
+		gfx::node::device_update(
+			aDeltaTime, 
+			aTime, 
+			aAppliedForces
+		);
+
+		// Update renderers.
+		for (auto& R : this->Renderer) {
+			R.second->update(aDeltaTime, aTime);
 		}
 	}
 

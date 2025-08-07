@@ -24,12 +24,16 @@ namespace geodesy::core::gfx {
 		node(std::shared_ptr<gpu::context> aContext, const node* aNode, phys::node* aRoot = nullptr, phys::node* aParent = nullptr);
 		~node();
 
-		void copy(const phys::node* aNode) override;
-		void update(
+		void copy_data(const phys::node* aNode) override;
+		virtual void host_update(
 			double 									aDeltaTime = 0.0f, 
 			double 									aTime = 0.0f, 
-			const std::vector<float>& 				aAnimationWeight = { 1.0f }, 
-			const std::vector<phys::animation>& 	aPlaybackAnimation = {}
+			const std::vector<phys::force>& 		aAppliedForces = {}
+		) override;
+		virtual void device_update(
+			double 									aDeltaTime = 0.0f, 
+			double 									aTime = 0.0f, 
+			const std::vector<phys::force>& 		aAppliedForces = {}
 		) override;
 
 		// Counts the total number of mesh references in the tree.

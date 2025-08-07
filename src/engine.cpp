@@ -19,6 +19,19 @@ namespace geodesy {
 
 	static bool Initialized = false;
 
+	std::set<std::string> engine::EngineExtensionsModule = { 
+		"VK_EXT_debug_utils"
+	};
+	std::set<std::string> engine::EngineLayersModule = { 
+		"VK_LAYER_KHRONOS_validation"
+	};
+	std::set<std::string> engine::ContextExtensionsModule = {
+
+	};
+	std::set<std::string> engine::ContextLayersModule = {
+		
+	};
+
 	bool engine::initialize() {
 		// This is to prevent loading twice. Initializes all third party libraries for the lifetime of the program.
 		if (Initialized) {
@@ -46,6 +59,9 @@ namespace geodesy {
 		// Initialize Window System Integration GLFW.
 		Checker &= system_window::initialize();
 
+		// Initialize OpenXR runtime. (You can try both form factors, but most likely only one will be available).
+		Checker &= cameravr::initialize(cameravr::form_factor::HEAD_MOUNTED_DISPLAY);
+
 		// Set Initialized to true.
 		Initialized = Checker;
 
@@ -59,6 +75,9 @@ namespace geodesy {
 
 	void engine::terminate() {
 		if (Initialized) {
+
+			// Terminate OpenXR runtime.
+			cameravr::terminate();
 
 			// Terminate Window System Integration GLFW.
 			system_window::terminate();
@@ -119,7 +138,7 @@ namespace geodesy {
 			AppInfo.applicationVersion					= VK_MAKE_VERSION(0, 0, 0);
 			AppInfo.pEngineName							= this->Name.c_str();
 			AppInfo.engineVersion						= VK_MAKE_VERSION(Version[0], Version[1], Version[2]);
-			AppInfo.apiVersion							= VK_API_VERSION_1_3;
+			AppInfo.apiVersion							= VK_API_VERSION_1_2;
 
 			CreateInfo.sType							= VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 			CreateInfo.pNext							= NULL;
@@ -192,31 +211,32 @@ namespace geodesy {
 
 	}
 
+	// ! Abandoned: Dead Code.
 	VkResult engine::update_resources(runtime::app* aApp) {
 		VkResult Result = VK_SUCCESS;
-		std::map<std::shared_ptr<context>, core::gpu::submission_batch> UpdateOperations;
+		// std::map<std::shared_ptr<context>, core::gpu::submission_batch> UpdateOperations;
 
 		aApp->Mutex.lock();
 
-		UpdateOperations = aApp->update(this->ThreadController.total_time());
+		aApp->update(this->ThreadController.total_time());
 
 		aApp->Mutex.unlock();
 
 		// --------------- Per Device Context work is done here --------------- //
 
-		for (std::shared_ptr<context> Ctx : Context) {
-			// Lock Context for execution.
-			Ctx->Mutex.lock();
+		// for (std::shared_ptr<context> Ctx : Context) {
+		// 	// Lock Context for execution.
+		// 	Ctx->Mutex.lock();
+			
+		// 	// Execute all transfer device operations.
+		// 	Result = Ctx->execute(device::operation::TRANSFER_AND_COMPUTE, UpdateOperations[Ctx].SubmitInfo);
 
-			// Wait for other inflight operations to finish.
-			Result = Ctx->engine_wait({ device::operation::TRANSFER_AND_COMPUTE, device::operation::GRAPHICS_AND_COMPUTE });
+		// 	// Wait for other inflight operations to finish.
+		// 	Result = Ctx->wait(device::operation::TRANSFER_AND_COMPUTE );
 
-			// Execute all transfer device operations.
-			Result = Ctx->engine_execute(device::operation::TRANSFER_AND_COMPUTE, UpdateOperations[Ctx].SubmitInfo);
-
-			// Unlock device context.
-			Ctx->Mutex.unlock();
-		}
+		// 	// Unlock device context.
+		// 	Ctx->Mutex.unlock();
+		// }
 
 		return Result;
 	}
@@ -236,13 +256,13 @@ namespace geodesy {
 		for (std::shared_ptr<context> Ctx : Context) {
 			// Lock Context for execution.
 			Ctx->Mutex.lock();
+			
+			// Execute all transfer device operations.
+			Result = Ctx->execute(device::operation::GRAPHICS_AND_COMPUTE, RenderInfo[Ctx].SubmitInfo);
 
 			// Wait for other inflight operations to finish.
-			Result = Ctx->engine_wait({ device::operation::TRANSFER_AND_COMPUTE, device::operation::GRAPHICS_AND_COMPUTE });
-
-			// Execute all transfer device operations.
-			Result = Ctx->engine_execute(device::operation::GRAPHICS_AND_COMPUTE, RenderInfo[Ctx].SubmitInfo);
-
+			Result = Ctx->wait(device::operation::GRAPHICS_AND_COMPUTE);
+			
 			// Unlock device context.
 			Ctx->Mutex.unlock();
 		}

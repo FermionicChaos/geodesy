@@ -53,16 +53,16 @@ namespace geodesy::bltn::obj {
 				SHARED_CONTINUOUS_REFRESH 	= VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR,
 			};
 
-		    struct property {
+			struct property {
 				uint32_t					    FrameCount;
 				float 							FrameRate;
 				core::gpu::image::format 		PixelFormat;
 				colorspace						ColorSpace;
-		        int 							ImageUsage;
+				int 							ImageUsage;
 				composite 						CompositeAlpha;
 				present_mode 					PresentMode;
 				bool 							Clipped;
-		        property();
+				property();
 				property(VkSwapchainCreateInfoKHR aCreateInfo, float aFrameRate);
 			};
 
@@ -72,8 +72,8 @@ namespace geodesy::bltn::obj {
 			VkSwapchainCreateInfoKHR				CreateInfo;
 			VkSwapchainKHR							Handle;
 
-		    swapchain(std::shared_ptr<core::gpu::context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain = VK_NULL_HANDLE);
-		    ~swapchain();
+			swapchain(std::shared_ptr<core::gpu::context> aContext, VkSurfaceKHR aSurface, const property& aProperty, VkSwapchainKHR aOldSwapchain = VK_NULL_HANDLE);
+			~swapchain();
 
 			VkImageCreateInfo image_create_info() const;
 
@@ -95,6 +95,13 @@ namespace geodesy::bltn::obj {
 			creator();
 		};
 
+		// Runtime Type Information (RTTI) ID for the system_window class.
+		constexpr static uint32_t rttiid = geodesy::runtime::generate_rttiid<system_window>();
+
+		static std::set<std::string> 			EngineExtensionsModule;
+		static std::set<std::string> 			EngineLayersModule;
+		static std::set<std::string> 			ContextExtensionsModule;
+		static std::set<std::string> 			ContextLayersModule;
 		static bool initialize();
 		static void terminate();
 		static std::set<std::string> engine_extensions();
@@ -118,7 +125,11 @@ namespace geodesy::bltn::obj {
 		~system_window();
 
 		core::gpu::submission_batch render(runtime::stage* aStage) override;
-		void update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce = { 0.0f, 0.0f, 0.0f }, core::math::vec<float, 3> aAppliedTorque = { 0.0f, 0.0f, 0.0f }) override;
+		void virtual host_update(
+			double 										aDeltaTime = 0.0f, 
+			double 										aTime = 0.0f, 
+			const std::vector<core::phys::force>& 		aAppliedForces = {}
+		) override;
 
 	private:
 

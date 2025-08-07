@@ -6,79 +6,62 @@ namespace geodesy::bltn::obj {
 	using namespace gpu;
 	using namespace gfx;
 
-	namespace {
-
-		struct window_uniform_data {
-			alignas(8) math::vec<float, 2> Size;
-			alignas(16) math::vec<uint, 3> Resolution;
-			window_uniform_data(
-				math::vec<float, 2> aSize,
-				math::vec<uint, 3> aResolution
-			);
-		};
-
-		window_uniform_data::window_uniform_data(
-			math::vec<float, 2> aSize,
-			math::vec<uint, 3> aResolution
-		) {
-			this->Size = aSize;
-			this->Resolution = aResolution;
-		}
-
-	}
-
 	window::window_draw_call::window_draw_call(
-		object* 								aObject, 
-		core::gfx::mesh::instance* 				aMeshInstance,
-		window* 								aWindow,
-		size_t 									aFrameIndex
+		window* aWindow,
+		size_t 	aFrameIndex,
+		object* aObject, 
+		size_t 	aMeshInstanceIndex
 	) {
 		// Get references for readability.
 		VkResult Result = VK_SUCCESS;
-		std::shared_ptr<gpu::context> Context = aObject->Context;
-		std::shared_ptr<mesh> Mesh = aObject->Model->Mesh[aMeshInstance->MeshIndex];
-		std::shared_ptr<material> Material = aObject->Model->Material[aMeshInstance->MaterialIndex];
+		auto Context = aObject->Context;
+		auto MeshInstance = aObject->TotalMeshInstance[aMeshInstanceIndex];
+		auto Mesh = aObject->Model->Mesh[MeshInstance->MeshIndex];
+		auto Material = aObject->Model->Material[MeshInstance->MaterialIndex];
+		auto Node = MeshInstance->Parent;
 
 		// Get image outputs and vertex inputs.
 		std::vector<std::shared_ptr<image>> ImageOutputList = {
 			aWindow->Framechain->Image[aFrameIndex]["Color"]
 		};
-		std::vector<std::shared_ptr<buffer>> VertexBuffer = { Mesh->VertexBuffer, aMeshInstance->VertexWeightBuffer };
+		std::vector<std::shared_ptr<buffer>> VertexBuffer = { Mesh->VertexBuffer, MeshInstance->VertexWeightBuffer };
 
 		// Allocate GPU resources to interface with pipeline.
-		Framebuffer 		= Context->create_framebuffer(aWindow->Pipeline, ImageOutputList, aWindow->Framechain->Resolution);
-		DescriptorArray 	= Context->create_descriptor_array(aWindow->Pipeline);
+		Framebuffer 		= Context->create_framebuffer(aWindow->Pipeline[0], ImageOutputList, aWindow->Framechain->Resolution);
+		DescriptorArray 	= Context->create_descriptor_array(aWindow->Pipeline[0]);
 		DrawCommand 		= aWindow->CommandPool->allocate();
 
 		// Bind Object Uniform Buffers
-		DescriptorArray->bind(0, 0, 0, aWindow->WindowUniformBuffer);		// Window Size, etc
-		DescriptorArray->bind(0, 1, 0, aObject->UniformBuffer);				// Object Position, Orientation, Scale
-		DescriptorArray->bind(0, 2, 0, Material->UniformBuffer); 			// Material Properties
+		DescriptorArray->bind(0, 0, 0, aWindow->SubjectUniformBuffer);			// Camera Position, Orientation, Projection
+		DescriptorArray->bind(0, 1, 0, MeshInstance->UniformBuffer); 			// Mesh Instance Transform
+		DescriptorArray->bind(0, 2, 0, Material->UniformBuffer); 				// Material Properties
 
 		// Bind Material Textures.
 		DescriptorArray->bind(1, 0, 0, Material->Texture["Color"]);
+		DescriptorArray->bind(1, 1, 0, Material->Texture["Opacity"]);
 
 		Result = Context->begin(DrawCommand);
-		aWindow->Pipeline->draw(DrawCommand, Framebuffer, VertexBuffer, Mesh->IndexBuffer, DescriptorArray);
+		aWindow->Pipeline[0]->draw(DrawCommand, Framebuffer, VertexBuffer, Mesh->IndexBuffer, DescriptorArray);
 		Result = Context->end(DrawCommand);
 	}
 
-	window::window_renderer::window_renderer(runtime::object* aObject, window* aWindow) : runtime::object::renderer(aObject, aWindow) {
+	window::window_renderer::window_renderer(runtime::object* aObject, window* aWindow) : runtime::object::renderer(aWindow, aObject) {
 		// Gather list of mesh instances throughout model hierarchy.
-		std::vector<mesh::instance*> MeshInstance = aObject->Model->Hierarchy->gather_instances();
+		std::vector<mesh::instance*> MeshInstance = aObject->gather_instances();
 
 		std::vector<std::vector<draw_call>> Renderer(aWindow->Framechain->Image.size(), std::vector<draw_call>(MeshInstance.size()));
 
 		// Generate draw calls standard per frame and mesh instance.
 		for (size_t i = 0; i < aWindow->Framechain->Image.size(); i++) {
 			for (size_t j = 0; j < MeshInstance.size(); j++) {
-				DrawCallList[i][j] = geodesy::make<window_draw_call>(aObject, MeshInstance[j], aWindow, i);
+				DrawCallList[i][j] = geodesy::make<window_draw_call>(aWindow, i, aObject, j);
 			}
 		}
 	}
 
 	window::creator::creator() {
-		ModelPath 		= "assets/models/quad.obj";
+		this->RTTIID = window::rttiid;
+		ModelPath 		= "dep/geodesy-src/assets/models/quad.obj";
 		PixelFormat		= image::format::B8G8R8A8_UNORM;
 		Resizable		= true;
 		Decorated		= true;
@@ -100,8 +83,8 @@ namespace geodesy::bltn::obj {
 		// Uses only a quad for basic shaping features, and window parameters. Mostly used for 2D graphics.
 		// Load in shaders for rendering.
 		std::vector<std::string> AssetPath = {
-			"assets/shader/window/window.vert",
-			"assets/shader/window/window.frag",
+			"dep/geodesy-src/assets/shader/standard.vert",
+			"dep/geodesy-src/assets/shader/window/window.frag",
 		};
 
 		// Open Shader Files.
@@ -118,16 +101,7 @@ namespace geodesy::bltn::obj {
 		std::vector<std::shared_ptr<shader>> ShaderList = { VertexShader, PixelShader };
 		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::make_shared<pipeline::rasterizer>(ShaderList, aWindowCreator->Resolution);
 
-		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 0, offsetof(gfx::mesh::vertex, Position));
-		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 1, offsetof(gfx::mesh::vertex, Normal));
-		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 2, offsetof(gfx::mesh::vertex, Tangent));
-		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 3, offsetof(gfx::mesh::vertex, Bitangent));
-		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 4, offsetof(gfx::mesh::vertex, TextureCoordinate));
-		Rasterizer->bind(VK_VERTEX_INPUT_RATE_VERTEX, 0, sizeof(gfx::mesh::vertex), 5, offsetof(gfx::mesh::vertex, Color));
-
-		// Set output format.
-		Rasterizer->attach(0, aWindowCreator->PixelFormat, image::sample::COUNT_1, image::layout::SHADER_READ_ONLY_OPTIMAL);
-
+		// ----- Set Pipeline Options ----- //
 		// How to intepret vertex data in rasterization.
 		Rasterizer->InputAssembly.topology					= VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		Rasterizer->InputAssembly.primitiveRestartEnable	= false;
@@ -141,16 +115,35 @@ namespace geodesy::bltn::obj {
 		// Copy Paste
 		Rasterizer->Multisample.rasterizationSamples		= VK_SAMPLE_COUNT_1_BIT;
 
-		this->Pipeline = Context->create_pipeline(Rasterizer);
+		// Define Vertex Input Bindings
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 0, offsetof(gfx::mesh::vertex, Position));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 1, offsetof(gfx::mesh::vertex, Normal));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 2, offsetof(gfx::mesh::vertex, Tangent));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 3, offsetof(gfx::mesh::vertex, Bitangent));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 4, offsetof(gfx::mesh::vertex, TextureCoordinate));
+		Rasterizer->bind(0, sizeof(gfx::mesh::vertex), 5, offsetof(gfx::mesh::vertex, Color));
+
+		// Define Output Attachments
+		Rasterizer->attach(0, aWindowCreator->PixelFormat);
+
+		this->Pipeline = std::vector<std::shared_ptr<core::gpu::pipeline>>(1);
+		this->Pipeline[0] = Context->create_pipeline(Rasterizer);
 
 		// Allocate Uniform Buffer Info.
+		subject::uniform_data UBO = subject::uniform_data(
+			this->Position, 
+			{ this->Theta, this->Phi },
+			this->Scale,
+			-1.0f,
+			1.0f
+		);
+
 		buffer::create_info UBCI;
 		UBCI.Memory = device::memory::HOST_VISIBLE | device::memory::HOST_COHERENT;
 		UBCI.Usage = buffer::usage::UNIFORM | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
-		
-		window_uniform_data WindowUniformData = window_uniform_data({ 1.0f, 1.0f }, aWindowCreator->Resolution);
-		this->WindowUniformBuffer = aContext->create_buffer(UBCI, sizeof(window_uniform_data), &WindowUniformData);
-		this->WindowUniformBuffer->map_memory(0, sizeof(window_uniform_data));
+
+		this->SubjectUniformBuffer = Context->create_buffer(UBCI, sizeof(subject::uniform_data), &UBO);
+		this->SubjectUniformBuffer->map_memory(0, sizeof(subject::uniform_data));
 	}
 
 	std::shared_ptr<runtime::object::renderer> window::default_renderer(runtime::object* aObject) {

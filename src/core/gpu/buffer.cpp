@@ -55,7 +55,7 @@ namespace geodesy::core::gpu {
 		CreateInfo.pNext						= NULL;
 		CreateInfo.flags						= 0;
 		CreateInfo.size							= aBufferSize;
-		CreateInfo.usage						= (VkBufferUsageFlags)(aBufferUsage);// | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST);
+		CreateInfo.usage						= (VkBufferUsageFlags)(aBufferUsage);
 		CreateInfo.sharingMode					= VK_SHARING_MODE_EXCLUSIVE;
 		CreateInfo.queueFamilyIndexCount		= 0;
 		CreateInfo.pQueueFamilyIndices			= NULL;

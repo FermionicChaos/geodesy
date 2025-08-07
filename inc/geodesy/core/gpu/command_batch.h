@@ -17,6 +17,9 @@ namespace geodesy::core::gpu {
 		std::vector<VkPipelineStageFlags> 			WaitStageList;
 		std::vector<VkSemaphore> 					SignalSemaphoreList;
 
+		command_batch() = default;
+		command_batch(const std::vector<VkCommandBuffer>& aCommandBufferList);
+
 		command_batch& operator+=(VkCommandBuffer aCommandBuffer);
 		command_batch& operator+=(const std::vector<VkCommandBuffer>& aCommandBufferList);
 

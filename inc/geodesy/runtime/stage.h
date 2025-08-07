@@ -1,6 +1,10 @@
 #ifndef GEODESY_CORE_STAGE_H
 #define GEODESY_CORE_STAGE_H
 
+#define MAX_STAGE_TEXTURES 1024
+#define MAX_STAGE_MATERIALS 32
+#define MAX_STAGE_LIGHTS 192
+
 #include <memory>
 
 #include "../config.h"
@@ -53,32 +57,67 @@ namespace geodesy::runtime {
 			size_t Count;
 		};
 
-		std::string											Name;
-		std::shared_ptr<core::gpu::context> 				Context;
-		std::vector<std::shared_ptr<object>>				Object;
-		std::map<std::string, std::shared_ptr<object>> 		ObjectLookup;
+		struct material_uniform_data {
+			core::gfx::material::uniform_data 		Data[MAX_STAGE_MATERIALS];
+			alignas(4) int 							Count;
+			material_uniform_data() : Count(0) {}
+		};
 
-		stage(std::shared_ptr<core::gpu::context> aContext, std::string aName);
-		~stage();
+		struct light_uniform_data {
+			core::gfx::model::light 				Source[MAX_STAGE_LIGHTS];
+			alignas(4) int 							Count;
+			light_uniform_data() : Count(0) {}
+		};
 
-		// This is a helper utility function that helps create arbitrary objects.
-		template<typename object_type, typename... args>
-		std::shared_ptr<object_type> create_object(args&&... aArgs) {
-			std::shared_ptr<object_type> NewObject(new object_type(
-				this->Context,
-				this,
-				std::forward<args>(aArgs)...
-			));
-			this->Object.push_back(NewObject);
-			this->ObjectLookup[NewObject->Name] = NewObject;
+		struct creator {
+			std::string 							Name;
+			uint32_t								RTTIID;
+			std::vector<object::creator*> 			ObjectCreationList;
+			creator();
+		};
+
+		// Runtime Type Information (RTTI) ID for the object.
+		constexpr static uint32_t rttiid = generate_rttiid<stage>();
+
+		// Polymorphic factory method for runtime object creation using type information
+		template<typename T>
+		static std::shared_ptr<T> create(std::shared_ptr<core::gpu::context> aContext, stage* aStage, object::creator* aCreator) {
+			std::shared_ptr<T> NewObject = geodesy::make<T>(
+				aContext,
+				aStage,
+				static_cast<typename T::creator*>(aCreator)
+			);
 			return NewObject;
 		}
-
-		virtual core::gpu::submission_batch update(double aDeltaTime);
-		virtual core::gpu::submission_batch render();
-
 		static std::vector<subject*> purify_by_subject(const std::vector<std::shared_ptr<object>>& aObjectList);
 		static std::vector<workload> determine_thread_workload(size_t aElementCount, size_t aThreadCount);
+
+		// ! ----- Stage Host Memory ----- ! //
+		std::string													Name;
+		uint32_t													RTTIID;
+		double														Time;
+		std::vector<core::phys::node*>								NodeCache; // This is a list of all nodes in the stage, used for updating.
+		std::map<std::string, std::shared_ptr<object>> 				ObjectLookup;
+
+		// ! ----- Stage Device Memory ----- ! //
+		std::shared_ptr<core::gpu::context> 						Context;
+		std::vector<std::shared_ptr<object>>						Object;
+		std::shared_ptr<core::gpu::acceleration_structure> 			TLAS;
+		std::shared_ptr<core::gpu::buffer> 							MaterialUniformBuffer;
+		std::shared_ptr<core::gpu::buffer> 							LightUniformBuffer;
+		std::map<subject*, std::shared_ptr<object::renderer>> 		Renderer;
+
+		stage(std::shared_ptr<core::gpu::context> aContext, creator* aCreator);
+		~stage();
+
+		std::vector<std::shared_ptr<object>> build_objects(std::shared_ptr<core::gpu::context> aContext, std::vector<object::creator*> aCreationList);
+		virtual std::shared_ptr<object> build_object(std::shared_ptr<core::gpu::context> aContext, stage* aStage, object::creator* aObjectCreator);
+		void build_node_cache();
+		void build_scene_geometry();
+
+		virtual void update(double aDeltaTime);
+		virtual core::gpu::submission_batch render();
+		std::vector<std::shared_ptr<object::draw_call>> post_processing(subject* aSubject);
 
 	};
 

@@ -62,34 +62,12 @@ static Assimp::Importer* ModelImporter = nullptr;
 
 namespace geodesy::core::gfx {
 
-	// static void traverse(const aiScene* aScene, aiNode* aNode) {
-	// 	static int TreeDepth = -1;
-	// 	TreeDepth += 1;
-	// 	bool isBone = false;
-	// 	for (int i = 0; i < aScene->mNumMeshes; i++) {
-	// 		for (int j = 0; j < aScene->mMeshes[i]->mNumBones; j++) {
-	// 			std::string A = aScene->mMeshes[i]->mBones[j]->mName.C_Str();
-	// 			std::string B = aNode->mName.C_Str();
-	// 			if (A == B) {
-	// 				isBone = true;
-	// 			}
-	// 		}
-	// 	}
-	// 	for (int i = 0; i < TreeDepth; i++) {
-	// 		std::cout << "  ";
-	// 	}
-	// 	std::cout << "Depth: " << TreeDepth << ", isBone: " << isBone << ", Name: " << aNode->mName.C_Str() << std::endl;
-	// 	for (int i = 0; i < aNode->mNumMeshes; i++) {
-	// 		for (int j = 0; j < TreeDepth; j++) {
-	// 			std::cout << " ";
-	// 		}
-	// 		std::cout << "Mesh Name: " << aScene->mMeshes[aNode->mMeshes[i]]->mName.C_Str() << std::endl;
-	// 	}
-	// 	for (int i = 0; i < aNode->mNumChildren; i++) {
-	// 		traverse(aScene, aNode->mChildren[i]);
-	// 	}
-	// 	TreeDepth -= 1;
-	// }
+	model::light::light() {
+		this->Type = light::AMBIENT;
+		this->Intensity = 1.0f; // Default intensity.
+		this->Color = math::vec<float, 3>(1.0f, 1.0f, 1.0f); // Default color is white.
+		this->SpotAngle = 45.0f; // Default spot angle in degrees.
+	}
 
 	bool model::initialize() {
 		ModelImporter = new Assimp::Importer();
@@ -146,6 +124,38 @@ namespace geodesy::core::gfx {
 		for (size_t i = 0; i < Scene->mNumMaterials; i++) {
 			this->Material[i] = std::shared_ptr<material>(new material(Scene->mMaterials[i], this->Directory, aFileManager));
 		}
+
+		// Load in lights.
+		this->Light = std::vector<light>(Scene->mNumLights);
+		for (size_t i = 0; i < Scene->mNumLights; i++) {
+			switch (Scene->mLights[i]->mType) {	
+			case aiLightSource_AMBIENT:
+				this->Light[i].Type = light::AMBIENT;
+				break;
+			case aiLightSource_DIRECTIONAL:
+				this->Light[i].Type = light::DIRECTIONAL;
+				break;
+			case aiLightSource_POINT:
+				this->Light[i].Type = light::POINT;
+				break;	
+			case aiLightSource_SPOT:
+				this->Light[i].Type = light::SPOT;
+				break;
+			case aiLightSource_AREA:
+				this->Light[i].Type = light::AREA;
+				break;
+			default:
+				this->Light[i].Type = light::UNDEFINED;
+				break;
+			}
+			this->Light[i].Type = Scene->mLights[i]->mType;
+			this->Light[i].Color = math::vec<float, 3>(Scene->mLights[i]->mColorDiffuse.r, Scene->mLights[i]->mColorDiffuse.g, Scene->mLights[i]->mColorDiffuse.b);
+			this->Light[i].Position = math::vec<float, 3>(Scene->mLights[i]->mPosition.x, Scene->mLights[i]->mPosition.y, Scene->mLights[i]->mPosition.z);
+			this->Light[i].Direction = math::vec<float, 3>(Scene->mLights[i]->mDirection.x, Scene->mLights[i]->mDirection.y, Scene->mLights[i]->mDirection.z);
+			this->Light[i].SpotAngle = Scene->mLights[i]->mAngleInnerCone;
+		}		
+
+		// Load in cameras.
 
 		// TODO: Implement direct texture loader later.
 		// this->Texture = std::vector<std::shared_ptr<gpu::image>>(Scene->mNumTextures);
@@ -217,12 +227,6 @@ namespace geodesy::core::gfx {
 
 	model::~model() {
 
-	}
-
-	void model::update(double aDeltaTime, const std::vector<float>& aAnimationWeights) {
-		this->Time += aDeltaTime;
-		// Choose animation here.
-		this->Hierarchy->update(aDeltaTime, this->Time, aAnimationWeights, this->Animation);
 	}
 
 }

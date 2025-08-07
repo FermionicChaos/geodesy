@@ -29,6 +29,19 @@ namespace geodesy::bltn::obj {
 	// std::atomic<GLFWwindow*> system_window::ReturnWindow					= NULL;
 	// std::atomic<GLFWwindow*> system_window::DestroyWindow					= NULL;
 
+	std::set<std::string> system_window::EngineExtensionsModule = {
+		"VK_EXT_swapchain_colorspace"
+	};
+	std::set<std::string> system_window::EngineLayersModule = {
+
+	};
+	std::set<std::string> system_window::ContextExtensionsModule = {
+
+	};
+	std::set<std::string> system_window::ContextLayersModule = {
+		
+	};
+
 	system_window::swapchain::property::property() {
 		this->FrameCount		= 3;
 		this->FrameRate			= 60.0f;
@@ -236,6 +249,16 @@ namespace geodesy::bltn::obj {
 	}
 
 	bool system_window::initialize() {
+		if (glfwInit() == GLFW_TRUE) {
+			std::set<std::string> EngineExtension = system_window::engine_extensions();
+			std::set<std::string> ContextExtension = system_window::context_extensions();
+			EngineExtensionsModule.insert(EngineExtension.begin(), EngineExtension.end());
+			ContextExtensionsModule.insert(ContextExtension.begin(), ContextExtension.end());
+			return true;
+		}
+		else {
+			return false;
+		}
 		return (glfwInit() == GLFW_TRUE);
 	}
 
@@ -333,7 +356,9 @@ namespace geodesy::bltn::obj {
 		glfwPollEvents();
 	}
 
-	system_window::creator::creator() {		
+	system_window::creator::creator() {
+		this->RTTIID = system_window::rttiid;
+		this->Direction 		= { -90.0f, 0.0f }; // Default direction is looking down the negative Z-axis.
 		this->Display			= nullptr;
 		this->ColorSpace		= swapchain::colorspace::SRGB_NONLINEAR;
 		this->CompositeAlpha	= swapchain::composite::ALPHA_OPAQUE;
@@ -385,9 +410,15 @@ namespace geodesy::bltn::obj {
 		this->destroy_window_handle(this->WindowHandle);
 	}
 
-	void system_window::update(double aDeltaTime, core::math::vec<float, 3> aAppliedForce, core::math::vec<float, 3> aAppliedTorque) {
+	void system_window::host_update(
+		double 									aDeltaTime, 
+		double 									aTime, 
+		const std::vector<phys::force>& 		aAppliedForces
+	) {
+		// Call base class update.
+		object::host_update(aDeltaTime, aTime, aAppliedForces);
+		// Update input state.
 		this->InputState.Mouse.update(aDeltaTime);
-		this->Time += aDeltaTime;
 	}
 
 	core::gpu::submission_batch system_window::render(runtime::stage* aStage) {
@@ -399,7 +430,7 @@ namespace geodesy::bltn::obj {
 		swapchain *Swapchain = dynamic_cast<swapchain*>(this->Framechain.get());
 
 		// Cast to rasterizer.
-		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::dynamic_pointer_cast<pipeline::rasterizer>(this->Pipeline->CreateInfo);
+		std::shared_ptr<pipeline::rasterizer> Rasterizer = std::dynamic_pointer_cast<pipeline::rasterizer>(this->Pipeline[0]->CreateInfo);
 
 		// Get next frame semaphore from queue.
 		this->NextFrameSemaphore = Swapchain->NextFrameSemaphoreList.front();
@@ -482,11 +513,11 @@ namespace geodesy::bltn::obj {
 				this->Framechain = std::dynamic_pointer_cast<framechain>(NewSwapchain);
 		
 				// Rebuild pipeline.
-				if (this->Pipeline->CreateInfo->BindPoint == pipeline::type::RASTERIZER) {
+				if (this->Pipeline[0]->CreateInfo->BindPoint == pipeline::type::RASTERIZER) {
 					// Resize rasterizer.
 					Rasterizer->resize(this->Framechain->Resolution);
 					// Rebuild pipeline.
-					this->Pipeline = this->Context->create_pipeline(Rasterizer);
+					this->Pipeline[0] = this->Context->create_pipeline(Rasterizer);
 				}
 			}
 	
@@ -551,7 +582,7 @@ namespace geodesy::bltn::obj {
 			// File drop
 			glfwSetDropCallback(ReturnHandle, system_window::file_drop_callback);
 		}
-		// glfwSetInputMode(ReturnHandle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		glfwSetInputMode(ReturnHandle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		return ReturnHandle;
 	}
 

@@ -11,10 +11,10 @@ namespace geodesy::bltn::obj {
 
 		struct window_draw_call : object::draw_call {
 			window_draw_call(
-				object* 								aObject, 
-				core::gfx::mesh::instance* 				aMeshInstance,
-				window* 								aWindow,
-				size_t 									aFrameIndex
+				window* aWindow,
+				size_t 	aFrameIndex,
+				object* aObject, 
+				size_t 	aMeshInstanceIndex
 			);
 		};
 
@@ -41,6 +41,9 @@ namespace geodesy::bltn::obj {
 			bool 						ShouldClose;
 			creator();
 		};
+
+		// Runtime Type Information (RTTI) ID for the window class.
+		constexpr static uint32_t rttiid = geodesy::runtime::generate_rttiid<window>();
 
 		std::shared_ptr<core::gpu::buffer> WindowUniformBuffer;
 

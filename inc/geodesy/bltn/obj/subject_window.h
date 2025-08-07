@@ -24,12 +24,12 @@ namespace geodesy::bltn::obj {
 
 		struct forward_draw_call : runtime::object::draw_call {
 			forward_draw_call(
-				object* 							aObject, 
-				core::gfx::mesh::instance* 			aMeshInstance,
-				runtime::subject* 						aSubjectSource,
-				size_t 								aSourceFrameIndex,
-				window* 							aSubjectTarget,
-				size_t 								aTargetFrameIndex
+				window* 			aSubjectTarget,
+				size_t 				aTargetFrameIndex,
+				runtime::subject* 	aSubjectSource,
+				size_t 				aSourceFrameIndex,
+				object* 			aObject,
+				size_t 				aMeshInstanceIndex
 			);
 		};
 
@@ -47,6 +47,9 @@ namespace geodesy::bltn::obj {
 			std::shared_ptr<runtime::subject> 			Subject;
 			creator();
 		};
+
+		// Runtime Type Information (RTTI) ID for the subject_window class.
+		constexpr static uint32_t rttiid = geodesy::runtime::generate_rttiid<subject_window>();
 
 		core::math::vec<float, 2> 			Size;
 		std::shared_ptr<runtime::subject> 		SubjectSource; 		// ! Change to std::weak_ptr

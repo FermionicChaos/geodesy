@@ -6,6 +6,46 @@ namespace geodesy::runtime {
 	using namespace core;
 	using namespace gpu;
 
+	subject::uniform_data::uniform_data(
+		core::math::vec<float, 3> 		aPosition, 
+		core::math::vec<float, 2> 		aDirection,
+		core::math::vec<float, 3> 		aScale,
+		float 							aNear,
+		float 							aFar
+	) {
+		math::mat<float, 4, 4> Translation = {
+			1.0f, 		0.0f, 		0.0f, 		-aPosition[0],
+			0.0f, 		1.0f, 		0.0f, 		-aPosition[1],
+			0.0f, 		0.0f, 		1.0f, 		-aPosition[2],
+			0.0f, 		0.0f, 		0.0f, 		 1.0f
+		};
+		this->Position = aPosition;
+		this->Rotation = math::rotation(aDirection[0], aDirection[1]);
+		this->Projection = math::orthographic(aScale[0], aScale[1], aNear, aFar);
+		this->PRT = this->Projection * this->Rotation * Translation;
+	}
+
+	subject::uniform_data::uniform_data(
+		core::math::vec<float, 3> 		aPosition, 
+		core::math::vec<float, 2> 		aDirection,
+		float 							aFOV,
+		core::math::vec<uint, 3> 		aResolution,
+		float 							aNear,
+		float 							aFar
+	) {
+		math::mat<float, 4, 4> Translation = {
+			1.0f, 		0.0f, 		0.0f, 		-aPosition[0],
+			0.0f, 		1.0f, 		0.0f, 		-aPosition[1],
+			0.0f, 		0.0f, 		1.0f, 		-aPosition[2],
+			0.0f, 		0.0f, 		0.0f, 		 1.0f
+		};
+		this->Position = aPosition;
+		this->Rotation = math::rotation(aDirection[0], aDirection[1]);
+		float AspectRatio = static_cast<float>(aResolution[0]) / static_cast<float>(aResolution[1]);
+		this->Projection = math::perspective(math::radians(aFOV), AspectRatio, aNear, aFar);
+		this->PRT = this->Projection * this->Rotation * Translation;
+	}
+
 	subject::framechain::framechain(std::shared_ptr<core::gpu::context> aContext, double aFrameRate, uint32_t aFrameCount) {
 		this->DrawIndex = 0;
 		this->ReadIndex = 0;
@@ -17,7 +57,7 @@ namespace geodesy::runtime {
 
 	subject::framechain::~framechain() {
 
-    for (size_t i = 0; i < this->PredrawFrameOperation.size(); i++) {
+		for (size_t i = 0; i < this->PredrawFrameOperation.size(); i++) {
 			this->Context->release_command_buffer(device::operation::GRAPHICS_AND_COMPUTE, this->PredrawFrameOperation[i].CommandBufferList);
 		}
 		for (size_t i = 0; i < this->PostdrawFrameOperation.size(); i++) {
@@ -63,6 +103,7 @@ namespace geodesy::runtime {
 	}
 
 	subject::creator::creator() {
+		this->RTTIID = subject::rttiid;
 		this->Resolution = { 1920, 1080, 1 };
 		this->FrameCount = 1;
 		this->FrameRate = 60.0f;
@@ -91,7 +132,15 @@ namespace geodesy::runtime {
 		return DefaultRenderer;
 	}
 
+	std::shared_ptr<runtime::object::renderer> subject::default_post_processor(stage* aStage) {
+		std::shared_ptr<renderer> DefaultPostProcessor;
+		return DefaultPostProcessor;
+	}
+
 	submission_batch subject::render(stage* aStage) {
+		// Check if framechain is valid.
+		if (this->Framechain == nullptr) return build({});
+
 		// The next frame operation will both present previously drawn frame and acquire next
 		// frame. 
 		VkResult Result = this->Framechain->next_frame();

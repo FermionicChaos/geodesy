@@ -105,7 +105,8 @@
         "__mutex_base": "cpp",
         "__node_handle": "cpp",
         "__tree": "cpp",
-        "__tuple": "cpp"
+        "__tuple": "cpp",
+        "*.inc": "cpp"
     },
     "dotnet.defaultSolution": "geodesy.sln",
     "cmake.configureOnOpen": false,

@@ -34,7 +34,14 @@ namespace geodesy::core::gpu {
 
 			// Generate Bindings for Uniform Buffers.
 			DSLB.binding = BindingIndex;
-			DSLB.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			switch(Type->getQualifier().storage) {
+			case glslang::TStorageQualifier::EvqUniform:
+				DSLB.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+				break;
+			case glslang::TStorageQualifier::EvqBuffer:
+				DSLB.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+				break;
+			}
 			DSLB.descriptorCount = DescriptorCount;
 			DSLB.stageFlags = glslang_shader_stage_to_vulkan(Variable.stages);
 			DSLB.pImmutableSamplers = NULL;
@@ -44,41 +51,6 @@ namespace geodesy::core::gpu {
 				this->DescriptorSetLayoutBinding.resize(SetIndex + 1);
 			}
 
-			this->DescriptorSetLayoutBinding[SetIndex].push_back(DSLB);
-			this->DescriptorSetVariable[SetBinding] = convert_to_variable(Type, Variable.name.c_str());
-		}
-		
-		// Gets buffer blocks (storage buffers).
-		for (size_t i = 0; i < this->Program->getNumBufferBlocks(); i++) {
-			VkDescriptorSetLayoutBinding DSLB{};
-			const glslang::TObjectReflection& Variable = this->Program->getBufferBlock(i);
-			const glslang::TType* Type = Variable.getType();
-			const glslang::TArraySizes* ArraySize = Type->getArraySizes();
-			size_t DescriptorCount = 0;
-			if (ArraySize != NULL) {
-				for (int j = 0; j < ArraySize->getNumDims(); j++) {
-					DescriptorCount += ArraySize->getDimSize(j);
-				}
-			} else {
-				DescriptorCount = 1;
-			}
-		
-			int SetIndex = Type->getQualifier().layoutSet;
-			int BindingIndex = Type->getQualifier().layoutBinding;
-			std::pair<int, int> SetBinding = std::make_pair(SetIndex, BindingIndex);
-		
-			// Generate Bindings for Storage Buffers.
-			DSLB.binding = BindingIndex;
-			DSLB.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-			DSLB.descriptorCount = DescriptorCount;
-			DSLB.stageFlags = glslang_shader_stage_to_vulkan(Variable.stages);
-			DSLB.pImmutableSamplers = NULL;
-		
-			// Resize DescriptorSetLayoutBinding if SetIndex does not exist.
-			if (SetIndex >= this->DescriptorSetLayoutBinding.size()) {
-				this->DescriptorSetLayoutBinding.resize(SetIndex + 1);
-			}
-		
 			this->DescriptorSetLayoutBinding[SetIndex].push_back(DSLB);
 			this->DescriptorSetVariable[SetBinding] = convert_to_variable(Type, Variable.name.c_str());
 		}
@@ -124,6 +96,10 @@ namespace geodesy::core::gpu {
 					// Regular Combined Image Sampler
 					DSLB.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 				}
+				break;
+			case glslang::TBasicType::EbtAccStruct:
+				// Acceleration Structure (top-level or bottom-level)
+				DSLB.descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
 				break;
 			default:
 				// TODO: Add other variables later.
@@ -331,7 +307,7 @@ namespace geodesy::core::gpu {
 			// Generates Descriptor Set Layout Bindings.
 			this->generate_descriptor_set_layout_binding();
 
-			std::cout << "// -------------------- Pipeline Reflection Start -------------------- \\\\" << std::endl << std::endl;
+			std::cout << "// -------------------- Rasterization Pipeline Reflection Start -------------------- \\\\" << std::endl << std::endl;
 
 			// Print Inputs
 			std::cout << "----- Vertex Input Attributes -----" << std::endl;
@@ -354,7 +330,7 @@ namespace geodesy::core::gpu {
 			}
 			std::cout << std::endl;
 
-			std::cout << "\\\\ -------------------- Pipeline Reflection End -------------------- //" << std::endl;
+			std::cout << "\\\\ -------------------- Rasterization Pipeline Reflection End -------------------- //" << std::endl;
 		}
 		else {
 			// Linking failed.
@@ -396,7 +372,7 @@ namespace geodesy::core::gpu {
 		}
 	}
 
-	void pipeline::rasterizer::bind(VkVertexInputRate aInputRate, uint32_t aBindingIndex, size_t aVertexStride, uint32_t aLocationIndex, size_t aVertexOffset) {
+	void pipeline::rasterizer::bind(uint32_t aBindingIndex, size_t aVertexStride, uint32_t aLocationIndex, size_t aVertexOffset, input_rate aInputRate) {
 		// Check if binding already exists in set.
 		bool ExistsInSet = false;
 		for (const VkVertexInputBindingDescription& Buffer : this->VertexBufferBindingDescription) {
@@ -408,7 +384,7 @@ namespace geodesy::core::gpu {
 			VkVertexInputBindingDescription Buffer{};
 			Buffer.binding		= aBindingIndex;
 			Buffer.stride		= aVertexStride;
-			Buffer.inputRate	= aInputRate;
+			Buffer.inputRate	= (VkVertexInputRate)aInputRate;
 			this->VertexBufferBindingDescription.push_back(Buffer);
 		}
 		else {
@@ -417,7 +393,7 @@ namespace geodesy::core::gpu {
 				if (aBindingIndex == Buffer.binding) {
 					Buffer.binding		= aBindingIndex;
 					Buffer.stride		= aVertexStride;
-					Buffer.inputRate	= aInputRate;
+					Buffer.inputRate	= (VkVertexInputRate)aInputRate;
 				}
 			}
 		}
@@ -434,19 +410,20 @@ namespace geodesy::core::gpu {
 	}
 
 	void pipeline::rasterizer::attach(uint32_t aAttachmentIndex, std::shared_ptr<image> aAttachmentImage, image::layout aImageLayout) {
-		this->attach(aAttachmentIndex, (image::format)aAttachmentImage->CreateInfo.format, (image::sample)aAttachmentImage->CreateInfo.samples, aImageLayout);
+		// TODO: Maybe check that image sample count matches rasterizer sample count?
+		this->attach(aAttachmentIndex, (image::format)aAttachmentImage->CreateInfo.format, aImageLayout);
 	}
 
-	void pipeline::rasterizer::attach(uint32_t aAttachmentIndex, image::format aFormat, image::sample aSampleCount, image::layout aImageLayout) {
+	void pipeline::rasterizer::attach(uint32_t aAttachmentIndex, image::format aFormat, image::layout aImageLayout) {
 		if (aAttachmentIndex < this->ColorAttachment.size()) {
 			this->ColorAttachment[aAttachmentIndex].Description.format			= (VkFormat)aFormat;
-			this->ColorAttachment[aAttachmentIndex].Description.samples			= (VkSampleCountFlagBits)aSampleCount;
+			this->ColorAttachment[aAttachmentIndex].Description.samples			= (VkSampleCountFlagBits)this->Multisample.rasterizationSamples;
 			this->ColorAttachment[aAttachmentIndex].Description.initialLayout	= (VkImageLayout)aImageLayout;
 			this->ColorAttachment[aAttachmentIndex].Description.finalLayout		= (VkImageLayout)aImageLayout;
 		}
 		else if (aAttachmentIndex == this->ColorAttachment.size()) {
 			this->DepthStencilAttachment.Description.format						= (VkFormat)aFormat;
-			this->DepthStencilAttachment.Description.samples					= (VkSampleCountFlagBits)aSampleCount;
+			this->DepthStencilAttachment.Description.samples					= (VkSampleCountFlagBits)this->Multisample.rasterizationSamples;
 			this->DepthStencilAttachment.Description.initialLayout				= (VkImageLayout)aImageLayout;
 			this->DepthStencilAttachment.Description.finalLayout				= (VkImageLayout)aImageLayout;
 		}
@@ -708,8 +685,9 @@ namespace geodesy::core::gpu {
 	pipeline::pipeline(std::shared_ptr<context> aContext, std::shared_ptr<raytracer> aRaytracer) : pipeline() {
 		VkResult Result = VK_SUCCESS;
 
-		BindPoint	= VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
-		Context		= aContext;
+		this->BindPoint				= VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+		this->Context				= aContext;
+		this->CreateInfo			= aRaytracer;
 
 		// Generate GPU shader modules.
 		Result = this->shader_stage_create(aRaytracer);
@@ -853,21 +831,29 @@ namespace geodesy::core::gpu {
 
 			// Get Shader Region Counts
 			uint32_t RayGenCount = 0, MissCount = 0, HitCount = 0, CallableCount = 0;
-			for (size_t i = 0; i < aRaytracer->Shader.size(); i++) {
-				switch (aRaytracer->Shader[i]->Stage) {
-				case shader::stage::RAYGEN:
-					RayGenCount++;
+			for (size_t i = 0; i < RSGCI.size(); i++) {  // Use shader groups, not individual shaders
+				switch (RSGCI[i].type) {
+				case VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR:
+					// Need to determine if it's raygen, miss, or callable
+					if (aRaytracer->ShaderGroup[i].GeneralShader) {
+						switch (aRaytracer->ShaderGroup[i].GeneralShader->Stage) {
+						case shader::stage::RAYGEN:
+							RayGenCount++;
+							break;
+						case shader::stage::MISS:
+							MissCount++;
+							break;
+						case shader::stage::CALLABLE:
+							CallableCount++;
+							break;
+						default:
+							break;
+						}
+					}
 					break;
-				case shader::stage::MISS:
-					MissCount++;
-					break;
-				case shader::stage::CLOSEST_HIT:
-				case shader::stage::ANY_HIT:
-				case shader::stage::INTERSECTION:
+				case VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR:
+				case VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR:
 					HitCount++;
-					break;
-				case shader::stage::CALLABLE:
-					CallableCount++;
 					break;
 				default:
 					break;
@@ -881,38 +867,46 @@ namespace geodesy::core::gpu {
 			
 			// Calculate Region Sizes based on alignment.
 			uint32_t HandleSizeAligned 		= align_up(HandleSize, HandleAlignment);
-			uint32_t RayGenSize 			= align_up(RayGenCount * HandleSizeAligned, BaseAlignment);
+			// For raygen: size must equal stride (only one entry), so don't align to BaseAlignment
+			uint32_t RayGenSize 			= RayGenCount > 0 ? HandleSizeAligned : 0;
 			uint32_t MissSize 				= align_up(MissCount * HandleSizeAligned, BaseAlignment);
 			uint32_t HitSize 				= align_up(HitCount * HandleSizeAligned, BaseAlignment);
 			uint32_t CallableSize 			= align_up(CallableCount * HandleSizeAligned, BaseAlignment);
-			uint32_t TotalSize = RayGenSize + MissSize + HitSize + CallableSize;
-
-			// Calculate offsets into SBTHM.
+			
+			// Calculate offsets with proper BaseAlignment for each region
 			uint32_t RayGenOffset = 0;
-			uint32_t MissOffset = RayGenSize;
-			uint32_t HitOffset = MissOffset + MissSize;
-			uint32_t CallableOffset = HitOffset + HitSize;
+			uint32_t MissOffset = align_up(RayGenOffset + RayGenSize, BaseAlignment);
+			uint32_t HitOffset = align_up(MissOffset + MissSize, BaseAlignment);
+			uint32_t CallableOffset = align_up(HitOffset + HitSize, BaseAlignment);
+			uint32_t TotalSize = CallableOffset + CallableSize;
 
 			// Get Index Map.
 			std::vector<uint32_t> RayGenIndices;
 			std::vector<uint32_t> MissIndices;
 			std::vector<uint32_t> HitIndices;
 			std::vector<uint32_t> CallableIndices;
-			for (size_t i = 0; i < aRaytracer->Shader.size(); i++) {
-				switch(aRaytracer->Shader[i]->Stage) {
-				case shader::stage::RAYGEN:
-					RayGenIndices.push_back(i);
+			for (size_t i = 0; i < RSGCI.size(); i++) {  // Iterate through shader groups
+				switch (RSGCI[i].type) {
+				case VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR:
+					if (aRaytracer->ShaderGroup[i].GeneralShader) {
+						switch (aRaytracer->ShaderGroup[i].GeneralShader->Stage) {
+						case shader::stage::RAYGEN:
+							RayGenIndices.push_back(i);  // i is the shader group index
+							break;
+						case shader::stage::MISS:
+							MissIndices.push_back(i);
+							break;
+						case shader::stage::CALLABLE:
+							CallableIndices.push_back(i);
+							break;
+						default:
+							break;
+						}
+					}
 					break;
-				case shader::stage::MISS:
-					MissIndices.push_back(i);
-					break;
-				case shader::stage::CLOSEST_HIT:
-				case shader::stage::ANY_HIT:
-				case shader::stage::INTERSECTION:
-					HitIndices.push_back(i);
-					break;
-				case shader::stage::CALLABLE:
-					CallableIndices.push_back(i);
+				case VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR:
+				case VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR:
+					HitIndices.push_back(i);  // i is the shader group index
 					break;
 				default:
 					break;
@@ -1176,9 +1170,11 @@ namespace geodesy::core::gpu {
 
 	void pipeline::raytrace(
 		VkCommandBuffer 											aCommandBuffer,
+		std::shared_ptr<descriptor::array> 							aDescriptorArray,
 		math::vec<uint, 3> 											aResolution
 	) {
 		PFN_vkCmdTraceRaysKHR vkCmdTraceRaysKHR = (PFN_vkCmdTraceRaysKHR)this->Context->FunctionPointer["vkCmdTraceRaysKHR"];
+		this->bind(aCommandBuffer, {}, nullptr, aDescriptorArray);
 		vkCmdTraceRaysKHR(
 			aCommandBuffer, 
 			&this->ShaderBindingTable.Raygen,
@@ -1217,46 +1213,22 @@ namespace geodesy::core::gpu {
 	}
 
 	std::map<VkDescriptorType, uint32_t> pipeline::descriptor_type_count() const {
-				// Calculate pool sizes based on pipeline descriptor set layout binding info.
+		// Calculate pool sizes based on pipeline descriptor set layout binding info.
 		std::map<VkDescriptorType, uint32_t> DescriptorTypeCount;
-		switch(this->BindPoint) {
-		case VK_PIPELINE_BIND_POINT_GRAPHICS:
-			{
-				std::shared_ptr<rasterizer> R = std::dynamic_pointer_cast<rasterizer>(this->CreateInfo);
-				for (size_t j = 0; j < R->DescriptorSetLayoutBinding.size(); j++) {
-					for (size_t k = 0; k < R->DescriptorSetLayoutBinding[j].size(); k++) {
-						VkDescriptorSetLayoutBinding DSLB = R->DescriptorSetLayoutBinding[j][k];
-						if (DescriptorTypeCount.count(DSLB.descriptorType) == 0) {
-							DescriptorTypeCount[DSLB.descriptorType] = 0;
-						}
-						DescriptorTypeCount[DSLB.descriptorType] += DSLB.descriptorCount;
-					}
+		for (size_t j = 0; j < this->CreateInfo->DescriptorSetLayoutBinding.size(); j++) {
+			for (size_t k = 0; k < this->CreateInfo->DescriptorSetLayoutBinding[j].size(); k++) {
+				VkDescriptorSetLayoutBinding DSLB = this->CreateInfo->DescriptorSetLayoutBinding[j][k];
+				if (DescriptorTypeCount.count(DSLB.descriptorType) == 0) {
+					DescriptorTypeCount[DSLB.descriptorType] = 0;
 				}
+				DescriptorTypeCount[DSLB.descriptorType] += DSLB.descriptorCount;
 			}
-			break;
-		case VK_PIPELINE_BIND_POINT_COMPUTE:
-			break;
-		case VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR:
-			break;
 		}
 		return DescriptorTypeCount;
 	}
 
 	std::vector<std::vector<VkDescriptorSetLayoutBinding>> pipeline::descriptor_set_layout_binding() const {
-		std::vector<std::vector<VkDescriptorSetLayoutBinding>> DescriptorSetLayoutBinding;
-		switch(this->BindPoint) {
-		case VK_PIPELINE_BIND_POINT_GRAPHICS:
-			{
-				std::shared_ptr<rasterizer> R = std::dynamic_pointer_cast<rasterizer>(this->CreateInfo);
-				DescriptorSetLayoutBinding = R->DescriptorSetLayoutBinding;
-			}
-			break;
-		case VK_PIPELINE_BIND_POINT_COMPUTE:
-			break;
-		case VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR:
-			break;
-		}
-		return DescriptorSetLayoutBinding;
+		return this->CreateInfo->DescriptorSetLayoutBinding;
 	}
 
 	VkResult pipeline::shader_stage_create(std::shared_ptr<create_info> aCreateInfo) {

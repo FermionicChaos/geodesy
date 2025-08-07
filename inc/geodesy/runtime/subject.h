@@ -48,7 +48,29 @@ namespace geodesy::runtime {
 			virtual std::vector<core::gpu::command_batch> predraw();
 			virtual std::vector<core::gpu::command_batch> postdraw();
 		
-		}; 	
+		};
+
+		struct uniform_data {
+			alignas(16) core::math::vec<float, 3> 		Position;
+			alignas(16) core::math::mat<float, 4, 4> 	Rotation;
+			alignas(16) core::math::mat<float, 4, 4> 	Projection;
+			alignas(16) core::math::mat<float, 4, 4> 	PRT;
+			uniform_data(
+				core::math::vec<float, 3> 		aPosition, 
+				core::math::vec<float, 2> 		aDirection,
+				core::math::vec<float, 3> 		aScale,
+				float 							aNear,
+				float 							aFar
+			);
+			uniform_data(
+				core::math::vec<float, 3> 		aPosition, 
+				core::math::vec<float, 2> 		aDirection,
+				float 							aFOV,
+				core::math::vec<uint, 3> 		aResolution,
+				float 							aNear,
+				float 							aFar
+			);
+		};
 
 		struct creator : object::creator {
 			core::math::vec<uint, 3> 		Resolution;
@@ -58,19 +80,25 @@ namespace geodesy::runtime {
 			creator();
 		};
 
-		std::shared_ptr<framechain> 								Framechain;
-		std::shared_ptr<core::gpu::pipeline> 						Pipeline;
-		std::shared_ptr<core::gpu::command_pool>					CommandPool;
-		std::shared_ptr<core::gpu::semaphore_pool> 					SemaphorePool;
-		std::vector<core::gpu::command_batch>						RenderingOperations;
-		VkSemaphore 												NextFrameSemaphore;
-		VkSemaphore 												PresentFrameSemaphore;
+		// Runtime Type Information (RTTI) ID for the subject class.
+		constexpr static uint32_t rttiid = generate_rttiid<subject>();
+				
+		std::shared_ptr<framechain> 											Framechain;
+		std::vector<std::vector<std::shared_ptr<core::gpu::framebuffer>>> 		Framebuffer;
+		std::vector<std::shared_ptr<core::gpu::pipeline>> 						Pipeline;
+		std::shared_ptr<core::gpu::buffer> 										SubjectUniformBuffer;
+		std::shared_ptr<core::gpu::command_pool>								CommandPool;
+		std::shared_ptr<core::gpu::semaphore_pool> 								SemaphorePool;
+		std::vector<core::gpu::command_batch>									RenderingOperations;
+		VkSemaphore 															NextFrameSemaphore;
+		VkSemaphore 															PresentFrameSemaphore;
 
 		subject(std::shared_ptr<core::gpu::context> aContext, stage* aStage, creator* aSubjectCreator);
 		~subject();
 
 		virtual bool is_subject() override;
 		virtual std::shared_ptr<renderer> default_renderer(object* aObject);
+		virtual std::shared_ptr<renderer> default_post_processor(stage* aStage);
 		virtual core::gpu::submission_batch render(stage* aStage);
 
 	};

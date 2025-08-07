@@ -15,8 +15,9 @@ namespace geodesy::core::phys {
 
 	mesh::mesh() {
 		this->Name						= "";
-		this->BoundingRadius			= 0.0f;
-		this->Mass						= 0.0f;
+		this->Mass						= 1.0f;
+		this->CenterOfMass 				= { 0.0f, 0.0f, 0.0f };
+		this->BoundingRadius			= { 0.0f, 0.0f, 0.0f };
 	}
 
 	mesh::vertex mesh::operator[](size_t aIndex) const {
@@ -26,4 +27,30 @@ namespace geodesy::core::phys {
 	mesh::vertex& mesh::operator[](size_t aIndex) {
 		return this->Vertex[aIndex];
 	}
+
+	// Calculates the center of mass of the mesh.
+	math::vec<float, 3> mesh::center_of_mass() const {
+		math::vec<float, 3> COM = math::vec<float, 3>(0.0f, 0.0f, 0.0f);
+		for (const auto& Vertex : this->Vertex) {
+			COM += Vertex.Position;
+		}
+		COM /= static_cast<float>(this->Vertex.size());
+		return COM;
+	}
+
+	// Determines the bounding radius of the mesh.
+	math::vec<float, 3> mesh::bounding_radius() const {
+		float MaxRadius = 0.0f;
+		math::vec<float, 3> MaxPosition = { 0.0f, 0.0f, 0.0f };
+		math::vec<float, 3> COM = this->center_of_mass();
+		for (const auto& Vertex : this->Vertex) {
+			float Distance = math::length(Vertex.Position - COM);
+			if (Distance > MaxRadius) {
+				MaxRadius = Distance;
+				MaxPosition = Vertex.Position - COM;
+			}
+		}
+		return MaxPosition;
+	}
+
 }

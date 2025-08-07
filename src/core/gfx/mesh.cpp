@@ -244,21 +244,34 @@ namespace geodesy::core::gfx {
 				Topology.Data32[3*i + 2] = (uint)aMesh->mFaces[i].mIndices[2];
 			}
 		}
+
+		// Calculate properties of the mesh.
+		this->CenterOfMass = this->center_of_mass();
+		this->BoundingRadius = this->bounding_radius();
 	}
 	
 	mesh::mesh(std::shared_ptr<gpu::context> aContext, std::shared_ptr<mesh> aMesh) {
 		this->HostMesh = aMesh;
+		this->Name = aMesh->Name;
+		this->Mass = aMesh->Mass;
+		this->CenterOfMass = aMesh->CenterOfMass;
+		this->BoundingRadius = aMesh->BoundingRadius;
 		this->Context = aContext;
 		if ((aContext != nullptr) && (aMesh != nullptr)) {
 			// Vertex Buffer Creation Info
 			gpu::buffer::create_info VBCI;
 			VBCI.Memory = device::memory::DEVICE_LOCAL;
-			VBCI.Usage = buffer::usage::VERTEX | buffer::usage::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR | buffer::usage::SHADER_DEVICE_ADDRESS | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
+			VBCI.Usage = buffer::usage::VERTEX | buffer::usage::SHADER_DEVICE_ADDRESS | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 			VBCI.ElementCount = aMesh->Vertex.size();
 			// Index buffer Create Info
 			gpu::buffer::create_info IBCI;
 			IBCI.Memory = device::memory::DEVICE_LOCAL;
-			IBCI.Usage = buffer::usage::INDEX | buffer::usage::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR | buffer::usage::SHADER_DEVICE_ADDRESS | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
+			IBCI.Usage = buffer::usage::INDEX | buffer::usage::SHADER_DEVICE_ADDRESS | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
+			// Only enable usage type if context supports acceleration structures.
+			if (aContext->extension_enabled("VK_KHR_acceleration_structure")) {
+				VBCI.Usage |= buffer::usage::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR;
+				IBCI.Usage |= buffer::usage::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR;
+			}
 			IBCI.ElementCount = aMesh->Topology.Data16.size() > 0 ? aMesh->Topology.Data16.size() : aMesh->Topology.Data32.size();
 			// Create Vertex Buffer
 			this->VertexBuffer = aContext->create_buffer(VBCI, aMesh->Vertex.size() * sizeof(vertex), aMesh->Vertex.data());
@@ -268,6 +281,10 @@ namespace geodesy::core::gfx {
 			}
 			else {
 				this->IndexBuffer = aContext->create_buffer(IBCI, aMesh->Topology.Data32.size() * sizeof(uint), aMesh->Topology.Data32.data());
+			}
+			// Create Acceleration Structure if context supports it.
+			if (aContext->extension_enabled("VK_KHR_acceleration_structure")) {
+				this->AccelerationStructure = geodesy::make<gpu::acceleration_structure>(aContext, this, aMesh.get());
 			}
 		}
 	}

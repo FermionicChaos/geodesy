@@ -2,6 +2,10 @@
 
 namespace geodesy::core::gpu {
 
+	command_batch::command_batch(const std::vector<VkCommandBuffer>& aCommandBufferList) {
+		this->CommandBufferList = aCommandBufferList;
+	}
+
 	command_batch& command_batch::operator+=(VkCommandBuffer aCommandBuffer) {
 		return (*this += std::vector<VkCommandBuffer>{aCommandBuffer} );
 	}

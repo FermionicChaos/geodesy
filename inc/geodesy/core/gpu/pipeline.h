@@ -81,6 +81,11 @@ namespace geodesy::core::gpu {
 			RAY_TRACER 							= VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR,
 		};
 
+		enum input_rate {
+			VERTEX 								= VK_VERTEX_INPUT_RATE_VERTEX,
+			INSTANCE 							= VK_VERTEX_INPUT_RATE_INSTANCE,
+		};
+
 		struct create_info {
 		public:
 
@@ -142,11 +147,11 @@ namespace geodesy::core::gpu {
 			rasterizer(std::vector<std::shared_ptr<shader>> aShaderList, math::vec<uint, 3> aResolution);
 
 			// bind maps the vertex attributes in the shader to where the vertex buffer is intended to be bound.
-			void bind(VkVertexInputRate aInputRate, uint32_t aBindingIndex, size_t aVertexStride, uint32_t aLocationIndex, size_t aVertexOffset);
+			void bind(uint32_t aBindingIndex, size_t aVertexStride, uint32_t aLocationIndex, size_t aVertexOffset, input_rate aInputRate = input_rate::VERTEX);
 
 			// attach attaches an image to a pipeline's output, conveying the format and layout of the image during rendering.
-			void attach(uint32_t aAttachmentIndex, std::shared_ptr<image> aAttachmentImage, image::layout aImageLayout);
-			void attach(uint32_t aAttachmentIndex, image::format aFormat, image::sample aSampleCount, image::layout aImageLayout);
+			void attach(uint32_t aAttachmentIndex, std::shared_ptr<image> aAttachmentImage, image::layout aImageLayout = image::layout::SHADER_READ_ONLY_OPTIMAL);
+			void attach(uint32_t aAttachmentIndex, image::format aFormat, image::layout aImageLayout = image::layout::SHADER_READ_ONLY_OPTIMAL);
 
 			void resize(math::vec<uint, 3> aResolution);
 
@@ -171,11 +176,11 @@ namespace geodesy::core::gpu {
 			};
 
 			struct shader_binding_table {
-				std::shared_ptr<buffer> 		Buffer;
-				VkStridedDeviceAddressRegionKHR Raygen;
-				VkStridedDeviceAddressRegionKHR Miss;
-				VkStridedDeviceAddressRegionKHR Hit;
-				VkStridedDeviceAddressRegionKHR Callable;
+				std::shared_ptr<buffer> 			Buffer;
+				VkStridedDeviceAddressRegionKHR 	Raygen;
+				VkStridedDeviceAddressRegionKHR 	Miss;
+				VkStridedDeviceAddressRegionKHR 	Hit;
+				VkStridedDeviceAddressRegionKHR 	Callable;
 			};
 
 			uint32_t 						MaxRecursionDepth;
@@ -280,6 +285,7 @@ namespace geodesy::core::gpu {
 
 		void raytrace(
 			VkCommandBuffer 											aCommandBuffer,
+			std::shared_ptr<descriptor::array> 							aDescriptorArray,
 			math::vec<uint, 3> 											aResolution
 		);
 		VkResult raytrace(

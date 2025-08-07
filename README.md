@@ -6,10 +6,9 @@
 ![Alt Text](https://github.com/FermionicChaos/geodesy/blob/master/res/github/logo.png)
 
 The geodesy engine is a high performance game/physics engine written in C++. It utilizes the Vulkan Graphics
-& Compute API to interact with GPU hardware. Years ago when I was studying physics and taking a general relativity
-class, we were tasked a final project and my class mate and I decided to do a curved spacetime renderer as our
-final project. We named the project "Geodesic Renderer", which was a renderer for curved space-time. I had weebified
-the name to geodesy, and hence the name for this project was born.
+& Compute API to interact with GPU hardware. Years ago when I was studying physics in college, we were tasked 
+a final project and my class mate and I decided to do a curved spacetime renderer as our final project. We named 
+the project "Geodesic Renderer", which was a renderer for curved space-time.
 
 ---
 
@@ -116,33 +115,45 @@ The geodesy engine is a cross-platform high performance game engine written in C
 graphics and compute API to interact with GPU hardware. The game engine is in its early design phases, and
 is highly experimental. Efforts have made the engine easy to use on multiple platforms.
 
-## To Do List:
+## TODO List:
 
-- Finish model.h material system.
+- Finish up deferred renderer.
 
-- Clean up pipeline.h to generate descriptor sets for model.h
+- Generalized Asset loading system through network, virtual file system, and local file system. 
 
-- Resolve issue with object being used in multiple stages simultaneously.
+- Factory creation system for run time loading stages/objects
 
-## Back Burner:
+- Object/Entity scripting systems for logical operations on the same stage.
+
+- Terminal Interface for shutting down the engine. 
+
+- Imgui Desktop Toolkit
+
+- Exit Conditions (Such as all windows being closed.)
+
+- Create model animation caching system.
 
 - Introduce portaudio to the geodesy engine.
 
-- Add layering system for window objects, for huds, system stats and so
-on. (Will be done with canvas class, and window as target.)
-
-- File System stuff.
-
-- Add built in extension types for file.h to recognize file types
-and forward to proper objects.
-
 - Add lua support for runtime scripting.
 
-- Add engine asset manager to prevent double loading.
+- Remove all GPU execution code from host update loop.
 
-- Add Dynamic Library compilation options.
+- Generalize runtime app/stage/object, remove scene3d/canvas
 
-- Change Texture class to image class? The reasoning behind this change
-along with how vulkan does it, is that a texture describes the texture
-of a particular surface while an image is a generalized concept of a type
-of memory.
+- Load VR vulkan extensions (finish cameravr)
+
+- Use MoltenVK for Vulkan MacOS/iOS Support
+
+- Formalize Cross Platform Input Handling
+
+## Bug List:
+
+- Figure out why ray tracer is not intersecting scene geometry.
+
+- Figure out gpu uniform buffer update latency
+
+- Figure out window zero size vulkan validation error on windows
+
+- Figure out window resizing validation error on windows.
+

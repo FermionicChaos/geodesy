@@ -119,9 +119,86 @@ namespace geodesy::core::math {
 			}
 		}
 
+		// Generates an orientation quaternion from spherical coordinates.
+		quaternion(T aTheta, T aPhi) {
+			// Your coordinate system: Z-up, XY ground plane
+			// Theta: polar angle from +Z axis (0 = pointing up, π/2 = horizontal, π = pointing down)
+			// Phi: azimuthal angle in XY plane (0 = +X direction, π/2 = +Y direction)
+		
+			// Convert spherical coordinates to Cartesian direction vector
+			T SinTheta = std::sin(aTheta);
+			T CosTheta = std::cos(aTheta);
+			T SinPhi = std::sin(aPhi);
+			T CosPhi = std::cos(aPhi);
+		
+			// Target direction in your coordinate system (Z-up)
+			std::array<T, 3> TargetDirection = {
+				SinTheta * CosPhi,   // X component
+				SinTheta * SinPhi,   // Y component  
+				CosTheta            // Z component
+			};
+		
+			// Base direction is +Z axis
+			std::array<T, 3> BaseDirection = {T(0), T(0), T(1)};
+		
+			// Calculate cross product: BaseDirection × TargetDirection
+			std::array<T, 3> RotationAxis = {
+				BaseDirection[1] * TargetDirection[2] - BaseDirection[2] * TargetDirection[1],  // X
+				BaseDirection[2] * TargetDirection[0] - BaseDirection[0] * TargetDirection[2],  // Y
+				BaseDirection[0] * TargetDirection[1] - BaseDirection[1] * TargetDirection[0]   // Z
+			};
+		
+			// Calculate dot product: BaseDirection · TargetDirection
+			T DotProduct = BaseDirection[0] * TargetDirection[0] + 
+						   BaseDirection[1] * TargetDirection[1] + 
+						   BaseDirection[2] * TargetDirection[2];
+		
+			// Calculate length of rotation axis
+			T AxisLength = std::sqrt(RotationAxis[0] * RotationAxis[0] + 
+									RotationAxis[1] * RotationAxis[1] + 
+									RotationAxis[2] * RotationAxis[2]);
+			
+			if (AxisLength < std::numeric_limits<T>::epsilon()) {
+				// Vectors are parallel or anti-parallel
+				if (DotProduct > T(0.999)) {
+					// Same direction - identity quaternion
+					(*this)[0] = T(1);  // w
+					(*this)[1] = T(0);  // x
+					(*this)[2] = T(0);  // y
+					(*this)[3] = T(0);  // z
+				} else {
+					// Opposite directions - 180° rotation
+					// Use X-axis for 180° rotation (since BaseDirection is {0,0,1})
+					(*this)[0] = T(0);  // w
+					(*this)[1] = T(1);  // x (180° around X-axis)
+					(*this)[2] = T(0);  // y
+					(*this)[3] = T(0);  // z
+				}
+			} else {
+				// Calculate rotation angle
+				T Angle = std::acos(std::clamp(DotProduct, T(-1), T(1)));
+			
+				// Normalize rotation axis
+				T InvAxisLength = T(1) / AxisLength;
+				RotationAxis[0] *= InvAxisLength;
+				RotationAxis[1] *= InvAxisLength;
+				RotationAxis[2] *= InvAxisLength;
+			
+				// Create quaternion from axis-angle
+				T HalfAngle = Angle / T(2);
+				T SinHalfAngle = std::sin(HalfAngle);
+				T CosHalfAngle = std::cos(HalfAngle);
+			
+				(*this)[0] = CosHalfAngle;                    // w
+				(*this)[1] = RotationAxis[0] * SinHalfAngle; // x
+				(*this)[2] = RotationAxis[1] * SinHalfAngle; // y
+				(*this)[3] = RotationAxis[2] * SinHalfAngle; // z
+			}
+		}
+
 		// Variadic template constructor to fill the vector
-    	template<typename... args, typename = std::enable_if_t<sizeof...(args) == 4>>
-    	quaternion(args... aArgs) : std::array<T, 4>{static_cast<T>(aArgs)...} {}
+		template<typename... args, typename = std::enable_if_t<sizeof...(args) == 4>>
+		quaternion(args... aArgs) : std::array<T, 4>{static_cast<T>(aArgs)...} {}
 
 		// Calculate the conjugate of the quaternion
 		quaternion<T> operator~() const {

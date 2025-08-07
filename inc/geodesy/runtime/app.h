@@ -23,6 +23,16 @@ namespace geodesy::runtime {
 	class app {
 	public:
 
+		// Polymorphic factory method for runtime object creation using type information
+		template<typename T>
+		static std::shared_ptr<T> create(std::shared_ptr<core::gpu::context> aContext, runtime::stage::creator* aCreator) {
+			std::shared_ptr<T> NewObject = geodesy::make<T>(
+				aContext,
+				static_cast<typename T::creator*>(aCreator)
+			);
+			return NewObject;
+		}
+
 		std::mutex											Mutex;
 		engine*												Engine;
 		std::string											Name;
@@ -35,22 +45,12 @@ namespace geodesy::runtime {
 		app(engine* aEngine, std::string aName, core::math::vec<uint, 3> aVersion);
 		~app();
 
-		template<typename T, typename... Args>
-		std::shared_ptr<T> create_stage(std::shared_ptr<core::gpu::context> aContext, std::string aName, Args&&... aArgs) {
-			std::shared_ptr<T> NewStage(new T(
-				aContext,
-				std::move(aName),
-				std::forward<Args>(aArgs)...
-			));
-			this->Stage.push_back(NewStage);
-			this->StageLookup[NewStage->Name] = NewStage;
-			return NewStage;
-		}
+		virtual std::shared_ptr<stage> build_stage(std::shared_ptr<core::gpu::context> aContext, stage::creator* aStageCreator);
 
 		void init();
 		virtual void run() = 0;
 		
-		std::map<std::shared_ptr<core::gpu::context>, core::gpu::submission_batch> update(double aDeltaTime);
+		void update(double aDeltaTime);
 		std::map<std::shared_ptr<core::gpu::context>, core::gpu::submission_batch> render();
 
 	};

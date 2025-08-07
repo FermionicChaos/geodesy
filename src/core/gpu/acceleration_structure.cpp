@@ -17,7 +17,7 @@ namespace geodesy::core::gpu {
 
 	acceleration_structure::acceleration_structure(std::shared_ptr<context> aContext, const gfx::mesh* aDeviceMesh, const gfx::mesh* aHostMesh) : acceleration_structure() {
 		this->Context = aContext;
-		uint32_t PrimitiveCount = (aHostMesh->Vertex.size() <= (1 << 16) ? aHostMesh->Topology.Data16.size() : aHostMesh->Topology.Data32.size()) / 3;
+		uint32_t PrimitiveCount = aHostMesh->Topology.Data16.size() > 0 ? aHostMesh->Topology.Data16.size() / 3 : aHostMesh->Topology.Data32.size() / 3;
 		// Build Bottom Level AS (Mesh Geometry Data).
 		// Needed for device addresses.
 		// PFN_vkGetBufferDeviceAddress vkGetBufferDeviceAddress = (PFN_vkGetBufferDeviceAddress)Context->FunctionPointer["vkGetBufferDeviceAddress"];
@@ -33,7 +33,7 @@ namespace geodesy::core::gpu {
 		ASG.geometry.triangles.vertexData.deviceAddress 		= aDeviceMesh->VertexBuffer->device_address();
 		ASG.geometry.triangles.vertexStride						= sizeof(gfx::mesh::vertex);
 		ASG.geometry.triangles.maxVertex						= aHostMesh->Vertex.size();
-		ASG.geometry.triangles.indexType						= aHostMesh->Vertex.size() <= (1 << 16) ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+		ASG.geometry.triangles.indexType						= aHostMesh->Topology.Data16.size() > 0 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
 		ASG.geometry.triangles.indexData.deviceAddress 			= aDeviceMesh->IndexBuffer->device_address();
 		ASG.geometry.triangles.transformData.deviceAddress		= 0;
 		ASG.flags												= VK_GEOMETRY_OPAQUE_BIT_KHR;
@@ -91,8 +91,8 @@ namespace geodesy::core::gpu {
 		if (Result == VK_SUCCESS) {
 			// Update ASBGI with the acceleration structure handle.
 			ASBGI.dstAccelerationStructure = this->Handle;
-			// Update ASBGI with the scratch buffer device address.
-			ASBGI.scratchData.deviceAddress = this->Buffer->device_address();
+			// Update ASBGI with the scratch buffer device address (NOT the AS buffer address).
+			ASBGI.scratchData.deviceAddress = this->BuildScratchBuffer->device_address();
 
 			// Now fill out acceleration structure buffer.
 			VkAccelerationStructureBuildRangeInfoKHR ASBRI;
@@ -129,6 +129,7 @@ namespace geodesy::core::gpu {
 	}
 
 	acceleration_structure::acceleration_structure(std::shared_ptr<context> aContext, const runtime::stage* aStage) {
+		this->Context = aContext;
 		// TLAS will have to iterate through every objects model to gather its mesh instances.
 
 		// Vulkan mesh instance list over entire stage.
@@ -137,37 +138,12 @@ namespace geodesy::core::gpu {
 		// Iterate through all objects in the stage.
 		for (const auto& Object : aStage->Object) {
 			// Get list of mesh instances per object model.
-			std::vector<gfx::mesh::instance*> MeshInstanceList = Object->gather_instances();
-			for (gfx::mesh::instance* MeshInstance : MeshInstanceList) {
+			for (auto& MeshInstance : Object->TotalMeshInstance) {
 				VkAccelerationStructureInstanceKHR ASI{};
-				gfx::mesh* Mesh = Object->Model->Mesh[MeshInstance->MeshIndex].get();
-
-				// ! Object Transformation Info.
-				// Create Translation Matrix.
-				math::mat<float, 4, 4> ObjectTranslation = {
-					1.0f, 0.0f, 0.0f, Object->Position[0],
-					0.0f, 1.0f, 0.0f, Object->Position[1],
-					0.0f, 0.0f, 1.0f, Object->Position[2],
-					0.0f, 0.0f, 0.0f, 1.0f
-				};
-				// Create Orientation Matrix.
-				math::mat<float, 4, 4> ObjectOrientation = {
-					Object->DirectionRight[0], 		Object->DirectionFront[0], 		Object->DirectionUp[0], 	0.0f,
-					Object->DirectionRight[1], 		Object->DirectionFront[1], 		Object->DirectionUp[1], 	0.0f,
-					Object->DirectionRight[2], 		Object->DirectionFront[2], 		Object->DirectionUp[2], 	0.0f,
-					0.0f, 							0.0f, 							0.0f, 						1.0f
-				};
-				// Create Scale Matrix.
-				math::mat<float, 4, 4> ObjectScale = {
-					Object->Scale[0], 	0.0f, 				0.0f, 				0.0f,
-					0.0f, 				Object->Scale[1], 	0.0f, 				0.0f,
-					0.0f, 				0.0f, 				Object->Scale[2], 	0.0f,
-					0.0f, 				0.0f, 				0.0f, 				1.0f
-				};
-				math::mat<float, 4, 4> ObjectTransform = ObjectTranslation * ObjectOrientation * ObjectScale;
+				auto Mesh = Object->Model->Mesh[MeshInstance->MeshIndex].get();
 
 				// Matrix Transform, get global transform to world space. (Include Object Transform.)
-				math::mat<float, 4, 4> WorldTransform = ObjectTransform;// * MeshInstance->Transform;
+				math::mat<float, 4, 4> WorldTransform = MeshInstance->Parent->GlobalTransform;
 				for (int Row = 0; Row < 3; Row++) {
 					for (int Col = 0; Col < 4; Col++) {
 						// Convert from memory internal format to vulkan using proper accessors.
@@ -180,7 +156,7 @@ namespace geodesy::core::gpu {
 				// Visible to all rays.
 				ASI.mask										= 0xFF;
 				// Might need info from ray tracing pipeline.
-				ASI.instanceShaderBindingTableRecordOffset		; // TODO: Figure out relation with pipeline.
+				ASI.instanceShaderBindingTableRecordOffset		= 0; // TODO: Figure out relation with pipeline.
 				// Flags
 				ASI.flags										= VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
 				// Instance ID.
@@ -195,7 +171,7 @@ namespace geodesy::core::gpu {
 		{
 			gpu::buffer::create_info IBCI;
 			IBCI.Memory = device::memory::DEVICE_LOCAL;
-			IBCI.Usage = buffer::usage::ACCELERATION_STRUCTURE_STORAGE_KHR | buffer::usage::SHADER_DEVICE_ADDRESS | buffer::usage::STORAGE | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
+			IBCI.Usage = buffer::usage::ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_KHR | buffer::usage::ACCELERATION_STRUCTURE_STORAGE_KHR | buffer::usage::SHADER_DEVICE_ADDRESS | buffer::usage::STORAGE | buffer::usage::TRANSFER_SRC | buffer::usage::TRANSFER_DST;
 			this->InstanceBuffer = aContext->create_buffer(IBCI, InstanceList.size() * sizeof(VkAccelerationStructureInstanceKHR), InstanceList.data());
 		}
 

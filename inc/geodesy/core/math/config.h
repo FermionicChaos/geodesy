@@ -7,6 +7,8 @@
 #include <type_traits>
 #include <ostream>
 #include <cmath>
+#include <algorithm>
+#include <limits>
 
 namespace geodesy::core::math {
 

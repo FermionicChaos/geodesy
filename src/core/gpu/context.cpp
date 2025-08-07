@@ -213,6 +213,10 @@ namespace geodesy::core::gpu {
 				throw aDevice->Engine->Logger;
 			}
 
+			// Save a copy of loaded layers and extensions.
+			this->Layers = aLayerList;
+			this->Extensions = aExtensionList;
+
 			// Load function pointers to ray tracing functions.
 			for (const char* FunctionName : VulkanRayTracingFunctionNames) {
 				this->FunctionPointer[FunctionName] = vkGetDeviceProcAddr(this->Handle, FunctionName);
@@ -265,6 +269,15 @@ namespace geodesy::core::gpu {
 		VkMemoryRequirements MemoryRequirements;
 		vkGetImageMemoryRequirements(this->Handle, aImageHandle, &MemoryRequirements);
 		return MemoryRequirements;
+	}
+
+	bool context::extension_enabled(const std::string& aExtensionName) {
+		if (this->Extensions.count(aExtensionName) > 0) {
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 
 	VkCommandBuffer context::allocate_command_buffer(device::operation aOperation, VkCommandBufferLevel aLevel) {
@@ -371,13 +384,18 @@ namespace geodesy::core::gpu {
 	VkDeviceMemory context::allocate_memory(VkMemoryRequirements aMemoryRequirements, uint aMemoryType) {
 		VkResult Result = VK_SUCCESS;
 		VkDeviceMemory MemoryHandle = VK_NULL_HANDLE;
+		// This structure is needed for ray tracing.
 		VkMemoryAllocateFlagsInfo MemoryAllocateFlagsInfo{};
 		MemoryAllocateFlagsInfo.sType			= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
 		MemoryAllocateFlagsInfo.pNext			= NULL;
 		MemoryAllocateFlagsInfo.flags			= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
 		VkMemoryAllocateInfo AllocateInfo{};
 		AllocateInfo.sType						= VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		AllocateInfo.pNext						= &MemoryAllocateFlagsInfo;
+		if (this->extension_enabled("VK_KHR_buffer_device_address")) {
+			AllocateInfo.pNext					= &MemoryAllocateFlagsInfo;
+		} else {
+			AllocateInfo.pNext					= NULL;
+		}
 		AllocateInfo.allocationSize				= aMemoryRequirements.size;
 		AllocateInfo.memoryTypeIndex			= this->Device->get_memory_type_index(aMemoryRequirements, aMemoryType);
 		Result = vkAllocateMemory(this->Handle, &AllocateInfo, NULL, &MemoryHandle);
@@ -390,6 +408,8 @@ namespace geodesy::core::gpu {
 		this->Memory.erase(aMemoryHandle);
 		aMemoryHandle = VK_NULL_HANDLE;
 	}
+
+	// Buffer createion
 
 	std::shared_ptr<buffer> context::create_buffer(buffer::create_info aCreateInfo, int aVertexCount, util::variable aVertexLayout, void* aVertexData) {
 		return this->create_buffer(aCreateInfo.Memory, aCreateInfo.Usage, aVertexCount * aVertexLayout.size(), aVertexData);
@@ -408,11 +428,8 @@ namespace geodesy::core::gpu {
 	}
 
 	std::shared_ptr<buffer> context::create_buffer(uint aMemoryType, uint aBufferUsage, size_t aElementCount, size_t aBufferSize, void* aBufferData) {
-		return std::make_shared<buffer>(this->shared_from_this(), aMemoryType, aBufferUsage, aElementCount, aBufferSize, aBufferData);
-	}
-
-	std::shared_ptr<image> context::create_image(image::create_info aCreateInfo, std::string aFilePath) {
-		return std::make_shared<image>(this->shared_from_this(), aCreateInfo, aFilePath);
+		std::shared_ptr<buffer> NewDeviceResource = geodesy::make<buffer>(this->shared_from_this(), aMemoryType, aBufferUsage, aElementCount, aBufferSize, aBufferData);
+		return NewDeviceResource;
 	}
 
 	std::shared_ptr<image> context::create_image(image::create_info aCreateInfo, std::shared_ptr<image> aHostImage) {
@@ -420,27 +437,38 @@ namespace geodesy::core::gpu {
 	}
 
 	std::shared_ptr<image> context::create_image(image::create_info aCreateInfo, image::format aFormat, uint aX, uint aY, uint aZ, uint aT, void* aTextureData) {
-		return std::make_shared<image>(this->shared_from_this(), aCreateInfo, aFormat, aX, aY, aZ, aT, aTextureData);
+		std::shared_ptr<image> NewDeviceResource = geodesy::make<image>(this->shared_from_this(), aCreateInfo, aFormat, aX, aY, aZ, aT, aTextureData);
+		return NewDeviceResource;
 	}
 
 	std::shared_ptr<descriptor::array> context::create_descriptor_array(std::shared_ptr<pipeline> aPipeline, VkSamplerCreateInfo aSamplerCreateInfo) {
-		return std::make_shared<descriptor::array>(this->shared_from_this(), aPipeline, aSamplerCreateInfo);
+		std::shared_ptr<descriptor::array> NewDeviceResource = geodesy::make<descriptor::array>(this->shared_from_this(), aPipeline, aSamplerCreateInfo);
+		return NewDeviceResource;
 	}
 
 	std::shared_ptr<framebuffer> context::create_framebuffer(std::shared_ptr<pipeline> aPipeline, std::vector<std::shared_ptr<image>> aImageAttachements, math::vec<uint, 3> aResolution) {
-		return std::make_shared<framebuffer>(this->shared_from_this(), aPipeline, aImageAttachements, aResolution);
+		std::shared_ptr<framebuffer> NewDeviceResource = geodesy::make<framebuffer>(this->shared_from_this(), aPipeline, aImageAttachements, aResolution);
+		return NewDeviceResource;
 	}
 
 	std::shared_ptr<framebuffer> context::create_framebuffer(std::shared_ptr<pipeline> aPipeline, std::map<std::string, std::shared_ptr<image>> aImage, std::vector<std::string> aAttachmentSelection, math::vec<uint, 3> aResolution) {
-		return std::make_shared<framebuffer>(this->shared_from_this(), aPipeline, aImage, aAttachmentSelection, aResolution);
+		std::shared_ptr<framebuffer> NewDeviceResource = geodesy::make<framebuffer>(this->shared_from_this(), aPipeline, aImage, aAttachmentSelection, aResolution);
+		return NewDeviceResource;
 	}
 
-	std::shared_ptr<pipeline> context::create_pipeline(std::shared_ptr<pipeline::rasterizer> aRasterizer, VkRenderPass aRenderPass, uint32_t aSubpassIndex) {\
-		return std::make_shared<pipeline>(this->shared_from_this(), aRasterizer, aRenderPass, aSubpassIndex);
+	std::shared_ptr<pipeline> context::create_pipeline(std::shared_ptr<pipeline::rasterizer> aRasterizer, VkRenderPass aRenderPass, uint32_t aSubpassIndex) {
+		std::shared_ptr<pipeline> NewDeviceResource = geodesy::make<pipeline>(this->shared_from_this(), aRasterizer, aRenderPass, aSubpassIndex);
+		return NewDeviceResource;
+	}
+
+	std::shared_ptr<pipeline> context::create_pipeline(std::shared_ptr<pipeline::raytracer> aRayTracer) {
+		std::shared_ptr<pipeline> NewDeviceResource = geodesy::make<pipeline>(this->shared_from_this(), aRayTracer);
+		return NewDeviceResource;
 	}
 
 	std::shared_ptr<gfx::model> context::create_model(std::shared_ptr<gfx::model> aModel, gpu::image::create_info aCreateInfo) {
-		return std::make_shared<gfx::model>(this->shared_from_this(), aModel, aCreateInfo);
+		std::shared_ptr<gfx::model> NewDeviceResource = geodesy::make<gfx::model>(this->shared_from_this(), aModel, aCreateInfo);
+		return NewDeviceResource;
 	}
 
 	VkResult context::begin(VkCommandBuffer aCommandBuffer) {
@@ -532,6 +560,14 @@ namespace geodesy::core::gpu {
 
 	void context::draw_indexed(VkCommandBuffer aCommandBuffer, uint32_t aIndexCount, uint32_t aInstanceCount, uint32_t aFirstIndex, uint32_t aVertexOffset, uint32_t aFirstInstance) {
 		vkCmdDrawIndexed(aCommandBuffer, aIndexCount, aInstanceCount, aFirstIndex, aVertexOffset, aFirstInstance);
+	}
+
+	VkResult context::wait() {
+		return vkDeviceWaitIdle(this->Handle);
+	}
+
+	VkResult context::wait(device::operation aDeviceOperation) {
+		return vkQueueWaitIdle(this->Queue[aDeviceOperation]);
 	}
 	
 	VkResult context::wait(VkFence aFence) {

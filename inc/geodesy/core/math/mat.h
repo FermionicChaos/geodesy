@@ -315,6 +315,17 @@ namespace geodesy::core::math {
 		return I;                                                    // now A⁻¹
 	}
 
+	// Generates orthographic projection matrix for Geodesy → Vulkan NDC
+	template <typename T> inline
+	mat<T, 4, 4> orthographic(T aDeltaX, T aDeltaY, T aNear, T aFar) {
+		return mat<T, 4, 4>(
+			2 / aDeltaX,		0,					0,							0,
+			0,					-2 / aDeltaY,		0,							0, 							// Flipped Y for Vulkan
+			0,					0,					-1 / (aFar - aNear),		aFar / (aFar - aNear), 		// Z: [Near,Far] → [1,0] (reversed)
+			0,					0,					0,							1 							// Translation for reverse depth
+		);
+	}
+
 	// Generates a projection matrix
 	template <typename T> inline 
 	mat<T, 4, 4> perspective(T FOV, T AspectRatio, T Near, T Far) {
@@ -345,7 +356,7 @@ namespace geodesy::core::math {
 		return mat<T, 4, 4>(
 			(1.0 / tn),     0.0,                    0.0,                                    0.0,
 			0.0,            (AspectRatio / tn),     0.0,                                    0.0,
-			0.0,            0.0,                    (Far / (Far - Near)),       (-(Far * Near) / (Far - Near)),
+			0.0,            0.0,                    (-Near / (Far - Near)),       			(Far * Near / (Far - Near)),
 			0.0,            0.0,                    1.0,                                    0.0
 		);
 	}
@@ -401,15 +412,32 @@ namespace geodesy::core::math {
 
 	template<typename T> inline
 	quaternion<T> orientation(T aTheta, T aPhi) {
-		vec<T, 3> DirectionRight 	= {  std::sin(aPhi), 						-std::cos(aPhi), 						0.0f 			 };
-		vec<T, 3> DirectionUp 		= { -std::cos(aTheta) * std::cos(aPhi), 	-std::cos(aTheta) * std::sin(aPhi), 	std::sin(aTheta) };
-		vec<T, 3> DirectionFront 	= {  std::sin(aTheta) * std::cos(aPhi), 	 std::sin(aTheta) * std::sin(aPhi), 	std::cos(aTheta) };
-		mat<T, 3, 3> OrientationMatrix = {
-			DirectionRight[0],  DirectionUp[0],  DirectionFront[0],
-			DirectionRight[1],  DirectionUp[1],  DirectionFront[1],
-			DirectionRight[2],  DirectionUp[2],  DirectionFront[2]
+		const T CosTheta = std::cos(aTheta);
+		const T SinTheta = std::sin(aTheta);
+		const T CosPhi = std::cos(aPhi);
+		const T SinPhi = std::sin(aPhi);
+		mat<T, 4, 4> OrientationMatrix = {
+			SinPhi,                     SinTheta * CosPhi,      -CosTheta * CosPhi,     0.0f,
+			-CosPhi,                    SinTheta * SinPhi,      -CosTheta * SinPhi,     0.0f,
+			0.0f,                       CosTheta,               SinTheta,               0.0f,
+			0.0f,                       0.0f,                   0.0f,                   1.0f
 		};
 		return quat(OrientationMatrix);
+	}
+
+	template<typename T> inline
+	quaternion<T> rotation(T aTheta, T aPhi) {
+		const T CosTheta = std::cos(aTheta);
+		const T SinTheta = std::sin(aTheta);
+		const T CosPhi = std::cos(aPhi);
+		const T SinPhi = std::sin(aPhi);
+		mat<T, 4, 4> RotationMatrix = {
+			SinPhi,                     -CosPhi,                0.0f,                   0.0f,
+			CosTheta * CosPhi,          CosTheta * SinPhi,      -SinTheta,              0.0f,
+			SinTheta * CosPhi,          SinTheta * SinPhi,      CosTheta,               0.0f,
+			0.0f,                       0.0f,                   0.0f,                   1.0f
+		};
+		return quat(RotationMatrix);
 	}
 
 	template <typename T, std::size_t M, std::size_t N> inline

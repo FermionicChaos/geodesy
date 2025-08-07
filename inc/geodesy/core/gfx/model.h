@@ -19,6 +19,27 @@ namespace geodesy::core::gfx {
 	class model : public io::file {
 	public:
 
+		struct light {
+
+			enum type : int {
+				UNDEFINED,
+				AMBIENT,
+				DIRECTIONAL,
+				POINT,
+				SPOT, 
+				AREA
+			};
+
+			alignas(4) int 						Type;
+			alignas(4) float 					Intensity;
+			alignas(16) math::vec<float, 3> 	Color;
+			alignas(16) math::vec<float, 3> 	Position;
+			alignas(16) math::vec<float, 3> 	Direction;
+			alignas(4) float 					SpotAngle;
+
+			light();
+		};
+
 		static bool initialize();
 		static void terminate();
 
@@ -35,7 +56,7 @@ namespace geodesy::core::gfx {
 		std::vector<std::shared_ptr<mesh>> 				Mesh;
 		std::vector<std::shared_ptr<material>> 			Material;
 		std::vector<std::shared_ptr<gpu::image>> 		Texture;
-		// std::vector<std::shared_ptr<light>> 			Light;				// Not Relevant To Model, open as stage.
+		std::vector<light> 								Light;				// Not Relevant To Model, open as stage.
 		// std::vector<std::shared_ptr<camera>> 		Camera;			// Not Relevant To Model, open as stage.
 		// std::shared_ptr<gpu::buffer> 					UniformBuffer;
 
@@ -43,8 +64,6 @@ namespace geodesy::core::gfx {
 		model(std::string aFilePath, file::manager* aFileManager = nullptr);
 		model(std::shared_ptr<gpu::context> aContext, std::shared_ptr<model> aModel, gpu::image::create_info aCreateInfo = {});
 		~model();
-
-		void update(double aDeltaTime, const std::vector<float>& aAnimationWeights);
 
 	};
 

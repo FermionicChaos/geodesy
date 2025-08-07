@@ -1,6 +1,31 @@
 #version 450 core
 #extension GL_ARB_separate_shader_objects : require
 
+// These are unpacked material properties used in rendering.
+struct material_property {
+	vec3 Albedo;
+	float Opacity;
+	// vec3 Normal;
+	// float Height;
+	vec3 Emissive;
+	vec3 Specular;
+	float Shininess;
+	float AmbientOcclusion;
+	float Metallic;
+	float Roughness;
+	float IOR;
+	vec3 SheenColor;
+	float SheenRoughness;
+	float SheenIntensity;
+	vec3 SheenNormal;
+	float ClearCoatFactor;
+	float ClearCoatRoughness;
+	vec3 ClearCoatNormal;
+	vec3 ClearCoatTint;
+	float ClearCoatThickness;
+	float ClearCoatIOR;
+};
+
 // -------------------- INPUT DATA -------------------- //
 layout (location = 0) in vec3 WorldPosition;
 layout (location = 1) in vec3 WorldNormal;
@@ -11,99 +36,108 @@ layout (location = 5) in vec4 InterpolatedVertexColor;
 
 // -------------------- UNIFORM DATA -------------------- //
 
-layout (set = 0, binding = 0) uniform Camera3DUBO {
+layout (set = 0, binding = 0) uniform SubjectUBO {
 	vec3 Position;
 	mat4 Rotation;
 	mat4 Projection;
-} Camera3D;
+	mat4 PRT;
+} Subject;
 
-layout (set = 0, binding = 3) uniform MaterialUBO {
-	// Rendering System Metadata
-	int RenderingSystem;
-	int Transparency;
-
-	// ----- Material Property Constants & Control Weights ----- //
-	float VertexColorWeight;
-	float TextureColorWeight;
-	float ColorWeight;
-	vec3 Color; // Aligns to 16 bytes
-
-	float TextureSpecularWeight;
-	float SpecularWeight;
-	vec3 Specular; // Aligns to 16 bytes
-
-	float TextureAmbientWeight;
-	float AmbientWeight;
-	vec3 AmbientLighting; // Aligns to 16 bytes
-
-	float TextureEmissiveWeight;
-	float EmissiveWeight;
-	vec3 Emissive; // Aligns to 16 bytes
-
-	float TextureShininessWeight;
-	float ShininessWeight;
-	float Shininess;
-
-	float TextureOpacityWeight;
-	float OpacityWeight;
-	float Opacity;
-
-	float VertexNormalWeight;
-	float TextureNormalWeight;
-
-	float TextureAmbientOcclusionWeight;
-	float AmbientOcclusionWeight;
-	float AmbientOcclusion;
-
-	float TextureReflectionWeight;
-	float ReflectionWeight;
-	float Reflection;
-
-	float TextureMetallicWeight;
-	float MetallicWeight;
-	float Metallic;
-
-	float TextureRoughnessWeight;
-	float RoughnessWeight;
-	float Roughness;
-
-	float TextureSheenWeight;
-	float SheenWeight;
-	vec3 SheenColor; // Aligns to 16 bytes
-	float SheenRoughness;
-
-	float TextureClearCoatWeight;
-	float ClearCoatWeight;
-	float ClearCoat;
-	float ClearCoatRoughness;
-
-	// ----- Extraneous Material Properties ----- //
-	float RefractionIndex;
-
-	float Anisotropy;
-	vec3 AnisotropyDirection; // Aligns to 16 bytes
-
-	float SubsurfaceScattering;
-
-	float ParallaxScale;
-	int ParallaxIterationCount;
+layout (set = 0, binding = 2) uniform MaterialUBO {
+	int 	Transparency;
+	float 	AlbedoVertexWeight;
+	float 	AlbedoTextureWeight;
+	float 	AlbedoWeight;
+	int 	AlbedoTextureIndex;
+	vec3 	Albedo;
+	float 	OpacityTextureWeight;
+	float 	OpacityWeight;
+	int 	OpacityTextureIndex;
+	float 	Opacity;
+	float 	NormalVertexWeight;
+	float 	NormalTextureWeight;
+	int 	NormalTextureIndex;
+	int 	HeightTextureIndex;
+	float 	HeightScale;
+	int 	HeightStepCount;
+	float 	AmbientLightingTextureWeight;
+	float 	AmbientLightingWeight;
+	int 	AmbientLightingTextureIndex;
+	vec3 	AmbientLighting;
+	float 	EmissiveTextureWeight;
+	float 	EmissiveWeight;
+	int 	EmissiveTextureIndex;
+	vec3 	Emissive;
+	float 	SpecularTextureWeight;
+	float 	SpecularWeight;
+	int 	SpecularTextureIndex;
+	vec3 	Specular;
+	float 	ShininessTextureWeight;
+	float 	ShininessWeight;
+	int 	ShininessTextureIndex;
+	float 	Shininess;
+	float 	AmbientOcclusionTextureWeight;
+	float 	AmbientOcclusionWeight;
+	int 	AmbientOcclusionTextureIndex;
+	float 	AmbientOcclusion;
+	float 	RoughnessTextureWeight;
+	float 	RoughnessWeight;
+	int 	RoughnessTextureIndex;
+	float 	Roughness;
+	float 	MetallicTextureWeight;
+	float 	MetallicWeight;
+	int 	MetallicTextureIndex;
+	float 	Metallic;
+	float 	IORVertexWeight;
+	float 	IORTextureWeight;
+	float 	IORWeight;
+	int 	IORTextureIndex;
+	float 	IOR;
+	float 	SheenColorTextureWeight;
+	float 	SheenColorWeight;
+	int 	SheenColorTextureIndex;
+	vec3 	SheenColor;
+	float 	SheenIntensityTextureWeight;
+	float 	SheenIntensityWeight;
+	float 	SheenRoughnessTextureWeight;
+	float 	SheenRoughnessWeight;
+	int 	SheenMaskTextureIndex;
+	float 	SheenRoughness;
+	float 	SheenIntensity;
+	float 	ClearCoatStrengthTextureWeight;
+	float 	ClearCoatStrengthWeight;
+	float 	ClearCoatRoughnessTextureWeight;
+	float 	ClearCoatRoughnessWeight;
+	int 	ClearCoatStrengthRoughnessTextureIndex;
+	float 	ClearCoatStrength;
+	float 	ClearCoatRoughness;
+	float 	ClearCoatNormalTextureWeight;
+	float 	ClearCoatNormalWeight;
+	int 	ClearCoatNormalTextureIndex;
+	vec3 	ClearCoatNormal;
+	float 	ClearCoatTintTextureWeight;
+	float 	ClearCoatTintWeight;
+	int 	ClearCoatTintTextureIndex;
+	vec3 	ClearCoatTint;
+	float 	ClearCoatIOR;
+	float 	ClearCoatThickness;
 } Material;
 
 // Texture Data
-layout (set = 1, binding = 0) uniform sampler2D MaterialColor; 				// Color of the Surface
-layout (set = 1, binding = 1) uniform sampler2D MaterialOpacity; 			// Opacity Map
-layout (set = 1, binding = 2) uniform sampler2D MaterialNormalMap; 			// Normal Map
-layout (set = 1, binding = 3) uniform sampler2D MaterialHeightMap; 			// Height Map
-layout (set = 1, binding = 4) uniform sampler2D MaterialEmissive; 			// Emissive Lighting
+layout (set = 1, binding = 0) uniform sampler2D MaterialColor; 				// float3 Color of the Surface
+layout (set = 1, binding = 1) uniform sampler2D MaterialOpacity; 			// float Opacity Map
+layout (set = 1, binding = 2) uniform sampler2D MaterialNormalMap; 			// float3 Normal Map
+layout (set = 1, binding = 3) uniform sampler2D MaterialHeightMap; 			// float Height Map
+layout (set = 1, binding = 4) uniform sampler2D MaterialEmissive; 			// float3 Emissive Lighting
 // Blinn-Phong Specular Highlights
-layout (set = 1, binding = 5) uniform sampler2D MaterialSpecular; 			// Specular Highlights
-layout (set = 1, binding = 6) uniform sampler2D MaterialShininess; 			// Shininess Map
+layout (set = 1, binding = 5) uniform sampler2D MaterialSpecular; 			// float3 Specular
+layout (set = 1, binding = 6) uniform sampler2D MaterialShininess; 			// float Shininess
 // PBR Specific Textures
-layout (set = 1, binding = 7) uniform sampler2D MaterialAmbientOcclusion; 	// Ambient Occlusion Map
-layout (set = 1, binding = 8) uniform sampler2D MaterialMetallic; 			// Metallic Map
-layout (set = 1, binding = 9) uniform sampler2D MaterialRoughness; 			// Roughness Map
-layout (set = 1, binding = 10) uniform sampler2D MaterialSheen; 			// Sheen Map
-layout (set = 1, binding = 11) uniform sampler2D MaterialClearCoat; 		// Clear Coat Map
+layout (set = 1, binding = 7) uniform sampler2D MaterialAmbientOcclusion; 	// float AOC
+layout (set = 1, binding = 8) uniform sampler2D MaterialRoughness; 			// float Roughness
+layout (set = 1, binding = 9) uniform sampler2D MaterialMetallic; 			// float Metallic	
+// layout (set = 1, binding = 10) uniform sampler2D MaterialSheen; 			// Sheen Map
+// layout (set = 1, binding = 11) uniform sampler2D MaterialClearCoat; 		// Clear Coat Map
 
 // -------------------- OUTPUT DATA -------------------- //
 
@@ -114,124 +148,161 @@ layout (set = 1, binding = 11) uniform sampler2D MaterialClearCoat; 		// Clear C
 layout (location = 0) out vec4 PixelColor;
 layout (location = 1) out vec4 PixelPosition;
 layout (location = 2) out vec4 PixelNormal;
-layout (location = 3) out vec4 PixelEmissive;
-layout (location = 4) out vec4 PixelSS;
-layout (location = 5) out vec4 PixelORM;
+layout (location = 3) out vec4 PixelTangent;
+layout (location = 4) out vec4 PixelBitangent;
+layout (location = 5) out vec4 PixelARM;
+layout (location = 6) out vec4 PixelEmissive;
+layout (location = 7) out vec4 PixelTranslucencyMask;
 
+// -----------------------------------------------------------------------------
+//  Parallax mapping by binary search (bisection)
+//
+//  • Works with any height map where 0 = surface, 1 = highest point.
+//  • Uses Material.HeightScale as maximum depth into the surface.
+//  • Iteration count is Material.HeightStepCount (6-10 is plenty).
+// -----------------------------------------------------------------------------
 vec2 bisection_parallax(vec2 aUV, mat3 aTBN) {
+	/* 1) View vector in tangent space -------------------------------------- */
+	vec3 viewWS = normalize(Subject.Position - WorldPosition);
+	vec3 viewTS = transpose(aTBN) * viewWS;
 
-	// ITBN takes any vector from world space and converts it to tangent space.
-	mat3 ITBN = transpose(aTBN);
+	/* Guard against grazing angles: no parallax if surface is edge-on */
+	float vz = max(viewTS.z, 0.05);        // avoid division blow-ups
 
-	// Converts the view direction from world space to tangent space.
-	vec3 InvertedViewDir = ITBN * normalize(Camera3D.Position - WorldPosition);
+	/* 2) Maximum UV displacement along view ray --------------------------- */
+	vec2 parallaxDir  = viewTS.xy / vz;               // direction in TS
+	vec2 uvOffsetMax  = parallaxDir * Material.HeightScale;
 
-	// This determines the maximum UV offset that can be applied. while still possibly
-	// containing the correct UV coordinate that can possibly intersect the view dir
-	// with the height map.
-	float UVMaxMag = Material.ParallaxScale * length(InvertedViewDir.xy) / InvertedViewDir.z;
+	/* 3) Initialise search interval --------------------------------------- */
+	vec2  uvNear  = aUV;                 // depth 0   (surface)
+	vec2  uvFar   = aUV + uvOffsetMax;   // depth 1   (max depth)
+	float dNear   = 0.0;
+	float dFar    = 1.0;
 
-	// Calculate the view direction along the surface in tangent space, then
-	// transforms back to world space.
-	vec3 UVMaxDir = aTBN * vec3(InvertedViewDir.xy, 0.0);
+	/* 4) Binary search for first depth crossing --------------------------- */
+	for (int i = 0; i < Material.HeightStepCount; ++i) {
+		vec2  uvMid = mix(uvNear, uvFar, 0.5);
+		float dMid  = 0.5 * (dNear + dFar);
+		float hMid  = texture(MaterialHeightMap, uvMid).r;
 
-	// Initialize the start and end points of the search
-	vec2 UVStart = aUV;
-	vec2 UVEnd = UVMaxDir.xy * UVMaxMag + aUV;
-
-	// Sample the height at the midpoint
-	float hStart = texture(MaterialHeightMap, UVStart).r;
-	float hEnd = texture(MaterialHeightMap, UVEnd).r;
-
-	// The y values are going to be the values to determine where an inversion 
-	// has occurred. It is the height map height minus expected interception point
-	// along view dir.
-	float yStart = hStart - (length(UVStart - aUV) / UVMaxMag) * Material.ParallaxScale;
-	float yEnd = hEnd - (length(UVEnd - aUV) / UVMaxMag) * Material.ParallaxScale;
-
-	// Perform the bisection search here. We can modify later
-	// to start biased towards the end and move inwards. That
-	// way it finds the first intersection farthest to UVMax.
-	vec2 UVMid;
-	for (int i = 0; i < Material.ParallaxIterationCount; i++) {
-
-		// Compute the midpoint between UVStart and UVEnd
-		UVMid = (UVStart + UVEnd) * 0.5;
-		float hMid = texture(MaterialHeightMap, UVMid).r;
-		float yMid = hMid - (length(UVMid - aUV) / UVMaxMag) * Material.ParallaxScale;
-
-		// Early exit condition if height threshold is met.
-		if (abs(hMid - (length(UVMid - aUV) / UVMaxMag) * Material.ParallaxScale) < 0.01) {
-			break;
+		if (hMid > dMid) {
+			uvNear = uvMid;
+			dNear  = dMid;
 		}
-
-		// Check for sign inversion.
-		if (yMid * yEnd < 0.0) {
-			UVStart = UVMid;
-			hStart = hMid;
-			yStart = yMid;
-		} else {
-			UVEnd = UVMid;
-			hEnd = hMid;
-			yEnd = yMid;
+		else {
+			uvFar = uvMid;
+			dFar  = dMid;
 		}
-
 	}
-	
-	return UVMid;
+
+	/* 5) Final UV: midpoint of last interval ------------------------------ */
+	return mix(uvNear, uvFar, 0.5);
 }
 
-// Comment out to remove lighting testing.
-const vec4 AmbientLight = vec4(0.8, 0.8, 0.6, 1.0);
-const float LightAmplitude = 100.0;
-const vec4 LightColor = vec4(0.0, 1.0, 1.0, 1.0);
-const vec3 LightPosition = vec3(0.0, -5.0, 5.0);
 
-float blinn_phong(float aKs, float aS, vec3 aN, vec3 aL, vec3 aV) {
-	// Calculate the half vector between the light and view direction.
-	return ((1.0 - aKs) * max(dot(aN, aL), 0.0) + aKs * pow(max(dot(aN, normalize(aL + aV)), 0.0), aS));
-}
+material_property unpack(vec2 aUV) {
+	material_property MaterialProperty;
 
-float cook_torrance(float aF0, float aAlpha, vec3 aN, vec3 aL, vec3 aV) {
-	// Calculate the half vector between the light and view direction.
-	vec3 H = normalize(aL + aV);
+	// Check if material has a Albedo Texture.
+	if (Material.AlbedoTextureIndex >= 0) {
+		// Vertex Color + Texture Color + Material Color
+		MaterialProperty.Albedo = InterpolatedVertexColor.rgb*Material.AlbedoVertexWeight + texture(MaterialColor, aUV).rgb*Material.AlbedoTextureWeight + Material.Albedo*Material.AlbedoWeight;
+	}
+	else {
+		// Vertex Color + Material Color
+		float RenormalizationFactor = Material.AlbedoVertexWeight + Material.AlbedoWeight;
+		MaterialProperty.Albedo = InterpolatedVertexColor.rgb*Material.AlbedoVertexWeight + Material.Albedo*Material.AlbedoWeight;
+		MaterialProperty.Albedo /= RenormalizationFactor > 0.0 ? RenormalizationFactor : 1.0;
+	}
 
-	// Calculate the dot products of the normal with the half vector, light, and view direction.
-	float NdotH = dot(aN, H);
-	float NdotL = dot(aN, aL);
-	float NdotV = dot(aN, aV);
-	float HdotL = dot(H, aL);
-	float HdotV = dot(H, aV);
+	// Get Opacity
+	if (Material.OpacityTextureIndex >= 0) {
+		// Texture Opacity + Material Opacity
+		MaterialProperty.Opacity = texture(MaterialOpacity, aUV).r*Material.OpacityTextureWeight + Material.Opacity*Material.OpacityWeight;
+	}
+	else {
+		// Material Opacity
+		MaterialProperty.Opacity = Material.Opacity;
+	}
 
-	// Calculate fresnel term.
-	float F = aF0 + (1.0 - aF0) * pow(1.0 - NdotH, 5.0);
+	MaterialProperty.Opacity *= texture(MaterialColor, aUV).a; // Apply alpha from color texture.
 
-	// Calculate geometric attenuation.
-	float G = min(1.0, min(2.0 * NdotH * NdotV / HdotV, 2.0 * NdotH * NdotL / HdotV));
+	// Ignore Normal, and Height Map.
 
-	// Calculate the distribution term.
-	float D = exp((NdotH * NdotH - 1.0) / (aAlpha * aAlpha * NdotH * NdotH)) / (aAlpha * aAlpha * NdotH * NdotH * NdotH * NdotH);
+	// Load Emissive Color
+	if (Material.EmissiveTextureIndex >= 0) {
+		// Texture Emissive + Material Emissive
+		MaterialProperty.Emissive = texture(MaterialEmissive, aUV).rgb*Material.EmissiveTextureWeight + Material.Emissive*Material.EmissiveWeight;
+	}
+	else {
+		// Material Emissive
+		MaterialProperty.Emissive = Material.Emissive;
+	}
 
-	return F * G * D / (4.0 * NdotL * NdotV);	
-}
+	// Load Specular Values
+	if (Material.SpecularTextureIndex >= 0) {
+		// Texture Specular + Material Specular
+		MaterialProperty.Specular = texture(MaterialSpecular, aUV).rgb*Material.SpecularTextureWeight + Material.Specular*Material.SpecularWeight;
+	}
+	else {
+		// Material Specular
+		MaterialProperty.Specular = Material.Specular;
+	}
 
-vec4 final_color(vec2 aUV) {
-	// Sampled color from material and texture.
-	vec4 SampledColor = mix(texture(MaterialColor, aUV), vec4(Material.Color, Material.Opacity), Material.ColorWeight);
+	// Load Shininess Value
+	if (Material.ShininessTextureIndex >= 0) {
+		// Texture Shininess + Material Shininess
+		MaterialProperty.Shininess = texture(MaterialShininess, aUV).r*Material.ShininessTextureWeight + Material.Shininess*Material.ShininessWeight;
+	}
+	else {
+		// Material Shininess
+		MaterialProperty.Shininess = Material.Shininess;
+	}
 
-	// Calculates the distance between the light source and the pixel.
-	vec3 l = normalize(LightPosition - PixelPosition.xyz);
-	vec3 v = normalize(Camera3D.Position - PixelPosition.xyz);
-	float r = length(PixelPosition.xyz - LightPosition);
-	vec3 h = (l + v) / length(l + v);
+	// Load Ambient Occlusion
+	if (Material.AmbientOcclusionTextureIndex >= 0) {
+		// Texture Ambient Occlusion + Material Ambient Occlusion
+		MaterialProperty.AmbientOcclusion = texture(MaterialAmbientOcclusion, aUV).r*Material.AmbientOcclusionTextureWeight + Material.AmbientOcclusion*Material.AmbientOcclusionWeight;
+	}
+	else {
+		// Material Ambient Occlusion
+		MaterialProperty.AmbientOcclusion = Material.AmbientOcclusion;
+	}
 
-	// 
-	float CosTheta = max(dot(l, PixelNormal.xyz), 0.0);
-	
-	// Calculates the final color of the pixel based on ambient lighting and light source.
-	vec4 FinalColor = SampledColor * (AmbientLight + LightAmplitude * CosTheta * LightColor / (r * r)); 
+	// Load Metallic Value
+	if (Material.MetallicTextureIndex >= 0) {
+		// Texture Metallic + Material Metallic
+		MaterialProperty.Metallic = texture(MaterialMetallic, aUV).r*Material.MetallicTextureWeight + Material.Metallic*Material.MetallicWeight;
+	}
+	else {
+		// Material Metallic
+		MaterialProperty.Metallic = Material.Metallic;
+	}
 
-	return FinalColor;
+	// Load Roughness Value
+	if (Material.RoughnessTextureIndex >= 0) {
+		// Texture Roughness + Material Roughness
+		MaterialProperty.Roughness = texture(MaterialRoughness, aUV).r*Material.RoughnessTextureWeight + Material.Roughness*Material.RoughnessWeight;
+	}
+	else {
+		// Material Roughness
+		MaterialProperty.Roughness = Material.Roughness;
+	}
+
+	// Load IOR Value
+	// if (Material.IORTextureIndex >= 0) {
+	// 	// Texture IOR + Material IOR
+	// 	MaterialProperty.IOR = texture(MaterialIOR, aUV).r*Material.IORTextureWeight + Material.IOR*Material.IORWeight;
+	// }
+	// else {
+	// 	// Material IOR
+	// 	MaterialProperty.IOR = Material.IOR;
+	// }
+	MaterialProperty.IOR = Material.IOR;
+
+	// TODO: 
+
+	return MaterialProperty;
 }
 
 void main() {
@@ -246,36 +317,66 @@ void main() {
 	// Generate new bitangent vector based on the new tangent and normal vectors.
 	b = cross(n, t);
 
-	// Construct the TBN matrix to transform from world space to surface tangent space.
+	// Construct the TBN matrix to transform FROM tangent space TO world space
+	// Columns are: [Tangent, Bitangent, Normal]
 	mat3 TBN = mat3(t, b, n);
 
-	// Calculate UV coordinates after applying the height map.
-	vec2 UV = TextureCoordinate.xy; //bisection_parallax(TextureCoordinate.xy, TBN);
+	// Calculate aUV coordinates after applying parallax mapping with height map.
+	vec2 aUV;
+	if (Material.HeightTextureIndex > 0) {
+		// If height map is present, use parallax mapping.
+		aUV = bisection_parallax(TextureCoordinate.xy, TBN);
+	}
+	else {
+		aUV = TextureCoordinate.xy;
+	}
 
-	vec3 Emissive = texture(MaterialEmissive, UV).rgb*Material.TextureEmissiveWeight + Material.Emissive*Material.EmissiveWeight;
-	float Specular = texture(MaterialSpecular, UV).r*Material.TextureSpecularWeight + Material.Specular.r*Material.SpecularWeight;
-	float Shininess = texture(MaterialShininess, UV).r*Material.TextureShininessWeight + Material.Shininess*Material.ShininessWeight;
-	float AmbientOcclusion = texture(MaterialAmbientOcclusion, UV).r*Material.TextureAmbientOcclusionWeight + Material.AmbientOcclusion*Material.AmbientOcclusionWeight;
-	float Metallic = texture(MaterialMetallic, UV).r*Material.TextureMetallicWeight + Material.Metallic*Material.MetallicWeight;
-	float Roughness = texture(MaterialRoughness, UV).r*Material.TextureRoughnessWeight + Material.Roughness*Material.RoughnessWeight;
-	// vec3 SheenColor = texture(MaterialSheen, UV).rgb*Material.TextureSheenWeight + Material.SheenColor*Material.SheenWeight;
-	// float SheenRoughness = Material.SheenRoughness;
-	// float ClearCoat = texture(MaterialClearCoat, UV).r*Material.TextureClearCoatWeight + Material.ClearCoat*Material.ClearCoatWeight;
-	// float ClearCoatRoughness = Material.ClearCoatRoughness;
+	// Load Material Propertie for fragment.
+	material_property MP = unpack(aUV);
 
-	// Get Texture Normal, z should be 1.0 if directly normal to surface.
-	vec3 TextureNormal = normalize(2.0*texture(MaterialNormalMap, UV).rgb - 1.0);
-	PixelNormal = vec4(n, 1.0)*Material.VertexNormalWeight + vec4(TBN*TextureNormal, 1.0)*Material.TextureNormalWeight;
+	// Move over material color.
+	if (Material.Transparency == 0) {
+		// Pixel is to use standard lighting and shadowing.
+		PixelTranslucencyMask = vec4(0.0f, 0.0f, 0.0f, 1.0f); // Opaque
+	}
+	else {
+		// Pixel is to use full ray tracing.
+		PixelTranslucencyMask = vec4(1.0f, 1.0f, 1.0f, 1.0f); // Translucent
+	}
+
+	// How much the pixel glows.
+	PixelEmissive = vec4(MP.Emissive, MP.Opacity);
+
+	// Merge Ambient Occlusion, Metallic, and Roughness into a single vec4.
+	PixelARM = vec4(MP.AmbientOcclusion, MP.Roughness, MP.Metallic, MP.Opacity);
+
+	// Encode Bitangent and Tangent vectors from [-1,1] range to [0,1] range for storage
+	PixelBitangent = vec4((b + vec3(1.0)) * 0.5, MP.Opacity);
+
+	// Encode Bitangent and Tangent vectors from [-1,1] range to [0,1] range for storage
+	PixelTangent = vec4((t + vec3(1.0)) * 0.5, MP.Opacity);
+
+	vec3 FinalNormal = n;
+	if (Material.NormalTextureIndex >= 0) {
+		// Convert from [0,1] to [-1,1] range
+		vec3 TextureNormal = (texture(MaterialNormalMap, aUV).rgb*2.0) - 1.0;
+
+		// Calculate the world space normal from the texture normal.
+		vec3 WorldSpaceTextureNormal = normalize(TBN*TextureNormal);
+
+		// DEBUG: Use to check if normal map is vaguely aligned with vertex normal.
+		// FinalNormal = dot(n, WorldSpaceTextureNormal)*vec3(1.0, 1.0, 1.0);
+		// Blend vertex normal and normal map based on weights
+		FinalNormal = normalize(n*Material.NormalVertexWeight + WorldSpaceTextureNormal*Material.NormalTextureWeight);
+	}
+
+	// Encode normal vector from [-1,1] range to [0,1] range for storage
+	// Formula: encoded = (normal + 1.0) * 0.5
+	PixelNormal = vec4((FinalNormal + vec3(1.0)) * 0.5, MP.Opacity);
 
 	// Determine World Space Position of the pixel. Maybe modify later to do based on interpolated surface normal?
-	PixelPosition = vec4(WorldPosition, 1.0) + PixelNormal*texture(MaterialHeightMap, UV).r;
+	PixelPosition = vec4(WorldPosition + FinalNormal*texture(MaterialHeightMap, aUV).r, MP.Opacity);
 
-	// Copy over material properties to the output.
-	PixelEmissive = vec4(Emissive, 1.0);
-	PixelSS = vec4(Specular, Shininess, 0.0, 0.0);
-	PixelORM = vec4(AmbientOcclusion, Metallic, Roughness, 0.0);
-
-	// Calculates Albedo based on weights of the texture, vertex color, and material color.
-	PixelColor = InterpolatedVertexColor*Material.VertexColorWeight + texture(MaterialColor, UV)*Material.TextureColorWeight + vec4(Material.Color, Material.Opacity)*Material.ColorWeight;
-
+	// Color Pass through for opaque objects.
+	PixelColor = vec4(MP.Albedo, MP.Opacity);//*0.01 + PixelNormal*0.9;
 }
