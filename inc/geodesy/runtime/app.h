@@ -47,9 +47,8 @@ namespace geodesy::runtime {
 
 		virtual std::shared_ptr<stage> build_stage(std::shared_ptr<core::gpu::context> aContext, stage::creator* aStageCreator);
 
-		void init();
-		virtual void run() = 0;
-		
+		virtual void initialize();
+		virtual void run();
 		void update(double aDeltaTime);
 		std::map<std::shared_ptr<core::gpu::context>, core::gpu::submission_batch> render();
 

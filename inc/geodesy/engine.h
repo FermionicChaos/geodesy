@@ -95,6 +95,7 @@ namespace geodesy {
 		core::util::log															Logger;
 		core::io::file::manager													FileManager;
 		core::lgc::thread_controller											ThreadController;
+		bool 																	IndependentDeviceExecutionThread;
 
 		// ----- GPU ----- //
 
@@ -114,8 +115,12 @@ namespace geodesy {
 		VkResult wait_on_device_context(std::vector<std::shared_ptr<core::gpu::context>> aDeviceContextList = {});
 
 		void run(runtime::app* aApp);
-		VkResult update_resources(runtime::app* aApp);
-		VkResult execute_render_operations(runtime::app* aApp);
+		VkResult update_host_resources(runtime::app* aApp);
+		VkResult execute_device_operations(runtime::app* aApp);
+
+	private:
+	
+		void device_execution_thread(runtime::app* aApp);
 
 	};
 

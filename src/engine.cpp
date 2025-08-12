@@ -106,6 +106,7 @@ namespace geodesy {
 		this->Handle = VK_NULL_HANDLE;
 		this->PrimaryDisplay = nullptr;
 		this->PrimaryDevice = nullptr;
+		this->IndependentDeviceExecutionThread = false;
 	}
 
 	engine::engine(std::vector<const char*> aCommandLineArgumentList, std::set<std::string> aLayerList, std::set<std::string> aExtensionList) : engine() {
@@ -207,41 +208,25 @@ namespace geodesy {
 
 	void engine::run(runtime::app* aApp) {
 
-		aApp->init();
+		// Fully initialize all resources of user application.
+		aApp->initialize();
+
+		// Begin main loop.
+		aApp->run();
 
 	}
 
 	// ! Abandoned: Dead Code.
-	VkResult engine::update_resources(runtime::app* aApp) {
-		VkResult Result = VK_SUCCESS;
-		// std::map<std::shared_ptr<context>, core::gpu::submission_batch> UpdateOperations;
-
+	VkResult engine::update_host_resources(runtime::app* aApp) {
 		aApp->Mutex.lock();
 
 		aApp->update(this->ThreadController.total_time());
 
 		aApp->Mutex.unlock();
-
-		// --------------- Per Device Context work is done here --------------- //
-
-		// for (std::shared_ptr<context> Ctx : Context) {
-		// 	// Lock Context for execution.
-		// 	Ctx->Mutex.lock();
-			
-		// 	// Execute all transfer device operations.
-		// 	Result = Ctx->execute(device::operation::TRANSFER_AND_COMPUTE, UpdateOperations[Ctx].SubmitInfo);
-
-		// 	// Wait for other inflight operations to finish.
-		// 	Result = Ctx->wait(device::operation::TRANSFER_AND_COMPUTE );
-
-		// 	// Unlock device context.
-		// 	Ctx->Mutex.unlock();
-		// }
-
-		return Result;
+		return VK_SUCCESS;
 	}
 
-	VkResult engine::execute_render_operations(runtime::app* aApp) {
+	VkResult engine::execute_device_operations(runtime::app* aApp) {
 		VkResult Result = VK_SUCCESS;
 		std::map<std::shared_ptr<context>, core::gpu::submission_batch> RenderInfo;
 
@@ -269,5 +254,12 @@ namespace geodesy {
 
 		return Result;
 	}
+
+	void engine::device_execution_thread(runtime::app* aApp) {
+		// Engine Execution Thread runs at full speed, no time step.
+		while(this->ThreadController.cycle(0.0)) {
+			this->execute_device_operations(aApp);
+		}
+	}	
 
 }

@@ -639,10 +639,8 @@ namespace geodesy::core::gpu {
 
 	VkResult context::execute_and_wait(device::operation aDeviceOperation, const std::vector<VkSubmitInfo>& aSubmissionList) {
 		VkResult Result = VK_SUCCESS;
-		VkFence Fence = this->create_fence();
-		Result = this->execute(aDeviceOperation, aSubmissionList, Fence);
-		Result = this->wait(Fence);
-		this->destroy_fence(Fence);
+		Result = this->execute(aDeviceOperation, aSubmissionList);
+		Result = this->wait(aDeviceOperation);
 		return Result;
 	}
 
