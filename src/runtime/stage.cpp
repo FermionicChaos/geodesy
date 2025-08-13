@@ -179,7 +179,6 @@ namespace geodesy::runtime {
 		// New Node processing should iterate over each object to check for animations, and then
 		// over each node in the linearized subnode.
 		
-		// TODO: Cache optimize by sorting by object rttiid type later.
 #ifdef ENABLE_MULTITHREADED_PROCESSING
 		#pragma omp parallel for
 #endif // ENABLE_MULTITHREADED_PROCESSING
