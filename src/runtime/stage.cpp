@@ -175,13 +175,17 @@ namespace geodesy::runtime {
 		// TODO: This section of the code will evaluate collision responses between pairs.
 		
 		// After collision has been completed, and response forces determined, update objects accordingly.
-			
+
+		// New Node processing should iterate over each object to check for animations, and then
+		// over each node in the linearized subnode.
+		
+		// TODO: Cache optimize by sorting by object rttiid type later.
 #ifdef ENABLE_MULTITHREADED_PROCESSING
 		#pragma omp parallel for
 #endif // ENABLE_MULTITHREADED_PROCESSING
-		for (std::ptrdiff_t i = 0; i < this->NodeCache.size(); i++) {
+		for (std::ptrdiff_t i = 0; i < this->Object.size(); i++) {
 			// Perform all host memory calculations, apply forces and animations
-			NodeCache[i]->host_update(aDeltaTime, this->Time);
+			this->Object[i]->host_update(aDeltaTime, this->Time);
 		}
 
 #ifdef ENABLE_MULTITHREADED_PROCESSING

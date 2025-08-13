@@ -60,7 +60,7 @@ namespace geodesy {
 		Checker &= system_window::initialize();
 
 		// Initialize OpenXR runtime. (You can try both form factors, but most likely only one will be available).
-		Checker &= cameravr::initialize(cameravr::form_factor::HEAD_MOUNTED_DISPLAY);
+		// Checker &= cameravr::initialize(cameravr::form_factor::HEAD_MOUNTED_DISPLAY);
 
 		// Set Initialized to true.
 		Initialized = Checker;
@@ -77,7 +77,7 @@ namespace geodesy {
 		if (Initialized) {
 
 			// Terminate OpenXR runtime.
-			cameravr::terminate();
+			// cameravr::terminate();
 
 			// Terminate Window System Integration GLFW.
 			system_window::terminate();

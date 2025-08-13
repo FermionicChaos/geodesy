@@ -406,9 +406,11 @@ namespace geodesy::bltn::obj {
 	}
 
 	void camera3d::host_update(
-		double 											aDeltaTime, 
-		double 											aTime, 
-		const std::vector<core::phys::force>& 			aAppliedForces
+		double 										aDeltaTime, 
+		double 										aTime, 
+		const std::vector<core::phys::force>& 		aAppliedForces,
+		const std::vector<core::phys::animation>& 	aPlaybackAnimation,
+		const std::vector<float>& 					aAnimationWeight
 	) {
 
 		object::host_update(aDeltaTime, aTime, aAppliedForces);

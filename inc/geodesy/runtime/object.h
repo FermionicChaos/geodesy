@@ -140,7 +140,9 @@ namespace geodesy::runtime {
 		virtual void host_update(
 			double 										aDeltaTime = 0.0f, 
 			double 										aTime = 0.0f, 
-			const std::vector<core::phys::force>& 		aAppliedForces = {}
+			const std::vector<core::phys::force>& 		aAppliedForces = {},
+			const std::vector<core::phys::animation>& 	aPlaybackAnimation = {},
+			const std::vector<float>& 					aAnimationWeight = {}
 		) override;
 		virtual void device_update(
 			double 										aDeltaTime = 0.0f, 

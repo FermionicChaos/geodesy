@@ -411,9 +411,11 @@ namespace geodesy::bltn::obj {
 	}
 
 	void system_window::host_update(
-		double 									aDeltaTime, 
-		double 									aTime, 
-		const std::vector<phys::force>& 		aAppliedForces
+		double 										aDeltaTime, 
+		double 										aTime, 
+		const std::vector<core::phys::force>& 		aAppliedForces,
+		const std::vector<core::phys::animation>& 	aPlaybackAnimation,
+		const std::vector<float>& 					aAnimationWeight
 	) {
 		// Call base class update.
 		object::host_update(aDeltaTime, aTime, aAppliedForces);

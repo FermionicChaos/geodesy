@@ -85,9 +85,11 @@ namespace geodesy::core::phys {
 		virtual void copy(const node* aNode);
 		virtual void swap(node* aNode);
 		virtual void host_update(
-			double 								aDeltaTime = 0.0f, 
-			double 								aTime = 0.0f, 
-			const std::vector<force>& 			aAppliedForces = {}
+			double 									aDeltaTime = 0.0f, 
+			double 									aTime = 0.0f, 
+			const std::vector<phys::force>& 		aAppliedForces = {},
+			const std::vector<phys::animation>& 	aPlaybackAnimation = {},
+			const std::vector<float>& 				aAnimationWeight = {}
 		);
 		virtual void device_update(
 			double 									aDeltaTime = 0.0f, 

@@ -136,9 +136,11 @@ namespace geodesy::core::phys {
 	}
 
 	void node::host_update(
-		double 							aDeltaTime, 
-		double 							aTime, 
-		const std::vector<force>& 		aAppliedForces
+		double 									aDeltaTime, 
+		double 									aTime, 
+		const std::vector<force>& 				aAppliedForces,
+		const std::vector<phys::animation>& 	aPlaybackAnimation,
+		const std::vector<float>& 				aAnimationWeight
 	) {
 		//tex:
 		// It is the responsibility of the model class to insure that the sum of the contribution
@@ -146,36 +148,24 @@ namespace geodesy::core::phys {
 		// $$ 1 = w^{b} + \sum_{\forall A \in Anim} w_{i} $$
 		// $$ T = T^{base} \cdot w^{base} + \sum_{\forall i \in A} T_{i}^{A} \cdot w_{i}^{A} $$ 
 
-		// Get Root Object
- 		runtime::object* Object = static_cast<runtime::object*>(this->Root);
-
-		// Check if root object is valid.
-		if (Object == nullptr) return;
-
-		// Check if model exists.
-		if (Object->Model == nullptr) return;
-
-		auto AnimationWeight = Object->AnimationWeights;
-		auto PlaybackAnimation = Object->Model->Animation;
-
 		// No Animation Data, just use bind pose.
-		if (!(PlaybackAnimation.size() > 0 ? PlaybackAnimation.size() + 1 == AnimationWeight.size() : false)) return;
+		if (!(aPlaybackAnimation.size() > 0 ? aPlaybackAnimation.size() + 1 == aAnimationWeight.size() : false)) return;
 
 		// Bind Pose Transform
-		this->CurrentTransform = (this->DefaultTransform * AnimationWeight[0]);
+		this->CurrentTransform = (this->DefaultTransform * aAnimationWeight[0]);
 
 		// TODO: Figure out how to load animations per node. Also incredibly slow right now. Optimize Later.
 		// Overrides/Averages Animation Transformations with Bind Pose Transform based on weights.
-		for (size_t i = 0; i < PlaybackAnimation.size(); i++) {
+		for (size_t i = 0; i < aPlaybackAnimation.size(); i++) {
 			// Check if Animation Data exists for this node, if not, use bind pose.
 			// Pull animation for readability.
-			auto& NodeAnimation = PlaybackAnimation[i][this->Identifier];
-			float Weight = AnimationWeight[i + 1];
+			auto& NodeAnimation = aPlaybackAnimation[i][this->Identifier];
+			float Weight = aAnimationWeight[i + 1];
 			if (NodeAnimation.exists()) {
 				// Calculate time in ticks
-				float TickerTime = aTime * PlaybackAnimation[i].TicksPerSecond;
+				float TickerTime = aTime * aPlaybackAnimation[i].TicksPerSecond;
 				// Ensure TickerTime is within the bounds of the animation.
-				float BoundedTickerTime = std::fmod(TickerTime, PlaybackAnimation[i].Stop - PlaybackAnimation[i].Start) + PlaybackAnimation[i].Start;
+				float BoundedTickerTime = std::fmod(TickerTime, aPlaybackAnimation[i].Stop - aPlaybackAnimation[i].Start) + aPlaybackAnimation[i].Start;
 				if (this->Root == this) {
 					this->CurrentTransform += this->DefaultTransform * NodeAnimation[BoundedTickerTime] * Weight;
 				}

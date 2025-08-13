@@ -168,14 +168,41 @@ namespace geodesy::runtime {
 	void object::host_update(
 		double 										aDeltaTime, 
 		double 										aTime, 
-		const std::vector<phys::force>& 			aAppliedForces
+		const std::vector<core::phys::force>& 		aAppliedForces,
+		const std::vector<core::phys::animation>& 	aPlaybackAnimation,
+		const std::vector<float>& 					aAnimationWeight
 	) {
 
+		// Animations overridden for base node.
 		this->CurrentTransform = phys::calculate_transform(
 			this->Position, 
 			this->Orientation,
 			this->Scale
 		);
+
+		// Perform Animation & Physics on all sub-nodes in object hierarchy.
+		if (this->Model != nullptr) {
+			// Animations Applied
+			for (size_t i = 1; i < this->LinearizedNodeTree.size(); i++) {
+				this->LinearizedNodeTree[i]->host_update(
+					aDeltaTime, 
+					aTime, 
+					aAppliedForces, 
+					this->Model->Animation, 
+					this->AnimationWeights
+				);
+			}
+		}
+		else {
+			// No animations with this objects model.
+			for (size_t i = 1; i < this->LinearizedNodeTree.size(); i++) {
+				this->LinearizedNodeTree[i]->host_update(
+					aDeltaTime, 
+					aTime, 
+					aAppliedForces
+				);
+			}
+		}
 
 	}
 
